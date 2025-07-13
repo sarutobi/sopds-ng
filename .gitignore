@@ -1,9 +1,33 @@
+# All hidden files
+.*
+#Except this hidden files
+!.gitignore
+
+# All files with suffixes
+*.vim
+*.py[co]
+*.db
+*.mo
 *.log
-*.swp
-*.pid
-*.pyc
-db.sqlite3
-db.sqlite3-journal
-.idea/*
-venv
+*.lock
+*.env
+*.dev
+*-dev.*
+
+# Except this files 
+!base.env
+
+# All Files with prefixes
+local_*
+my_*
+dev_*
+
+# All named Files
+Dockerfile.setup
+
+# All directories
+build/
+tmp/
+src/app/static
+**/node_modules/
 
