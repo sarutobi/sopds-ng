@@ -15,49 +15,48 @@
 
 <body>
 <div class="grid-container">
-<div class="grid-x">
- {% include "sopds_top.html" %}
-</div>
-
-<div class="grid-x">
-     {% include "sopds_logo.html" %}
-</div>
-
-<div class="grid-x">
-     {% include "sopds_menu.html" %}
-</div>
-
-<div class="grid-x">
-     {% include "sopds_breadcrumbs.html" %}
-</div>
-
-{% if system_message %}
-<div class="grid-x">
-     {% include "sopds_messages.html" %}
-</div>
-{% endif %}
-
-{% if not user.is_authenticated %}
-<div class="grid-x">
-    {# {% include "registration/login.html" %} #}
-</div>
-{% endif %}
-
-{% block content %}
-<div class="grid-x">
-    {% block ext-body %} {% endblock %}  {# ext-body #}
-    {# {% cache 300 cache_t body cache_id %} #}
-    {% block body %} {% endblock %}  {# body #}
-    {# {% endcache %} #}
-</div>
-{% endblock %}  {# content #}
-
-
-<div class="grid-x">
-      {% include "sopds_footer.html" %}
-</div>
+    <div class="grid-x">
+        {% include "sopds_top.html" %}
     </div>
-</div>
+
+    <div class="grid-x">
+         {% include "sopds_logo.html" %}
+    </div>
+
+    <div class="grid-x">
+         {% include "sopds_menu.html" %}
+    </div>
+
+    <div class="grid-x">
+         {% include "sopds_breadcrumbs.html" %}
+    </div>
+
+    {% if system_message %}
+    <div class="grid-x">
+         {% include "sopds_messages.html" %}
+    </div>
+    {% endif %}
+
+    {% if not user.is_authenticated %}
+    <div class="grid-x">
+        {# {% include "registration/login.html" %} #}
+    </div>
+    {% endif %}
+
+    {% block content %}
+    <div class="grid-x">
+        {% block ext-body %} {% endblock %}  {# ext-body #}
+        {# {% cache 300 cache_t body cache_id %} #}
+        {% block body %} {% endblock %}  {# body #}
+        {# {% endcache %} #}
+    </div> <!-- content -->
+    {% endblock %}  {# content #}
+
+
+    <div class="grid-x">
+          {% include "sopds_footer.html" %}
+    </div><!-- footer -->
+</div><!-- conntainer -->
 
   <script src="{% static "js/vendor/jquery.min.js" %}"></script>
   <script src="{% static "js/vendor/foundation.min.js" %}"></script>
