@@ -1,25 +1,39 @@
-#### SimpleOPDS Catalog - Простой OPDS Каталог
-#### Author: Dmitry V.Shelepnev  
+#### SimpleOPDS Catalog NG (new generation) - Простой OPDS Каталог НП (новое поколение)
+#### Based on SimpleOPDS Catalog by Dmitry V.Shelepnev
+#### Author: Valery A. Ilychev
 #### Версия 0.47-devel
 
 [English README.md](README.md)
 
+Базируется на исходном коде [SimpleOPDS Catalog](https://github.com/mitshel/sopds) Дмитрия Шелепова.
+
+Изменения относительно оригинального проекта:
+1. Пока что проект рассчитан на работу только с БД postgresql. Работа с другими БД (mysql, sqlite) возможна, но не гарантируется.
+2. Актуализация версий зависимостей.
+3. Изменение базовой верстки.
+4. Возможность запустить проект в контейнере docker.
+5. Исправлены выявленные ошибки, применены изменения,  сформированные сторонними контрибюторами.
+
+Структура исходного кода реорганизована для более удобного управления.
+
+
 #### 1. Простая установка SimpleOPDS (используем простую БД sqlite3)
 
 1.1 Установка проекта  
-Загрузить архив с проектом можно с сайта www.sopds.ru, 
-либо из github.com следующей командой:
+Загрузить архив с проектом можно из github.com следующей командой:
 
-	git clone https://github.com/mitshel/sopds.git
+	git clone https://github.com/sarutobi/sopds-ng.git
 
 1.2 Зависимости.  
 - Требуется Python не ниже версии 3.4
-- Django 1.10
+- Django 5.1
 - Pillow 2.9.0
-- apscheduler 3.3.0
+- apscheduler 3.11
 - django-picklefield
 - lxml
 - python-telegram-bot 10
+
+_!!!! Далее идет оригинальная версия README !!!_
 
 Для работы проекта необходимо установить указанные  зависимости: 
 
