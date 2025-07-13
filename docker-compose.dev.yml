@@ -1,0 +1,29 @@
+
+services:
+  web:
+    image: sopds-ng-dev
+    ports:
+      - "8008:8008"
+    volumes:
+     - ./src/app:/sopds/app
+
+    depends_on:
+    - db
+
+
+  db:
+    image: postgres:17
+    restart: always
+    shm_size: 128 mb
+    ports:
+      - "5432:5432"
+
+    environment:
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: 'sopds'
+    volumes:
+      - sopds-ng-db:/var/lib/postgres/data/
+
+volumes:
+   sopds-ng-db:
+

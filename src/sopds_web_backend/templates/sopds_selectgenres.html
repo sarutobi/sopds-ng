@@ -1,0 +1,19 @@
+{% extends "sopds_main.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block body %}
+{% autoescape on %}
+{%  for g in items %}
+<div class="cell sopdsitem">
+	{% if not parent_id %}
+	   <a href="{% url "web:genre" %}?section={{g.section_id}}">{{ g.section }}</a>
+	{% else %}
+	   <a href="{% url "web:searchbooks" %}?searchtype=g&searchterms={{g.id}}">{{ g.subsection }}</a>
+	{% endif %}
+	<span style="font-size:80%">{% blocktrans with g_num_book=g.num_book %}Total: {{ g_num_book }} books.{% endblocktrans %}</span>
+</div>		
+{% endfor %}
+{% endautoescape %}
+
+{% endblock %}  {# body #}

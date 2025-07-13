@@ -1,0 +1,32 @@
+
+services:
+  web:
+    image: ${DOCKER_IMAGE_TAG}
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./src:/sopds
+      - /home/valera/tmp/books:/books
+    environment:
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      DEBUG: ${DEBUG}
+      SECRET_KEY: ${SECRET_KEY}
+    depends_on:
+    - db
+
+  db:
+    image: postgres:17
+    restart: always
+    shm_size: 128 mb
+    ports:
+      - "5432:5432"
+
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: 'sopds'
+    volumes:
+      - sopds-ng-db:/var/lib/postgresql/data/
+
+volumes:
+  sopds-ng-db:
+

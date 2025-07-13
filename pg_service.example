@@ -1,0 +1,5 @@
+[sopds]
+host=localhost
+user=postgres
+dbname=sopds
+port=5432
