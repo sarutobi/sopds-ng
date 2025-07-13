@@ -1,5 +1,6 @@
 {% extends "sopds_main.html" %}
 {% load i18n %}
+{% load static %}
 
 {% block body %}
 <script>
@@ -101,16 +102,16 @@
                     <i style="font-size:80%;">{% trans "Download:" %} </i>
                 </div>
                 <div class="cell">
-                    <i><a href="{% url 'opds_catalog:download' b.id 0 %}"><span class="label small">{{b.format}}</span></a></i>&nbsp;
+                    <i><a href="{% url 'opds_catalog:download' b.id 0 %}" title="{{ b.format }}"><img src="{% static "images/download.svg" %}" width="30" alt="{{ b.format}}"></a></i>
                 <!--/div-->
                 {% if not b.format in nozip %}
-                <i><a href="{% url 'opds_catalog:download' b.id 1 %}"><span class="label small">{{b.format}}+zip</span></a></i>&nbsp;
+                <i><a href="{% url 'opds_catalog:download' b.id 1 %}" title="{{ b.format }} + zip"><img src="{% static "images/download-zip.svg" %}" width="30" alt="{{ b.format }}+zip"></a></i>
                 {%  endif %}
                 {% if b.format == 'fb2' and fb2toepub %}
-                <i><a href="{% url 'opds_catalog:convert' b.id 'epub' %}"><span class="label small">epub</span></a></i>&nbsp;
+                <i><a href="{% url 'opds_catalog:convert' b.id 'epub' %}" title="epub"><img src="{% static "images/download-epub.svg" %}" width="30" alt="epub"></a></i>
                 {% endif %}
                 {% if b.format == 'fb2' and fb2tomobi %}
-                <i><a href="{% url 'opds_catalog:convert' b.id 'mobi' %}"><span class="label small">mobi</span></a></i>&nbsp;
+                <i><a href="{% url 'opds_catalog:convert' b.id 'mobi' %}" title="mobi"><img src="{% static "images/download-mobi.svg" %}" width="30" alt="mobi"></a></i>&nbsp;
                 {% endif %}			
                 {% if isbookshelf %}
                 &nbsp;&nbsp;<i><a href="#" onclick="del_bsbook({{ b.id }},'{{b.title}}');"><span class="secondary label small">&nbsp;{% trans "Delete from bookshelf" %}&nbsp;</span></a></i>
