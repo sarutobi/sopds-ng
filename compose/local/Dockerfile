@@ -11,10 +11,11 @@ ENV PGSERVICEFILE=/home/sopds/.pg_service.conf
 ENV PGPASSFILE=/home/sopds/.pgpass
 
 # Requirements file
-ARG REQUIREMENTS="dev.txt"
+ARG REQUIREMENTS="local.txt"
 
 WORKDIR /sopds
 
+RUN apt update && apt install -y gettext
 COPY ./requirements /sopds/
 COPY .pgpass /.pgpass
 COPY .pg_service.conf /.pg_service.conf
