@@ -2,7 +2,6 @@
   https://stackoverflow.com/questions/5836674/why-does-debug-false-setting-make-my-django-static-files-access-fail
 [2025-07-26]  
 - Вынести работу с БД из всех сервисов в единую точку
-- Добавить лицензию GPL 3
 - Интеграция с новым конвертотром fb2converter https://github.com/rupor-github/fb2converter/
 - Логотип для проекта
 - Работа с MySQL и sqlite
