@@ -15,7 +15,7 @@ from opds_catalog.models import Book, Author, Series, bookshelf, Counter, Catalo
 from opds_catalog import settings
 from constance import config
 from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
-
+from opds_catalog.utils import get_lang_name
 
 from sopds_web_backend.settings import HALF_PAGES_LINKS
 
@@ -161,7 +161,7 @@ def SearchBooksView(request):
         for row in books[start:finish+1]:
             p = {'doubles':0, 'lang_code': row.lang_code, 'filename': row.filename, 'path': row.path, \
                   'registerdate': row.registerdate, 'id': row.id, 'annotation': strip_tags(row.annotation), \
-                  'docdate': row.docdate, 'format': row.format, 'title': row.title, 'lang': row.lang, 'filesize': row.filesize,\
+                  'docdate': row.docdate, 'format': row.format, 'title': row.title, 'lang': get_lang_name(row.lang), 'filesize': row.filesize,\
                   'authors': row.authors.values(), 'genres': row.genres.values(), 'series': row.series.values(),'ser_no': row.bseries_set.values('ser_no'),\
                   #'readtime':row.bookshelf_set.filter(user=request.user).values('readtime') if config.SOPDS_AUTH else None
                   'readtime':row.bookshelf_set.filter(user=request.user).values('readtime') if SOPDS_AUTH else None

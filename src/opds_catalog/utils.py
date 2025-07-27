@@ -4,6 +4,8 @@
 #
 import unicodedata
 
+from django.conf import settings
+
 def translit(s):
     """Russian translit: converts 'привет'->'privet'"""
     assert s is not str, "Error: argument MUST be string"
@@ -18,4 +20,12 @@ def translit(s):
 
 def to_ascii(s):
     return s.encode('ascii', 'replace').decode('utf-8')
-
+
+def get_lang_name(lang):
+    ''' Преобразование языкового кода в наименование языка '''
+    k = lang.upper()
+    if k in settings.LANGUAGE_NAMES.keys():
+        return settings.LANGUAGE_NAMES[k]
+
+    return lang
+
