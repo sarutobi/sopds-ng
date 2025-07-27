@@ -30,5 +30,5 @@ shell +args:
 # Buid containers
 build: 
     just down
-    @docker compose build --no-cache
+    @docker compose build
     just up

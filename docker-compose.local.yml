@@ -10,7 +10,8 @@ services:
       - "8008:8008"
     volumes:
      - ./src:/sopds
-     - ${BOOKS}:/books
+     - ${BOOKS}:/books:ro
+     - ./.env:/sopds/.env
     environment:
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
       DEBUG: ${DEBUG}

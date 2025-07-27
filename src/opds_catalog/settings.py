@@ -4,10 +4,12 @@ from django.conf import settings
 from django.utils import translation
 from constance import config
 
+#import environ
+
 loglevels={'debug':logging.DEBUG,'info':logging.INFO,'warning':logging.WARNING,'error':logging.ERROR,'critical':logging.CRITICAL,'none':logging.NOTSET}
 NOZIP_FORMATS = ['epub', 'mobi']
 
-VERSION = "0.48-devel"
+VERSION = getattr(settings, "VERSION", "develop")
 TITLE = getattr(settings, "SOPDS_TITLE", "SimpleOPDS NG")
 SUBTITLE = getattr(settings, "SOPDS_SUBTITLE", "SimpleOPDS Catalog new generation by www.sopds.ru. Version %s."%VERSION)
 ICON = getattr(settings, "SOPDS_ICON", "/static/images/favicon.ico")
