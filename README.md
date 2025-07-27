@@ -6,7 +6,7 @@
 [Инструкция на русском языке: README_RUS.md](README_RUS.md)
 
 Based on source code [SimpleOPDS Catalog](https://github.com/mitshel/sopds) by Dmitry V.Shelepov.
-
+![Example 1](images/sopds-ng-1.jpg)
 Notable changes:
 1. Tested to work only with postgresql. Other db engines (mysql, sqlite) can be used, but compatibility is not tested.
 2. Dependency actualized.
