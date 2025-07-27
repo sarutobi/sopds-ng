@@ -4,8 +4,6 @@ from django.conf import settings
 from django.utils import translation
 from constance import config
 
-#import environ
-
 loglevels={'debug':logging.DEBUG,'info':logging.INFO,'warning':logging.WARNING,'error':logging.ERROR,'critical':logging.CRITICAL,'none':logging.NOTSET}
 NOZIP_FORMATS = ['epub', 'mobi']
 
