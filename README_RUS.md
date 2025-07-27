@@ -6,7 +6,7 @@
 [English README.md](README.md)
 
 Базируется на исходном коде [SimpleOPDS Catalog](https://github.com/mitshel/sopds) Дмитрия Шелепова.
-
+![Example](images/sopds-ng-1.jpg)
 Изменения относительно оригинального проекта:
 1. Пока что проект рассчитан на работу только с БД postgresql. Работа с другими БД (mysql, sqlite) возможна, но не гарантируется.
 2. Актуализация версий зависимостей.
