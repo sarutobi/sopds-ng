@@ -50,7 +50,9 @@ def pg_optimize(verbose=False):
     else:
         print('Start PostgreSql tables optimization...')
         cursor = connection.cursor()
+        # TODO: зачем для таблицы книг выставляется fillfactor 50
         cursor.execute('alter table opds_catalog_book SET ( fillfactor = 50)')
+        # TODO: заменить вызов VACUUM FULL на нормально настроенный автовакуум
         cursor.execute('VACUUM FULL opds_catalog_book')
         print('PostgreSql tables internal structure optimized...')
 
@@ -96,13 +98,17 @@ def getlangcode(s):
     return langcode
     
 def avail_check_prepare():
-    Book.objects.filter(~Q(avail=0)).update(avail=1)
+    # Используется только в sopdscan
+    #Book.objects.filter(~Q(avail=0)).update(avail=1)
+    Book.objects.exclude(avail=0).update(avail=1)
 
 def books_del_logical():
+    # Используется только в sopdscan. Возможно, не используется вообще
     row_count = Book.objects.filter(avail=1).update(avail=0)
     return row_count
 
 def books_del_phisical():
+    # Используется только в sopdscan
     row_count = Book.objects.filter(avail__lte=1).delete()
     # TODO: Разобратся нужно ли удалять записи в таблицах связи ManyToMany или они сами удалятся?
     # sql='delete from '+TBL_BAUTHORS+' where book_id in (select book_id from '+TBL_BOOKS+' where avail<=1)'
@@ -119,6 +125,7 @@ def arc_skip(arcpath,arcsize):
        Если книги из искомого каталога имелись и для них установлен avail=2, то пропуск возможен 
        и возвращаем 1 (или row_count)      
     """
+    # TODO: рефакторинг arc_skip для упрощения работы
     catalog = findcat(arcpath)
     
     # Если такого каталога еще нет в БД, то значит считаем что ZIP изменен и пропуск невозможен
@@ -147,6 +154,7 @@ def inp_skip(arcpath,arcsize):
        Если книги из искомого INPX имелись и для них установлен avail=2, то пропуск возможен 
        и возвращаем 1 (или row_count)      
     """
+    # TODO: рефакторинг inp_skip для упрощения работы
     catalog = findcat(arcpath)
 
     # Если такого INPX еще нет в БД, то значит считаем что INPX изменен и пропуск невозможен
@@ -175,6 +183,7 @@ def inpx_skip(arcpath, arcsize):
        Если книги из искомого INPX имелись и для них установлен avail=2, то пропуск возможен
        и возвращаем 1 (или row_count)
     """
+    # TODO: рефакторинг inpx_skip для упрощения работы
     catalog = findcat(arcpath)
 
     # Если такого INPX еще нет в БД, то значит считаем что INPX изменен и пропуск невозможен
@@ -229,6 +238,7 @@ def findbook(name, path, setavail=0):
     return book
 
 def addbook(name, path, cat, exten, title, annotation, docdate, lang, size=0, archive=0):
+    ''' Добавление книги в коллекцию'''
     book = Book.objects.create(filename=name[:SIZE_BOOK_FILENAME],path=path[:SIZE_BOOK_PATH],catalog=cat,filesize=size,format=exten.lower()[:SIZE_BOOK_FORMAT],
                 title=title[:SIZE_BOOK_TITLE],search_title=title.upper()[:SIZE_BOOK_TITLE],annotation=p(annotation,SIZE_BOOK_ANNOTATION),
                 docdate=docdate[:SIZE_BOOK_DOCDATE],lang=lang[:SIZE_BOOK_LANG],cat_type=archive,avail=2, lang_code=getlangcode(title))
@@ -252,23 +262,29 @@ def addbauthor(book, author):
     ba.save()
 
 def addgenre(genre):
+    # TODO: функция addgenre используется только в sopdscan
     genre, created = Genre.objects.get_or_create(genre=genre[:SIZE_GENRE], defaults={'section':unknown_genre, 'subsection':genre[:SIZE_GENRE_SUBSECTION]})
     return genre
 
 def addbgenre(book, genre):
+    # TODO: функция addbgenre используется только в sopdscan
     bg = bgenre(book=book, genre=genre)
     bg.save()
 
 def addseries(ser):
+    # TODO: addseries используется только в sopdscan
     series, created = Series.objects.get_or_create(ser=ser[:SIZE_SERIES], defaults={'search_ser':ser.upper()[:SIZE_SERIES], 'lang_code':getlangcode(ser)})
     return series
 
 def addbseries(book, ser, ser_no):
+    # TODO: addbseries используется только в sopdscan
     bs = bseries(book=book, ser=ser, ser_no=ser_no)
     bs.save()
     
 def set_autocommit(autocommit):
+    # TODO: функция set_autocommit не используется
     transaction.set_autocommit(autocommit)
     
 def commit():
+    # TODO: функция commit не используется
     transaction.commit()

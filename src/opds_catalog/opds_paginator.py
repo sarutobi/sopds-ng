@@ -6,13 +6,21 @@ Created on 21 нояб. 2016 г.
 
 class Paginator:
     def __init__(self, d1_count, d2_count, page_num=1, maxitems=60, half_pages_link = 3):
+        ''' Создание пейджера и расчет результата.
+        Параметры:
+            d1_count - число элементов для пагинации 
+            d2_count - число книг в катлоге либо 0 для других элементов
+            page_num - текущая страница, которая отображается в пейджере
+            maxitems - число объектов на странице пейджера
+            half_pages_link -
+        '''
         self.d1_count = d1_count
         self.d2_count = d2_count
-        self.count = self.d1_count + self.d2_count
+        self.count = self.d1_count + self.d2_count # зачем?
         self.MAXITEMS = maxitems
         self.HALF_PAGES_LINK = half_pages_link
-        self.page_num = page_num      
-        self.calc_data()                   
+        self.page_num = page_num
+        self.calc_data()
     
     def calc_data(self):
         d1_MAXITEMS = self.MAXITEMS
