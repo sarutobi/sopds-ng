@@ -110,7 +110,7 @@ msgstr "Название книги:"
 
 #: sopds_web_backend/templates/sopds_books.html:106
 msgid "Language:"
-msgstr "Язык"
+msgstr "Язык:"
 
 #: sopds_web_backend/templates/sopds_books.html:108
 msgid "Authors:"
