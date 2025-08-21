@@ -52,7 +52,7 @@ class Command(BaseCommand):
                 if book.id not in found_doubles:
                     for book_doubles in Book.objects.filter(title=book.title, authors__in=book.authors.all()).exclude(id=book.id).distinct().order_by('-docdate'):
                         self.logger.info (f"Found duplicate id {book_doubles.id} for book {book.id}")
-                        found_doubles.add(book_doubles.id)
+                        found_doubles.append(book_doubles.id)
             
             self.scan_is_active = False
             self.stdout.write('Complete book duplicates scan.')        
