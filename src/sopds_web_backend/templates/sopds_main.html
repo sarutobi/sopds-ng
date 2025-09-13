@@ -64,12 +64,12 @@
   <script>
 
     function length_validator($el,required,parent) {
-         if ($('#main_searchbox')[0].value.length < 3)          
+         if ($('#main_searchbox')[0].value.length < 3)
                 return false;
          return true;
     };
 	Foundation.Abide.defaults.validators["check_search"] = length_validator; 
-    $(document).foundation();   
+    $(document).foundation();
 	
     function logout(to_url) {
 	    var out = window.location.href.replace(/:\/\//, '://log:out@');
@@ -78,7 +78,7 @@
 	        window.location = to_url;
 	  });
     }
-    SetSearch();  
+    SetSearch();
 	
   </script>
   
