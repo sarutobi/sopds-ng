@@ -38,7 +38,7 @@ build_containers:
 clean_release:
     rm -rf release*
     mkdir -p release
-   
+
 # Build release
 build_release: (clean_release)
     cp -r src/ build/release/sopds-ng
@@ -46,3 +46,6 @@ build_release: (clean_release)
     cp -r requirements build/release
     find build/release -type f -name "local.*" -delete
 
+# Create docker image for foundation
+prepare_foundation:
+    docker build -t foundation -f foundation/Dockerfile .
