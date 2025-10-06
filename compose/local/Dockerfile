@@ -17,12 +17,12 @@ WORKDIR /sopds
 
 RUN apt update && apt install -y gettext
 COPY ./requirements /sopds/
-COPY .pgpass /.pgpass
-COPY .pg_service.conf /.pg_service.conf
+#COPY .pgpass /.pgpass
+#COPY .pg_service.conf /.pg_service.conf
 
 RUN useradd --create-home sopds \
 && chown sopds:sopds -R /sopds \
-&& mv /.pg* /home/sopds/ && chmod 0600 /home/sopds/.pgpass && chown -R sopds:sopds /home/sopds \
+#&& mv /.pg* /home/sopds/ && chmod 0600 /home/sopds/.pgpass && chown -R sopds:sopds /home/sopds \
 && pip install --upgrade pip \
 && pip install --no-cache-dir -r $REQUIREMENTS 
 

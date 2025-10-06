@@ -10,7 +10,7 @@ services:
       - "8008:8008"
     volumes:
      - ./src:/sopds
-     - ${BOOKS}:/books:ro
+     - ${SOPDS_BOOK_PATH}:/books:ro
      - ./.env:/sopds/.env
     environment:
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
@@ -28,7 +28,7 @@ services:
       - "5432:5432"
 
     environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${SOPDS_DB_PASSWORD}
       POSTGRES_DB: 'sopds'
     volumes:
       - sopds-ng-db:/var/lib/postgresql/data/

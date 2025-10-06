@@ -27,7 +27,7 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
 
 # Project version
-VERSION = env('VERSION')
+VERSION = env('SOPDS_VERSION')
 
 ALLOWED_HOSTS = []
 
@@ -83,15 +83,18 @@ WSGI_APPLICATION = 'sopds.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
+ENGINE = env('SOPDS_DB_ENGINE')
+if 'postgres' == ENGINE:
+    default_database = {
         'ENGINE': 'django.db.backends.postgresql',
-        'OPTIONS': {
-            'service': 'sopds',
-            'passfile': env('PGPASSFILE'),
-        },
+        'NAME' : env('SOPDS_DB_NAME'),
+        'USER' : env('SOPDS_DB_USER'),
+        'PASSWORD' : env('SOPDS_DB_PASSWORD'),
+        'HOST' : env('SOPDS_DB_HOST'),
+        'PORT' : env('SOPDS_DB_PORT')
     }
+DATABASES = {
+    'default': default_database
 }
 
 
