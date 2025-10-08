@@ -19,13 +19,13 @@ class parserTestCase(TestCase):
         parser.reset()
         f = open(os.path.join(self.test_ROOTLIB, self.test_fb2), 'rb')
         parser.parse(f)
-        self.assertEquals(parser.book_title.getvalue()[0], "The Sanctuary Sparrow")
-        self.assertEquals(parser.author_first.getvalue()[0], "Ellis")
-        self.assertEquals(parser.author_last.getvalue()[0], "Peters")
-        self.assertEquals(parser.genre.getvalue()[0], "antique")
-        self.assertEquals(parser.lang.getvalue()[0], "en")
-        self.assertEquals(parser.docdate.getvalue()[0], "30.1.2011")
-        self.assertEquals(parser.parse_error, 0)
+        self.assertEqual(parser.book_title.getvalue()[0], "The Sanctuary Sparrow")
+        self.assertEqual(parser.author_first.getvalue()[0], "Ellis")
+        self.assertEqual(parser.author_last.getvalue()[0], "Peters")
+        self.assertEqual(parser.genre.getvalue()[0], "antique")
+        self.assertEqual(parser.lang.getvalue()[0], "en")
+        self.assertEqual(parser.docdate.getvalue()[0], "30.1.2011")
+        self.assertEqual(parser.parse_error, 0)
 
     def test_fb2parse_novalid(self):
         """ Тестирование класса fb2parser - разбор невалидного fb2 """
@@ -33,7 +33,7 @@ class parserTestCase(TestCase):
         parser.reset()
         f = open(os.path.join(self.test_ROOTLIB, self.test_bad_fb2), 'rb')
         parser.parse(f)
-        self.assertNotEquals(parser.parse_error, 0)
+        self.assertNotEqual(parser.parse_error, 0)
 
     def test_fb2parse_cover(self):
         """ Тестирование класса fb2parser - извлечение обдложки из fb2 """
@@ -41,6 +41,6 @@ class parserTestCase(TestCase):
         parser.reset()
         f = open(os.path.join(self.test_ROOTLIB, self.test_fb2), 'rb')
         parser.parse(f)
-        self.assertEquals(parser.parse_error, 0)
-        self.assertEquals(len(parser.cover_image.cover_data), 76207)
-        self.assertEquals(parser.cover_image.getattr('content-type'), "image/jpeg")
+        self.assertEqual(parser.parse_error, 0)
+        self.assertEqual(len(parser.cover_image.cover_data), 76207)
+        self.assertEqual(parser.cover_image.getattr('content-type'), "image/jpeg")
