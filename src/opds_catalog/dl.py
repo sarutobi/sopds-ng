@@ -6,7 +6,7 @@ import base64
 import io
 import subprocess
 
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.views.decorators.cache import cache_page
 
 from opds_catalog.models import Book, bookshelf
@@ -270,74 +270,76 @@ def Cover(request, book_id, thumbnail=False):
         response.write(image)
 
     if not image:
-        if os.path.exists(config.SOPDS_NOCOVER_PATH):
-            response["Content-Type"] = 'image/jpeg'
-            f = open(config.SOPDS_NOCOVER_PATH, "rb")
-            response.write(f.read())
-            f.close()
-        else:
-            raise Http404
+        # Вместо обработки изображения отдаем ссылку на изображение "Нет обложки"
+        return HttpResponseRedirect(config.SOPDS_NOCOVER_PATH)
+        #if os.path.exists(config.SOPDS_NOCOVER_PATH):
+        #    response["Content-Type"] = 'image/jpeg'
+        #    f = open(config.SOPDS_NOCOVER_PATH, "rb")
+        #    response.write(f.read())
+        #    f.close()
+        #else:
+        #    raise Http404
 
     return response
 
 # Старая версия (до 0.41) процедуры извлечения обложек из файлов книг только fb2
-def Cover0(request, book_id, thumbnail = False):
-    """ Загрузка обложки """
-    book = Book.objects.get(id=book_id)
-    response = HttpResponse()
-    c0=0
-    full_path=os.path.join(config.SOPDS_ROOT_LIB,book.path)
-    if book.cat_type==opdsdb.CAT_INP:
-        # Убираем из пути INPX и INP файл
-        inp_path, zip_name = os.path.split(full_path)
-        inpx_path, inp_name = os.path.split(inp_path)
-        path, inpx_name = os.path.split(inpx_path)
-        full_path = os.path.join(path,zip_name)
-         
-    if book.format=='fb2':        
-        fb2=fb2parse.fb2parser(1)
-        if book.cat_type==opdsdb.CAT_NORMAL:
-            file_path=os.path.join(full_path,book.filename)
-            fo=codecs.open(file_path, "rb")
-            fb2.parse(fo,0)
-            fo.close()
-        elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
-            fz=codecs.open(full_path, "rb")
-            z = zipfile.ZipFile(fz, 'r', allowZip64=True)
-            fo = z.open(book.filename)
-            fb2.parse(fo,0)
-            fo.close()
-            z.close()
-            fz.close()
-
-        if len(fb2.cover_image.cover_data)>0:
-            try:
-                s=fb2.cover_image.cover_data
-                dstr=base64.b64decode(s)
-                if thumbnail:
-                    response["Content-Type"] = 'image/jpeg'
-                    thumb = Image.open(io.BytesIO(dstr)).convert('RGB')
-                    thumb.thumbnail((settings.THUMB_SIZE, settings.THUMB_SIZE), Image.ANTIALIAS)
-                    tfile = io.BytesIO()
-                    thumb.save(tfile, 'JPEG')
-                    dstr = tfile.getvalue()
-                else:
-                    response["Content-Type"] = fb2.cover_image.getattr('content-type')
-                response.write(dstr)
-                c0=1
-            except:
-                c0=0
-
-    if c0==0:
-        if os.path.exists(config.SOPDS_NOCOVER_PATH):
-            response["Content-Type"]='image/jpeg'
-            f=open(config.SOPDS_NOCOVER_PATH,"rb")
-            response.write(f.read())
-            f.close()
-        else:
-            raise Http404
-
-    return response
+#def Cover0(request, book_id, thumbnail = False):
+#    """ Загрузка обложки """
+#    book = Book.objects.get(id=book_id)
+#    response = HttpResponse()
+#    c0=0
+#    full_path=os.path.join(config.SOPDS_ROOT_LIB,book.path)
+#    if book.cat_type==opdsdb.CAT_INP:
+#        # Убираем из пути INPX и INP файл
+#        inp_path, zip_name = os.path.split(full_path)
+#        inpx_path, inp_name = os.path.split(inp_path)
+#        path, inpx_name = os.path.split(inpx_path)
+#        full_path = os.path.join(path,zip_name)
+#         
+#    if book.format=='fb2':        
+#        fb2=fb2parse.fb2parser(1)
+#        if book.cat_type==opdsdb.CAT_NORMAL:
+#            file_path=os.path.join(full_path,book.filename)
+#            fo=codecs.open(file_path, "rb")
+#            fb2.parse(fo,0)
+#            fo.close()
+#        elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
+#            fz=codecs.open(full_path, "rb")
+#            z = zipfile.ZipFile(fz, 'r', allowZip64=True)
+#            fo = z.open(book.filename)
+#            fb2.parse(fo,0)
+#            fo.close()
+#            z.close()
+#            fz.close()
+#
+#        if len(fb2.cover_image.cover_data)>0:
+#            try:
+#                s=fb2.cover_image.cover_data
+#                dstr=base64.b64decode(s)
+#                if thumbnail:
+#                    response["Content-Type"] = 'image/jpeg'
+#                    thumb = Image.open(io.BytesIO(dstr)).convert('RGB')
+#                    thumb.thumbnail((settings.THUMB_SIZE, settings.THUMB_SIZE), Image.ANTIALIAS)
+#                    tfile = io.BytesIO()
+#                    thumb.save(tfile, 'JPEG')
+#                    dstr = tfile.getvalue()
+#                else:
+#                    response["Content-Type"] = fb2.cover_image.getattr('content-type')
+#                response.write(dstr)
+#                c0=1
+#            except:
+#                c0=0
+#
+#    if c0==0:
+#        if os.path.exists(config.SOPDS_NOCOVER_PATH):
+#            response["Content-Type"]='image/jpeg'
+#            f=open(config.SOPDS_NOCOVER_PATH,"rb")
+#            response.write(f.read())
+#            f.close()
+#        else:
+#            raise Http404
+#
+#    return response
 
 def Thumbnail(request, book_id):
     return Cover(request, book_id, True)
