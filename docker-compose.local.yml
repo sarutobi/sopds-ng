@@ -34,6 +34,13 @@ services:
     volumes:
       - sopds-ng-db:/var/lib/postgresql/data/
 
+  mc:
+    image: memcached:1.6-alpine
+    command:
+      - --conn-limit=64
+      - --memory-limit=64
+      - --threads=2
+
 volumes:
    sopds-ng-db:
 

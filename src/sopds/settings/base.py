@@ -97,6 +97,13 @@ DATABASES = {
     'default': default_database
 }
 
+# Memcached
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.memcached.PyMemcacheCache",
+        "LOCATION": "mc:11211",
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -146,6 +153,7 @@ STATIC_ROOT = 'static'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
+CONSTANCE_DATABASE_CACHE_BACKEND = 'default'
 
 CONSTANCE_ADDITIONAL_FIELDS = {
     'language_select': ['django.forms.fields.ChoiceField', {
@@ -224,7 +232,7 @@ CONSTANCE_CONFIG = OrderedDict([
     ('SOPDS_TELEBOT_API_TOKEN', ('', _('Telegramm API Token'))),
     ('SOPDS_TELEBOT_AUTH', (True,_('Enable telebot authentication. Test presense telegram username in local users database (case insensetive).'))),
     ('SOPDS_TELEBOT_MAXITEMS', (10, _('Max items on page'))),
-    
+
     ('SOPDS_AUTH', (True,_('Enable authentication'))),
     ('SOPDS_ALPHABET_MENU', (True,_('Enable alphabet submenu'))),   
     ('SOPDS_DOUBLES_HIDE', (True,_('This flag hides found doublicates'))),
@@ -232,9 +240,9 @@ CONSTANCE_CONFIG = OrderedDict([
     ('SOPDS_SPLITITEMS', (300,_('Max subitems count in alphabet menuitem'))),
     ('SOPDS_MAXITEMS', (60,_('Max items on page'))),
     ('SOPDS_TITLE_AS_FILENAME', (True,_('Create downloaded filename from book title'))),
-    ('SOPDS_NOCOVER_PATH', (os.path.join(BASE_DIR,'static/images/nocover.jpg'),_('Path to image file showing for book without embedded cover'))),    
-        
-    
+    ('SOPDS_NOCOVER_PATH', ('/static/images/sopds-ng-nocover.jpg',_('URI of image file showing for book without embedded cover'))),
+
+
     ('SOPDS_FB2SAX', (True,_('This flag activate SAX Parser for FB2 instead of lxml.xpath'))),
     ('SOPDS_ZIPSCAN', (True,_('This flag activate zip files scanning'))),
     ('SOPDS_ZIPCODEPAGE', ('cp866',_('Set codepage for filenames inside zipfile'))),

@@ -6,3 +6,4 @@ django-constance[database]==4.3.2
 apscheduler==3.11
 django-environ==0.12
 python-telegram-bot==22
+pymemcache==4
