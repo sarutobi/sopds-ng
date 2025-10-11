@@ -55,7 +55,6 @@ build_debug: (clean_debug)
     cp -lr src/* build/debug
     cp -lr requirements build/debug
     cp pytest.ini build/debug/
-    cp .env build/debug
     cp bootstrap.sh build/debug/
 
     chmod +x build/debug/bootstrap.sh

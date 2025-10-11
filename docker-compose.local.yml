@@ -12,7 +12,7 @@ services:
  #    - ./src:/sopds-ng
  #    - ./pytest.ini:/sopds/pytest.ini
      - ${SOPDS_BOOK_PATH}:/books:ro
- #    - ./.env:/sopds-ng/.env
+     - ./.env:/sopds-ng/.env
     environment:
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
       DEBUG: ${DEBUG}
