@@ -45,7 +45,7 @@ class Inpx:
         self.TEST_ZIP = False#config.SOPDS_INPX_TEST_ZIP
         self.TEST_FILES = False# config.SOPDS_INPX_TEST_FILES
         self.error = 0       
-        
+
     def parse(self):
         finpx = zipfile.ZipFile(self.inpx_file, "r")
         filelist = finpx.namelist()
@@ -115,4 +115,4 @@ class Inpx:
 
             finp.close()
         finpx.close()
-        
+

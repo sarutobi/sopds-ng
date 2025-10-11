@@ -1,0 +1,27 @@
+
+// 0. SOPDS Constants
+$sopds-bg-color: #f15a23;
+$sopds-bg-hover: scale-color($sopds-bg-color, $lightness: -15%);
+$sopds-topbar-bg-color: #ffffff;
+$sopds-title-color: #f15a23;
+$sopds-hover-color: scale-color($sopds-title-color, $lightness: -40%);
+
+$sopds-menu-bg-color: #f15a23;
+$sopds-menu-color: #FFFFFF;
+$sopds-menu-bg-hover-color: scale-color($sopds-menu-bg-color, $lightness: -15%);
+$sopds-menu-bg-active-color: scale-color($sopds-menu-bg-color, $lightness: -20%);
+$sopds-menu-hover-color: scale-color($sopds-menu-color, $lightness: -15%);
+$flex: true;
+
+$foundation-palette: (
+  "primary": $sopds-bg-color,
+  "secondary": #777,
+  "success": #3adb76,
+  "warning": #ffae00,
+  "alert": #cc4b37,
+);
+$light-gray: #e6e6e6;
+$medium-gray: #cacaca;
+$dark-gray: #8a8a8a;
+$black: #0a0a0a;
+$white: #fefefe;

@@ -81,10 +81,10 @@ class opdsScanner:
         self.log_options()
         self.inp_cat = None
         self.zip_file = None
-        self.rel_path = None     
-                    
+        self.rel_path = None
+
         opdsdb.avail_check_prepare()
-            
+
         for full_path, dirs, files in os.walk(config.SOPDS_ROOT_LIB, followlinks=True):
             # Если разрешена обработка inpx, то при нахождении inpx обрабатываем его и прекращаем обработку текущего каталога
             if config.SOPDS_INPX_ENABLE:
@@ -93,9 +93,9 @@ class opdsScanner:
                 if inpx_files:
                     for inpx_file in inpx_files:
                         file = os.path.join(full_path, inpx_file)
-                        self.processinpx(inpx_file, full_path, file)                       
+                        self.processinpx(inpx_file, full_path, file)
                     continue
-                
+
             for name in files:
                 file=os.path.join(full_path,name)
                 (n,e)=os.path.splitext(name)
@@ -104,35 +104,35 @@ class opdsScanner:
                         self.processzip(name,full_path,file)
                 else:
                     file_size=os.path.getsize(file)
-                    self.processfile(name,full_path,file,None,0,file_size)                   
+                    self.processfile(name,full_path,file,None,0,file_size)
 
         #if config.SOPDS_DELETE_LOGICAL:
         #    self.books_deleted=opdsdb.books_del_logical()
         #else:
         #    self.books_deleted=opdsdb.books_del_phisical()
-            
+
         self.books_deleted=opdsdb.books_del_phisical()
-        
+
         self.log_stats()
 
     def inpskip_callback(self, inpx, inp_file, inp_size):
 
         self.rel_path=os.path.relpath(os.path.join(inpx,inp_file),config.SOPDS_ROOT_LIB)
-        
+
         if config.SOPDS_INPX_SKIP_UNCHANGED and opdsdb.inp_skip(self.rel_path,inp_size):
             self.logger.info('Skip INP metafile '+inp_file+'. Not changed.')
-            result = 1               
-        else:    
+            result = 1
+        else:
             self.logger.info('Start process INP metafile = '+inp_file)
             self.inp_cat = opdsdb.addcattree(self.rel_path, opdsdb.CAT_INPX, inp_size)
             result = 0
-         
+
         return result
-                
-    def inpx_callback(self, inpx, inp, meta_data):          
-                 
+
+    def inpx_callback(self, inpx, inp, meta_data):
+
         name = "%s.%s"%(meta_data[inpx_parser.sFile],meta_data[inpx_parser.sExt])
-        
+
         lang=meta_data[inpx_parser.sLang].strip(strip_symbols)
         title=meta_data[inpx_parser.sTitle].strip(strip_symbols)
         annotation=''
@@ -157,7 +157,7 @@ class opdsScanner:
             for s in meta_data[inpx_parser.sSeries]:
                 ser=opdsdb.addseries(s.strip())
                 opdsdb.addbseries(book,ser,0)
-                   
+
     def processinpx(self,name,full_path,file):
         rel_file=os.path.relpath(file,config.SOPDS_ROOT_LIB)
         inpx_size = os.path.getsize(file)

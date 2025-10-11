@@ -86,7 +86,7 @@ def clear_genres(verbose=False):
 def p(s,size):
     new = utfhigh.sub(u'',s[:size])
     return new
-    
+
 def getlangcode(s):
     langcode = 9
     if len(s)==0:
@@ -96,7 +96,7 @@ def getlangcode(s):
             langcode = k
     
     return langcode
-    
+
 def avail_check_prepare():
     # Используется только в sopdscan
     #Book.objects.filter(~Q(avail=0)).update(avail=1)
@@ -142,7 +142,7 @@ def arc_skip(arcpath,arcsize):
     # Здесь мы оказываемся если размеры архива в БД и в наличии разные, поэтому считаем что изменения в архиве есть 
     # и пропуск сканирования невозможен    
     return 0
-    
+
 
 def inp_skip(arcpath,arcsize):
     """

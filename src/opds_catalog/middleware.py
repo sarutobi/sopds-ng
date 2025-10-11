@@ -21,7 +21,7 @@ class BasicAuthMiddleware(object):
     def process_request(self,request):
         if not config.SOPDS_AUTH:
             return
-            
+
         # AuthenticationMiddleware is required so that request.user exists.
         #if not hasattr(request, 'user'):
         #    raise ImproperlyConfigured(
@@ -33,8 +33,8 @@ class BasicAuthMiddleware(object):
         try:
             authentication = request.META[self.header]
         except KeyError:
-            return self.unauthed()  
-        try:                    
+            return self.unauthed()
+        try:
             (auth_meth, auth_data) = authentication.split(' ',1)
         except ValueError:
             return self.unauthed()
