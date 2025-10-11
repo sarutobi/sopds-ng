@@ -34,17 +34,37 @@ build_containers:
     just up
 
 # Clean release dir
-[working-directory: 'build']
 clean_release:
-    rm -rf release*
-    mkdir -p release
+    rm -rf ./build/release*
+
+# Clean debug dir
+clean_debug:
+    rm -rf ./build/debug
 
 # Build release
 build_release: (clean_release)
+    mkdir -p build/release
     cp -r src/ build/release/sopds-ng
     rm -rf build/release/sopds-ng/assets
     cp -r requirements build/release
     find build/release -type f -name "local.*" -delete
+
+# Build debug version
+build_debug: (clean_debug)
+    mkdir -p build/debug
+    cp -lr src/* build/debug
+    cp -lr requirements build/debug
+    cp pytest.ini build/debug/
+    cp .env build/debug
+    cp bootstrap.sh build/debug/
+
+    chmod +x build/debug/bootstrap.sh
+
+    rm -rf build/debug/assets
+    rm -rf build/debug/static
+    rm -rf build/debug/.pytest_cache
+
+    just build_containers
 
 # Create docker image for foundation
 prepare_foundation:

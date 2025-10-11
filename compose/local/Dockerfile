@@ -7,29 +7,20 @@ ENV PYTHONDONTWRITEBYTECODE=1
 #Prevents Python from buffering stdout and stderr
 ENV PYTHONUNBUFFERED=1
 
-ENV PGSERVICEFILE=/home/sopds/.pg_service.conf
-ENV PGPASSFILE=/home/sopds/.pgpass
-
 # Requirements file
 ARG REQUIREMENTS="local.txt"
 
-WORKDIR /sopds
+WORKDIR /sopds-ng
 
 RUN apt update && apt install -y gettext
-COPY ./requirements /sopds/
-#COPY .pgpass /.pgpass
-#COPY .pg_service.conf /.pg_service.conf
+COPY . .
+RUN pip install --upgrade pip
+RUN pip install -r requirements/$REQUIREMENTS
+RUN useradd sopds-ng && chown sopds-ng:sopds-ng -R /sopds-ng 
 
-RUN useradd --create-home sopds \
-&& chown sopds:sopds -R /sopds \
-#&& mv /.pg* /home/sopds/ && chmod 0600 /home/sopds/.pgpass && chown -R sopds:sopds /home/sopds \
-&& pip install --upgrade pip \
-&& pip install --no-cache-dir -r $REQUIREMENTS 
+USER sopds-ng
 
-USER sopds
-
-ENV USER="sopds"
-
+ENV USER="sopds-ng"
 
 EXPOSE 8008
-CMD ["python3", "manage.py", "runserver", "0.0.0.0:8008"]
+CMD ["./bootstrap.sh"]

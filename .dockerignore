@@ -1,12 +1,13 @@
-.editorconfig
-.gitattributes
-.github
-.gitignore
-.gitlab-ci.yml
-.idea
-.pre-commit-config.yaml
-.readthedocs.yml
-.travis.yml
-venv
-.git
-.envs/
+# By default ignore all
+*
+
+# Except this things
+!/requirements
+!/src
+!/LICENSE
+
+# But still do not include
+/src/.pytest*
+/src/.env
+/src/static
+

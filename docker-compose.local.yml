@@ -2,16 +2,17 @@
 services:
   web:
     build:
-      context: .
-      dockerfile: ./compose/local/Dockerfile
+      context: build/debug/
+      dockerfile: ../../compose/local/Dockerfile
     image: ${DOCKER_IMAGE_TAG}
 
     ports:
       - "8008:8008"
     volumes:
-     - ./src:/sopds
+ #    - ./src:/sopds-ng
+ #    - ./pytest.ini:/sopds/pytest.ini
      - ${SOPDS_BOOK_PATH}:/books:ro
-     - ./.env:/sopds/.env
+ #    - ./.env:/sopds-ng/.env
     environment:
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
       DEBUG: ${DEBUG}
