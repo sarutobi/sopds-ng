@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from django.conf import settings
-from django.test import TestCase, Client, override_settings
+from constance import config
+from django.test import TestCase
 
 from opds_catalog.dl import getFileName
 from opds_catalog.models import Book
 
 
 class DownloadsTestCase(TestCase):
-    fixtures = ['testdb.json']
+    fixtures = ["testdb.json"]
 
     def setUp(self):
         pass
@@ -18,38 +18,37 @@ class DownloadsTestCase(TestCase):
 
     def test_download_zip(self):
         pass
- 
+
     def test_download_cover(self):
         pass
 
+
 class TestGetFileName(TestCase):
-
-    def setUp(self):
+    def setUp(self) -> None:
         self.book = Book(title="Книга", format="fb2", filename="123abc.zip")
-        self.constance = settings.CONSTANCE_CONFIG
+        self.title_as_filename = config.SOPDS_TITLE_AS_FILENAME
 
-    def test_by_filename(self):
-        self.constance['SOPDS_TITLE_AS_FILENAME'] = (False, '')
+    def tearDown(self) -> None:
+        config.SOPDS_TITLE_AS_FILENAME = self.title_as_filename
+
+    def test_by_filename(self) -> None:
         expected_filename = self.book.filename
+        config.SOPDS_TITLE_AS_FILENAME = False
 
-        with override_settings(CONSTANCE_CONFIG = self.constance):
-            test_filename = getFileName(self.book)
-            assert test_filename == expected_filename
+        test_filename = getFileName(self.book)
+        assert test_filename == expected_filename
 
-    def test_by_title(self):
-        self.constance['SOPDS_TITLE_AS_FILENAME'] = (True, '')
-        expected_filename = 'Kniga.fb2'
+    def test_by_title(self) -> None:
+        config.SOPDS_TITLE_AS_FILENAME = True
+        expected_filename = "Kniga.fb2"
 
-        with override_settings(CONSTANCE_CONFIG = self.constance):
-            test_filename = getFileName(self.book)
-            assert test_filename == expected_filename
+        test_filename = getFileName(self.book)
+        assert test_filename == expected_filename
 
-    def test_by_russian_filename(self):
-        self.constance['SOPDS_TITLE_AS_FILENAME'] = (False, '')
+    def test_by_russian_filename(self) -> None:
         book = Book(title="Книга", format="fb2", filename="Книга.zip")
+        config.SOPDS_TITLE_AS_FILENAME = False
         expected_filename = "Kniga.zip"
 
-        with override_settings(CONSTANCE_CONFIG = self.constance):
-            test_filename = getFileName(book)
-            assert test_filename == expected_filename
-
+        test_filename = getFileName(book)
+        assert test_filename == expected_filename

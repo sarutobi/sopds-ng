@@ -69,3 +69,7 @@ build_dev: (clean_dev)
 # Create docker image for foundation
 prepare_foundation:
     docker build -t foundation -f foundation/Dockerfile .
+
+# Run tests 
+tests *args:
+    docker compose exec -it web pytest --ds=sopds.settings.local {{args}}
