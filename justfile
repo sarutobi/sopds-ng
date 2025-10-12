@@ -30,7 +30,7 @@ shell +args:
 # Rebuid containers
 build_containers: 
     just down
-    @docker compose build
+    @docker compose build --no-cache --progress=plain
     just up
 
 # Clean release dir
@@ -38,7 +38,7 @@ clean_release:
     rm -rf ./build/release*
 
 # Clean debug dir
-clean_debug:
+clean_dev:
     rm -rf ./build/debug
 
 # Build release
@@ -50,8 +50,9 @@ build_release: (clean_release)
     find build/release -type f -name "local.*" -delete
 
 # Build debug version
-build_debug: (clean_debug)
+build_dev: (clean_dev)
     mkdir -p build/debug
+    rm src/bootstrap.sh
     cp -lr src/* build/debug
     cp -lr requirements build/debug
     cp pytest.ini build/debug/

@@ -9,14 +9,15 @@ services:
     ports:
       - "8008:8008"
     volumes:
- #    - ./src:/sopds-ng
- #    - ./pytest.ini:/sopds/pytest.ini
+     - ./src:/sopds-ng
+     - ./pytest.ini:/sopds/pytest.ini
      - ${SOPDS_BOOK_PATH}:/books:ro
      - ./.env:/sopds-ng/.env
-    environment:
-      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
-      DEBUG: ${DEBUG}
-      SECRET_KEY: ${SECRET_KEY}
+     - ./bootstrap.sh:/sopds-ng/bootstrap.sh
+ #   environment:
+ #     DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+ #     DEBUG: ${DEBUG}
+ #     SECRET_KEY: ${SECRET_KEY}
     depends_on:
     - db
 

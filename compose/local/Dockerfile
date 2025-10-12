@@ -13,7 +13,9 @@ ARG REQUIREMENTS="local.txt"
 WORKDIR /sopds-ng
 
 RUN apt update && apt install -y gettext
-COPY . .
+COPY requirements/ requirements/
+#COPY bootstrap.sh .
+RUN ls -l
 RUN pip install --upgrade pip
 RUN pip install -r requirements/$REQUIREMENTS
 RUN useradd sopds-ng && chown sopds-ng:sopds-ng -R /sopds-ng 
@@ -23,4 +25,4 @@ USER sopds-ng
 ENV USER="sopds-ng"
 
 EXPOSE 8008
-CMD ["./bootstrap.sh"]
+CMD ["sh", "./bootstrap.sh"]
