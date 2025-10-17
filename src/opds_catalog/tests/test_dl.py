@@ -3,8 +3,10 @@
 from constance import config
 from django.test import TestCase
 
-from opds_catalog.dl import getFileName
+from opds_catalog.dl import getFileName, getFileData
 from opds_catalog.models import Book
+
+from .helpers import read_file_as_iobytes, read_book_from_zip_file
 
 
 class DownloadsTestCase(TestCase):
@@ -36,14 +38,14 @@ class TestGetFileName(TestCase):
         config.SOPDS_TITLE_AS_FILENAME = False
 
         test_filename = getFileName(self.book)
-        assert test_filename == expected_filename
+        self.assertEqual(test_filename, expected_filename)
 
     def test_by_title(self) -> None:
         config.SOPDS_TITLE_AS_FILENAME = True
         expected_filename = "Kniga.fb2"
 
         test_filename = getFileName(self.book)
-        assert test_filename == expected_filename
+        self.assertEqual(test_filename, expected_filename)
 
     def test_by_russian_filename(self) -> None:
         book = Book(title="Книга", format="fb2", filename="Книга.zip")
@@ -51,4 +53,63 @@ class TestGetFileName(TestCase):
         expected_filename = "Kniga.zip"
 
         test_filename = getFileName(book)
-        assert test_filename == expected_filename
+        self.assertEqual(test_filename, expected_filename)
+
+
+class TestGetFileContent(TestCase):
+    def setUp(self) -> None:
+        self.root_library = config.SOPDS_ROOT_LIB
+        config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
+
+    def tearDown(self) -> None:
+        config.SOPDS_ROOT_LIB = self.root_library
+
+    def testReadBookFromRegularFile(self) -> None:
+        expected = read_file_as_iobytes("opds_catalog/tests/data/262001.fb2")
+        self.assertIsNotNone(expected)
+
+        book = Book(filename="262001.fb2", cat_type=0, path="data")
+        actual = getFileData(book)
+        self.assertEqual(actual.getvalue(), expected.getvalue())
+
+    def testReadBookFromZipFile(self) -> None:
+        expected = read_book_from_zip_file(
+            "opds_catalog/tests/data/books.zip", "539273.fb2"
+        )
+        self.assertIsNotNone(expected)
+
+        book = Book(filename="539273.fb2", cat_type=1, path="data/books.zip")
+        actual = getFileData(book)
+        self.assertEqual(actual.getvalue(), expected.getvalue())
+
+    def testReadBookFromINPFile(self) -> None:
+        expected = read_book_from_zip_file(
+            "opds_catalog/tests/data/books.zip", "539273.fb2"
+        )
+        self.assertIsNotNone(expected)
+
+        book = Book(filename="539273.fb2", cat_type=3, path="data/inpx/inp/books.zip")
+        actual = getFileData(book)
+        self.assertEqual(actual.getvalue(), expected.getvalue())
+
+    def testReadAbsentBook(self) -> None:
+        # Проверки чтения данных из несуществующих файлов
+        book = Book(filename="263001.fb2", cat_type=0, path="data")
+        actual = getFileData(book)
+        self.assertIsNone(actual)
+
+        book = Book(filename="539273.fb2", cat_type=1, path="data/books1.zip")
+        actual = getFileData(book)
+        self.assertIsNone(actual)
+
+        book = Book(filename="559273.fb2", cat_type=1, path="data/books.zip")
+        actual = getFileData(book)
+        self.assertIsNone(actual)
+
+        book = Book(filename="539273.fb2", cat_type=3, path="data/inpx/inp/books1.zip")
+        actual = getFileData(book)
+        self.assertIsNone(actual)
+
+        book = Book(filename="559273.fb2", cat_type=3, path="data/inpx/inp/books.zip")
+        actual = getFileData(book)
+        self.assertIsNone(actual)

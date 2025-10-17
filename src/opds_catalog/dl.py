@@ -32,7 +32,7 @@ def getFileName(book: Book) -> str:
     return utils.to_ascii(transname)
 
 
-def getFileData(book):
+def getFileData(book) -> io.BytesIO:
     full_path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
     if book.cat_type == opdsdb.CAT_INP:
         # Убираем из пути INPX и INP файл
@@ -61,9 +61,12 @@ def getFileData(book):
             z = zipfile.ZipFile(fz, "r", allowZip64=True)
             fo = z.open(book.filename)
             # s=fo.read()
-        except FileNotFoundError:
+        except (FileNotFoundError, KeyError):
             # s = None
             fo = None
+
+    if fo is None:
+        return None
 
     dio = io.BytesIO()
     dio.write(fo.read())
