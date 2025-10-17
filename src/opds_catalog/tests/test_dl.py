@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import zipfile
+
 from constance import config
 from django.test import TestCase
 
-from opds_catalog.dl import getFileName, getFileData
+from opds_catalog.dl import getFileName, getFileData, getFileDataZip
 from opds_catalog.models import Book
 
 from .helpers import read_file_as_iobytes, read_book_from_zip_file
@@ -56,7 +58,7 @@ class TestGetFileName(TestCase):
         self.assertEqual(test_filename, expected_filename)
 
 
-class TestGetFileContent(TestCase):
+class TestGetFileData(TestCase):
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
         config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
@@ -113,3 +115,29 @@ class TestGetFileContent(TestCase):
         book = Book(filename="559273.fb2", cat_type=3, path="data/inpx/inp/books.zip")
         actual = getFileData(book)
         self.assertIsNone(actual)
+
+
+class TestGetFileDataZip(TestCase):
+    def setUp(self) -> None:
+        self.root_library = config.SOPDS_ROOT_LIB
+        config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
+
+    def tearDown(self) -> None:
+        config.SOPDS_ROOT_LIB = self.root_library
+
+    def testCreateZipStream(self) -> None:
+        expected_file_name = "zip_book.fb2"
+        expected_content = read_file_as_iobytes("opds_catalog/tests/data/262001.fb2")
+        book = Book(
+            title="zip book",
+            format="fb2",
+            filename="262001.fb2",
+            cat_type=0,
+            path="data",
+        )
+
+        actual = getFileDataZip(book)
+        with zipfile.ZipFile(actual, "r") as tested:
+            self.assertIn(expected_file_name, tested.namelist())
+            actual_content = tested.read(expected_file_name)
+            self.assertEqual(expected_content.getvalue(), actual_content)

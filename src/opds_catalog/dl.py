@@ -33,13 +33,18 @@ def getFileName(book: Book) -> str:
 
 
 def getFileData(book) -> io.BytesIO:
-    full_path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
-    if book.cat_type == opdsdb.CAT_INP:
-        # Убираем из пути INPX и INP файл
-        inp_path, zip_name = os.path.split(full_path)
-        inpx_path, inp_name = os.path.split(inp_path)
-        path, inpx_name = os.path.split(inpx_path)
-        full_path = os.path.join(path, zip_name)
+    def normalize_path(path: os.path) -> os.path:
+        print(path)
+        if book.cat_type == opdsdb.CAT_INP:
+            # Убираем из пути INPX и INP файл
+            inp_path, zip_name = os.path.split(path)
+            inpx_path, inp_name = os.path.split(inp_path)
+            n_path, inpx_name = os.path.split(inpx_path)
+            return os.path.join(n_path, zip_name)
+        else:
+            return path
+
+    full_path = normalize_path(os.path.join(config.SOPDS_ROOT_LIB, book.path))
 
     z = None
     fz = None
@@ -84,6 +89,7 @@ def getFileData(book) -> io.BytesIO:
 
 def getFileDataZip(book):
     transname = getFileName(book)
+    print(transname)
     fo = getFileData(book)
     dio = io.BytesIO()
     zo = zipfile.ZipFile(dio, "w", zipfile.ZIP_DEFLATED)
