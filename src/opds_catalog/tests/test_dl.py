@@ -4,7 +4,10 @@ import zipfile
 import os
 
 from constance import config
-from django.test import TestCase
+from django.contrib.auth.models import User
+from django.conf import settings
+from django.urls import reverse
+from django.test import TestCase, Client
 
 from opds_catalog.dl import (
     getFileName,
@@ -23,14 +26,35 @@ from .helpers import read_file_as_iobytes, read_book_from_zip_file, BookFactoryM
 class DownloadsTestCase(TestCase):
     fixtures = ["testdb.json"]
 
-    def setUp(self):
-        pass
+    def setUp(self) -> None:
+        self.root_library = config.SOPDS_ROOT_LIB
+        config.SOPDS_ROOT_LIB = os.path.join(
+            settings.BASE_DIR, "opds_catalog/tests/data/"
+        )
+        config.SOPDS_AUTH = False
+        User.objects.create_user("test", "test@sopds.ng", "secret")
+        self.c = Client()
 
-    def test_download_book(self):
-        pass
+    def tearDown(self) -> None:
+        config.SOPDS_ROOT_LIB = self.root_library
+
+    def test_unauthorized_downloads(self):
+        config.SOPDS_AUTH = True
+        response = self.c.get(reverse("opds:download", args=(5, 0)))
+        self.assertEqual(response.status_code, 401)
+
+    def test_authorized_download_book(self):
+        config.SOPDS_AUTH = True
+        self.c.login(username="test", password="secret")
+        response = self.c.get(reverse("opds:download", args=(5, 0)))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Length"], "495373")
 
     def test_download_zip(self):
-        pass
+        response = self.c.get(reverse("opds:download", args=(5, 1)))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Length"], "219508")
+        print(response)
 
     def test_download_cover(self):
         pass

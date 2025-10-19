@@ -12,7 +12,9 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 
 from opds_catalog.models import Book, bookshelf
 from opds_catalog import settings, utils, opdsdb  # , fb2parse
-import opds_catalog.zipf as zipfile
+
+# import opds_catalog.zipf as zipfile
+import zipfile
 
 from book_tools.format import create_bookfile, mime_detector
 from book_tools.format.mimetype import Mimetype
@@ -177,14 +179,14 @@ def Download(request, book_id, zip_flag):
         if request.user.is_authenticated:
             bookshelf.objects.get_or_create(user=request.user, book=book)
 
-    full_path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
+    full_path = get_fs_book_path(book)
 
-    if book.cat_type == opdsdb.CAT_INP:
-        # Убираем из пути INPX и INP файл
-        inp_path, zip_name = os.path.split(full_path)
-        inpx_path, inp_name = os.path.split(inp_path)
-        path, inpx_name = os.path.split(inpx_path)
-        full_path = os.path.join(path, zip_name)
+    #    if book.cat_type == opdsdb.CAT_INP:
+    #        # Убираем из пути INPX и INP файл
+    #        inp_path, zip_name = os.path.split(full_path)
+    #        inpx_path, inp_name = os.path.split(inp_path)
+    #        path, inpx_name = os.path.split(inpx_path)
+    #        full_path = os.path.join(path, zip_name)
 
     # if config.SOPDS_TITLE_AS_FILENAME:
     #    transname = utils.translit(book.title + "." + book.format)
@@ -206,45 +208,46 @@ def Download(request, book_id, zip_flag):
     response["Content-Disposition"] = 'attachment; filename="%s"' % (dlfilename)
     response["Content-Transfer-Encoding"] = "binary"
 
-    z = None
-    fz = None
-    s = None
+    #    z = None
+    #    fz = None
+    #    s = None
     book_size = book.filesize
-    if book.cat_type == opdsdb.CAT_NORMAL:
-        file_path = os.path.join(full_path, book.filename)
-        book_size = os.path.getsize(file_path)
-        try:
-            fo = codecs.open(file_path, "rb")
-        except FileNotFoundError:
-            raise Http404
-        s = fo.read()
-    elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
-        try:
-            fz = codecs.open(full_path, "rb")
-        except FileNotFoundError:
-            raise Http404
-        z = zipfile.ZipFile(fz, "r", allowZip64=True)
-        book_size = z.getinfo(book.filename).file_size
-        fo = z.open(book.filename)
-        s = fo.read()
+    s = getFileData(book)
+    #    if book.cat_type == opdsdb.CAT_NORMAL:
+    #        file_path = os.path.join(full_path, book.filename)
+    #        book_size = os.path.getsize(file_path)
+    #        try:
+    #            fo = codecs.open(file_path, "rb")
+    #        except FileNotFoundError:
+    #            raise Http404
+    #        s = fo.read()
+    #    elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
+    #        try:
+    #            fz = codecs.open(full_path, "rb")
+    #        except FileNotFoundError:
+    #            raise Http404
+    #        z = zipfile.ZipFile(fz, "r", allowZip64=True)
+    #        book_size = z.getinfo(book.filename).file_size
+    #        fo = z.open(book.filename)
+    #        s = fo.read()
 
     if zip_flag == "1":
         dio = io.BytesIO()
-        zo = zipfile.ZipFile(dio, "w", zipfile.ZIP_DEFLATED)
-        zo.writestr(transname, s)
-        zo.close()
+        with zipfile.ZipFile(dio, "w", zipfile.ZIP_DEFLATED) as zo:
+            zo.writestr(transname, s.getvalue())
+
         buf = dio.getvalue()
-        response["Content-Length"] = str(len(buf))
-        response.write(buf)
+        response["Content-Length"] = str(dio.getbuffer().nbytes)
+        response.write(dio)
     else:
-        response["Content-Length"] = str(book_size)
+        response["Content-Length"] = str(s.getbuffer().nbytes)
         response.write(s)
 
-    fo.close()
-    if z:
-        z.close()
-    if fz:
-        fz.close()
+    #    fo.close()
+    #    if z:
+    #        z.close()
+    #    if fz:
+    #        fz.close()
 
     return response
 
