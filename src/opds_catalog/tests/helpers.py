@@ -6,6 +6,9 @@ import zipfile
 
 from codecs import open
 
+from opds_catalog import opdsdb
+from opds_catalog.models import Book
+
 
 def read_file_as_iobytes(file: str) -> io.BytesIO:
     """Чтение содержимого файла из файловой системы в BytesIO"""
@@ -29,3 +32,18 @@ def read_book_from_zip_file(zip_file: str, bookname: str) -> io.BytesIO:
 
     content.seek(0)
     return content
+
+
+class BookFactoryMixin:
+    def setup_regular_book(self, filename="", path="") -> Book:
+        """Генерирует книгу, размещенную в обычном файле в файловой системе"""
+        return self.setup_book(filename=filename, cat_type=opdsdb.CAT_NORMAL, path=path)
+
+    def setup_zipped_book(self, filename="", path="") -> Book:
+        """Генерирует книгу, размещенную в zip файле в файловой системе"""
+        return self.setup_book(filename=filename, cat_type=opdsdb.CAT_ZIP, path=path)
+
+    def setup_book(self, title="", format="", filename="", cat_type=0, path="") -> Book:
+        return Book(
+            title=title, format=format, filename=filename, cat_type=cat_type, path=path
+        )

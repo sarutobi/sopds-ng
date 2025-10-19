@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import zipfile
+import os
 
 from constance import config
 from django.test import TestCase
@@ -11,10 +12,12 @@ from opds_catalog.dl import (
     getFileDataZip,
     get_fs_book_path,
     getFileDataConv,
+    read_from_regular_file,
+    read_from_zipped_file,
 )
 from opds_catalog.models import Book
 
-from .helpers import read_file_as_iobytes, read_book_from_zip_file
+from .helpers import read_file_as_iobytes, read_book_from_zip_file, BookFactoryMixin
 
 
 class DownloadsTestCase(TestCase):
@@ -33,9 +36,9 @@ class DownloadsTestCase(TestCase):
         pass
 
 
-class TestGetFileName(TestCase):
+class TestGetFileName(TestCase, BookFactoryMixin):
     def setUp(self) -> None:
-        self.book = Book(title="Книга", format="fb2", filename="123abc.zip")
+        self.book = self.setup_book(title="Книга", format="fb2", filename="123abc.zip")
         self.title_as_filename = config.SOPDS_TITLE_AS_FILENAME
 
     def tearDown(self) -> None:
@@ -51,20 +54,20 @@ class TestGetFileName(TestCase):
     def test_by_title(self) -> None:
         config.SOPDS_TITLE_AS_FILENAME = True
         expected_filename = "Kniga.fb2"
-
         test_filename = getFileName(self.book)
         self.assertEqual(test_filename, expected_filename)
 
     def test_by_russian_filename(self) -> None:
-        book = Book(title="Книга", format="fb2", filename="Книга.zip")
+        book = self.setup_book(title="Книга", format="fb2", filename="Книга.zip")
         config.SOPDS_TITLE_AS_FILENAME = False
         expected_filename = "Kniga.zip"
-
         test_filename = getFileName(book)
         self.assertEqual(test_filename, expected_filename)
 
 
-class TestGetFileData(TestCase):
+class TestReadFromRegularFile(TestCase, BookFactoryMixin):
+    """Тесты для чтения содержимого обычных файлов"""
+
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
         config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
@@ -73,20 +76,90 @@ class TestGetFileData(TestCase):
         config.SOPDS_ROOT_LIB = self.root_library
 
     def test_read_book_from_regular_file(self) -> None:
-        expected = read_file_as_iobytes("opds_catalog/tests/data/262001.fb2")
+        book = self.setup_regular_book(filename="262001.fb2", path="data")
+        expected = read_file_as_iobytes(
+            os.path.join(config.SOPDS_ROOT_LIB, book.path, book.filename)
+        )
         self.assertIsNotNone(expected)
 
-        book = Book(filename="262001.fb2", cat_type=0, path="data")
+        actual = read_from_regular_file(
+            os.path.join(get_fs_book_path(book), book.filename)
+        )
+        self.assertEqual(actual.getvalue(), expected.getvalue())
+
+    def test_read_from_unexistent_file(self) -> None:
+        # book = Book(filename="263001.fb2", cat_type=0, path="data")
+        book = self.setup_regular_book(filename="263001.fb2", path="data")
+        actual = read_from_regular_file(
+            os.path.join(get_fs_book_path(book), book.filename)
+        )
+        self.assertIsNone(actual)
+
+
+class TestReadFromZippedFile(TestCase, BookFactoryMixin):
+    """Тесты чтения из архивных файлов"""
+
+    def setUp(self) -> None:
+        self.root_library = config.SOPDS_ROOT_LIB
+        config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
+
+    def tearDown(self) -> None:
+        config.SOPDS_ROOT_LIB = self.root_library
+
+    def test_read_book_from_zip_file(self):
+        book = self.setup_zipped_book(filename="539273.fb2", path="data/books.zip")
+        expected = read_book_from_zip_file(
+            os.path.join(config.SOPDS_ROOT_LIB, book.path), book.filename
+        )
+        self.assertIsNotNone(expected)
+
+        actual = read_from_zipped_file(
+            os.path.join(config.SOPDS_ROOT_LIB, book.path), book.filename
+        )
+        self.assertEqual(actual.getvalue(), expected.getvalue())
+
+    def test_no_book_in_zip_file(self):
+        book = self.setup_zipped_book(filename="559273.fb2", path="data/books.zip")
+
+        actual = read_from_zipped_file(
+            os.path.join(config.SOPDS_ROOT_LIB, book.path), book.filename
+        )
+        self.assertIsNone(actual)
+
+    def test_read_book_from_non_existent_zip_file(self):
+        book = self.setup_zipped_book(filename="559273.fb2", path="data/books1.zip")
+
+        actual = read_from_zipped_file(
+            os.path.join(config.SOPDS_ROOT_LIB, book.path), book.filename
+        )
+        self.assertIsNone(actual)
+
+
+class TestGetFileData(TestCase, BookFactoryMixin):
+    def setUp(self) -> None:
+        self.root_library = config.SOPDS_ROOT_LIB
+        config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
+
+    def tearDown(self) -> None:
+        config.SOPDS_ROOT_LIB = self.root_library
+
+    def test_read_book_from_regular_file(self) -> None:
+        book = self.setup_regular_book(filename="262001.fb2", path="data")
+        expected = read_file_as_iobytes(
+            os.path.join(config.SOPDS_ROOT_LIB, book.path, book.filename)
+        )
+        self.assertIsNotNone(expected)
+
         actual = getFileData(book)
         self.assertEqual(actual.getvalue(), expected.getvalue())
 
     def test_read_book_from_zip_file(self) -> None:
+        book = self.setup_zipped_book(filename="539273.fb2", path="data/books.zip")
         expected = read_book_from_zip_file(
-            "opds_catalog/tests/data/books.zip", "539273.fb2"
+            os.path.join(config.SOPDS_ROOT_LIB, book.path), book.filename
         )
         self.assertIsNotNone(expected)
 
-        book = Book(filename="539273.fb2", cat_type=1, path="data/books.zip")
         actual = getFileData(book)
         self.assertEqual(actual.getvalue(), expected.getvalue())
 

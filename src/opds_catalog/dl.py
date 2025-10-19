@@ -44,60 +44,63 @@ def get_fs_book_path(book: Book) -> os.path:
         return path
 
 
+def read_from_regular_file(file_path: os.path) -> io.BytesIO:
+    """Читает содержимое обычного файла из файловой системы"""
+
+    if not os.path.isfile(file_path):
+        # TODO залоггировать ошибку
+        return None
+
+    content = io.BytesIO()
+    with open(file_path, "rb") as book:
+        content.write(book.read())
+
+    content.seek(0)
+    return content
+
+
+def read_from_zipped_file(zip_path: os.path, filename: str) -> io.BytesIO:
+    """Читает содержимое файла из zip файла в файловой системе"""
+
+    if not os.path.isfile(zip_path):
+        # TODO залоггировать ошибку
+        return None
+
+    content = io.BytesIO()
+    try:
+        with open(zip_path, "rb") as zip:
+            with zipfile.ZipFile(zip, "r", allowZip64=True) as zc:
+                # TODO Проверка существования нужного файла в архиве
+                with zc.open(filename, "r") as book:
+                    content.write(book.read())
+
+        content.seek(0)
+        return content
+    except KeyError:
+        # TODO Залоггировать ошибку
+        return None
+
+
 def getFileData(book: Book) -> io.BytesIO:
     full_path = get_fs_book_path(book)
 
-    z = None
-    fz = None
-    #    s = None
-    fo = None
-
     if book.cat_type == opdsdb.CAT_NORMAL:
         file_path = os.path.join(full_path, book.filename)
-        try:
-            fo = codecs.open(file_path, "rb")
-            # s = fo.read()
-        except FileNotFoundError:
-            # s = None
-            fo = None
+        return read_from_regular_file(file_path)
 
     elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
-        try:
-            fz = codecs.open(full_path, "rb")
-            z = zipfile.ZipFile(fz, "r", allowZip64=True)
-            fo = z.open(book.filename)
-            # s=fo.read()
-        except (FileNotFoundError, KeyError):
-            # s = None
-            fo = None
-
-    if fo is None:
-        return None
-
-    dio = io.BytesIO()
-    dio.write(fo.read())
-    dio.seek(0)
-
-    if fo:
-        fo.close()
-    if z:
-        z.close()
-    if fz:
-        fz.close()
-
-    return dio
+        return read_from_zipped_file(full_path, book.filename)
 
 
-def getFileDataZip(book):
+def getFileDataZip(book: Book) -> io.BytesIO:
     transname = getFileName(book)
     print(transname)
     fo = getFileData(book)
     dio = io.BytesIO()
-    zo = zipfile.ZipFile(dio, "w", zipfile.ZIP_DEFLATED)
-    zo.writestr(transname, fo.read())
-    zo.close()
-    dio.seek(0)
+    with zipfile.ZipFile(dio, "w", zipfile.ZIP_DEFLATED) as zo:
+        zo.writestr(transname, fo.read())
 
+    dio.seek(0)
     return dio
 
 
@@ -134,7 +137,7 @@ def getFileDataConv(book, convert_type):
     proc = subprocess.Popen(popen_args, shell=True, stdout=subprocess.PIPE)
     # У следующий строки 2 функции 1-получение информации по конвертации и 2- ожидание конца конвертации
     # В силу 2й функции ее удаление приведет к ошибке выдачи сконвертированного файла
-    out = proc.stdout.readlines()
+    out = proc.stdout.readlines()  # noqa: F841
 
     if os.path.isfile(tmp_conv_path):
         fo = codecs.open(tmp_conv_path, "rb")
@@ -421,7 +424,7 @@ def ConvertFB2(request, book_id, convert_type):
     popen_args = '"%s" "%s" "%s"' % (converter_path, file_path, tmp_conv_path)
     proc = subprocess.Popen(popen_args, shell=True, stdout=subprocess.PIPE)
     # proc = subprocess.Popen((converter_path.encode('utf8'),file_path.encode('utf8'),tmp_conv_path.encode('utf8')), shell=True, stdout=subprocess.PIPE)
-    out = proc.stdout.readlines()
+    out = proc.stdout.readlines()  # noqa: F841
 
     if os.path.isfile(tmp_conv_path):
         fo = codecs.open(tmp_conv_path, "rb")
