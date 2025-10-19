@@ -32,19 +32,20 @@ def getFileName(book: Book) -> str:
     return utils.to_ascii(transname)
 
 
-def getFileData(book) -> io.BytesIO:
-    def normalize_path(path: os.path) -> os.path:
-        print(path)
-        if book.cat_type == opdsdb.CAT_INP:
-            # Убираем из пути INPX и INP файл
-            inp_path, zip_name = os.path.split(path)
-            inpx_path, inp_name = os.path.split(inp_path)
-            n_path, inpx_name = os.path.split(inpx_path)
-            return os.path.join(n_path, zip_name)
-        else:
-            return path
+def get_fs_book_path(book: Book) -> os.path:
+    path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
+    if book.cat_type == opdsdb.CAT_INP:
+        # Убираем из пути INPX и INP файл
+        inp_path, zip_name = os.path.split(path)
+        inpx_path, inp_name = os.path.split(inp_path)
+        n_path, inpx_name = os.path.split(inpx_path)
+        return os.path.join(n_path, zip_name)
+    else:
+        return path
 
-    full_path = normalize_path(os.path.join(config.SOPDS_ROOT_LIB, book.path))
+
+def getFileData(book: Book) -> io.BytesIO:
+    full_path = get_fs_book_path(book)
 
     z = None
     fz = None

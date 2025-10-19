@@ -5,7 +5,13 @@ import zipfile
 from constance import config
 from django.test import TestCase
 
-from opds_catalog.dl import getFileName, getFileData, getFileDataZip
+from opds_catalog.dl import (
+    getFileName,
+    getFileData,
+    getFileDataZip,
+    get_fs_book_path,
+    getFileDataConv,
+)
 from opds_catalog.models import Book
 
 from .helpers import read_file_as_iobytes, read_book_from_zip_file
@@ -66,7 +72,7 @@ class TestGetFileData(TestCase):
     def tearDown(self) -> None:
         config.SOPDS_ROOT_LIB = self.root_library
 
-    def testReadBookFromRegularFile(self) -> None:
+    def test_read_book_from_regular_file(self) -> None:
         expected = read_file_as_iobytes("opds_catalog/tests/data/262001.fb2")
         self.assertIsNotNone(expected)
 
@@ -74,7 +80,7 @@ class TestGetFileData(TestCase):
         actual = getFileData(book)
         self.assertEqual(actual.getvalue(), expected.getvalue())
 
-    def testReadBookFromZipFile(self) -> None:
+    def test_read_book_from_zip_file(self) -> None:
         expected = read_book_from_zip_file(
             "opds_catalog/tests/data/books.zip", "539273.fb2"
         )
@@ -84,7 +90,7 @@ class TestGetFileData(TestCase):
         actual = getFileData(book)
         self.assertEqual(actual.getvalue(), expected.getvalue())
 
-    def testReadBookFromINPFile(self) -> None:
+    def test_read_book_from_inp_file(self) -> None:
         expected = read_book_from_zip_file(
             "opds_catalog/tests/data/books.zip", "539273.fb2"
         )
@@ -94,7 +100,7 @@ class TestGetFileData(TestCase):
         actual = getFileData(book)
         self.assertEqual(actual.getvalue(), expected.getvalue())
 
-    def testReadAbsentBook(self) -> None:
+    def test_read_absent_book(self) -> None:
         # Проверки чтения данных из несуществующих файлов
         book = Book(filename="263001.fb2", cat_type=0, path="data")
         actual = getFileData(book)
@@ -125,7 +131,7 @@ class TestGetFileDataZip(TestCase):
     def tearDown(self) -> None:
         config.SOPDS_ROOT_LIB = self.root_library
 
-    def testCreateZipStream(self) -> None:
+    def test_create_zip_stream(self) -> None:
         expected_file_name = "zip_book.fb2"
         expected_content = read_file_as_iobytes("opds_catalog/tests/data/262001.fb2")
         book = Book(
@@ -141,3 +147,52 @@ class TestGetFileDataZip(TestCase):
             self.assertIn(expected_file_name, tested.namelist())
             actual_content = tested.read(expected_file_name)
             self.assertEqual(expected_content.getvalue(), actual_content)
+
+
+class TestGetFsBookPath(TestCase):
+    def setUp(self) -> None:
+        self.root_library = config.SOPDS_ROOT_LIB
+        config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
+
+    def tearDown(self) -> None:
+        config.SOPDS_ROOT_LIB = self.root_library
+
+    def test_inp_book_path(self) -> None:
+        book = Book(filename="539273.fb2", cat_type=3, path="data/inpx/inp/books.zip")
+        expected_path = "opds_catalog/tests/data/books.zip"
+        actual_path = get_fs_book_path(book)
+        self.assertEqual(actual_path, expected_path)
+
+    def test_normal_book_path(self) -> None:
+        book = Book(filename="539273.fb2", cat_type=0, path="data/books.zip")
+        expected_path = "opds_catalog/tests/data/books.zip"
+        actual_path = get_fs_book_path(book)
+        self.assertIsNotNone(actual_path)
+        self.assertEqual(actual_path, expected_path)
+
+
+class TestGetFileDataConv(TestCase):
+    def setUp(self) -> None:
+        self.root_library = config.SOPDS_ROOT_LIB
+        config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
+
+    def tearDown(self) -> None:
+        config.SOPDS_ROOT_LIB = self.root_library
+
+    def test_convert_non_fb2_book(self) -> None:
+        book = Book(title="Not a fb2 book", format="pdf")
+        actual = getFileDataConv(book, "epub")
+        self.assertIsNone(actual)
+
+    def test_convert_absent_book(self) -> None:
+        book = Book(
+            title="I'm not exists", filename="263001.fb2", cat_type="0", path="data"
+        )
+        actual = getFileDataConv(book, "epub")
+        self.assertIsNone(actual)
+
+
+#    def test_convert_to_epub(self):
+#        book = Book(filename="539273.fb2", cat_type=1, path="data/books.zip")
+#        actual = getFileDataConv(book, "epub")
+#        self.assertIsNotNone(actual)
