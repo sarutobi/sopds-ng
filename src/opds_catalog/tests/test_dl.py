@@ -2,6 +2,7 @@
 
 import zipfile
 import os
+import pytest
 
 from constance import config
 from django.contrib.auth.models import User
@@ -58,6 +59,22 @@ class DownloadsTestCase(TestCase):
 
     def test_download_cover(self):
         pass
+
+
+@pytest.fixture
+def manage_sopds_root_lib():
+    backup = config.SOPDS_ROOT_LIB
+    config.SOPDS_ROOT_LIB = os.path.join(settings.BASE_DIR, "opds_catalog/tests/data/")
+    yield config
+    config.SOPDS_ROOT_LIB = backup
+
+
+@pytest.mark.django_db
+def test_config_custom(manage_sopds_root_lib) -> None:
+    conf = manage_sopds_root_lib
+    assert conf.SOPDS_ROOT_LIB == os.path.join(
+        settings.BASE_DIR, "opds_catalog/tests/data/"
+    )
 
 
 class TestGetFileName(TestCase, BookFactoryMixin):

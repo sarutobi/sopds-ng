@@ -26,6 +26,7 @@ from opds_catalog.middleware import BasicAuthMiddleware
 
 
 def getFileName(book: Book) -> str:
+    """формирует название файла для сохранения книги в латинице"""
     if config.SOPDS_TITLE_AS_FILENAME:
         transname = utils.translit(book.title + "." + book.format)
     else:
@@ -35,6 +36,7 @@ def getFileName(book: Book) -> str:
 
 
 def get_fs_book_path(book: Book) -> os.path:
+    """Формирует полный путь в файловой системе библиотеки для файла книги"""
     path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
     if book.cat_type == opdsdb.CAT_INP:
         # Убираем из пути INPX и INP файл
@@ -62,7 +64,7 @@ def read_from_regular_file(file_path: os.path) -> io.BytesIO:
 
 
 def read_from_zipped_file(zip_path: os.path, filename: str) -> io.BytesIO:
-    """Читает содержимое файла из zip файла в файловой системе"""
+    """Читает содержимое файла filename из zip файла в файловой системе"""
 
     if not os.path.isfile(zip_path):
         # TODO залоггировать ошибку
@@ -84,6 +86,7 @@ def read_from_zipped_file(zip_path: os.path, filename: str) -> io.BytesIO:
 
 
 def getFileData(book: Book) -> io.BytesIO:
+    """Поиск и считывание файла книги из ФС"""
     full_path = get_fs_book_path(book)
 
     if book.cat_type == opdsdb.CAT_NORMAL:
@@ -95,8 +98,8 @@ def getFileData(book: Book) -> io.BytesIO:
 
 
 def getFileDataZip(book: Book) -> io.BytesIO:
+    """Читает файл из ФС и упаковывает его в zip"""
     transname = getFileName(book)
-    print(transname)
     fo = getFileData(book)
     dio = io.BytesIO()
     with zipfile.ZipFile(dio, "w", zipfile.ZIP_DEFLATED) as zo:
@@ -107,6 +110,8 @@ def getFileDataZip(book: Book) -> io.BytesIO:
 
 
 def getFileDataConv(book, convert_type):
+    # TODO необходимо настроить конверторы
+    # TODO дополнить тесты
     if book.format != "fb2":
         return None
 
@@ -166,6 +171,8 @@ def getFileDataMobi(book):
 
 
 def Download(request, book_id, zip_flag):
+    # TODO это view, он должен быть в другом месте
+    # TODO реорганизовать в части формирования ответа
     """Загрузка файла книги"""
     book = Book.objects.get(id=book_id)
 
@@ -178,20 +185,6 @@ def Download(request, book_id, zip_flag):
 
         if request.user.is_authenticated:
             bookshelf.objects.get_or_create(user=request.user, book=book)
-
-    full_path = get_fs_book_path(book)
-
-    #    if book.cat_type == opdsdb.CAT_INP:
-    #        # Убираем из пути INPX и INP файл
-    #        inp_path, zip_name = os.path.split(full_path)
-    #        inpx_path, inp_name = os.path.split(inp_path)
-    #        path, inpx_name = os.path.split(inpx_path)
-    #        full_path = os.path.join(path, zip_name)
-
-    # if config.SOPDS_TITLE_AS_FILENAME:
-    #    transname = utils.translit(book.title + "." + book.format)
-    # else:
-    #    transname = utils.translit(book.filename)
 
     transname = getFileName(book)
     transname = utils.to_ascii(transname)
@@ -208,46 +201,18 @@ def Download(request, book_id, zip_flag):
     response["Content-Disposition"] = 'attachment; filename="%s"' % (dlfilename)
     response["Content-Transfer-Encoding"] = "binary"
 
-    #    z = None
-    #    fz = None
-    #    s = None
-    book_size = book.filesize
     s = getFileData(book)
-    #    if book.cat_type == opdsdb.CAT_NORMAL:
-    #        file_path = os.path.join(full_path, book.filename)
-    #        book_size = os.path.getsize(file_path)
-    #        try:
-    #            fo = codecs.open(file_path, "rb")
-    #        except FileNotFoundError:
-    #            raise Http404
-    #        s = fo.read()
-    #    elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
-    #        try:
-    #            fz = codecs.open(full_path, "rb")
-    #        except FileNotFoundError:
-    #            raise Http404
-    #        z = zipfile.ZipFile(fz, "r", allowZip64=True)
-    #        book_size = z.getinfo(book.filename).file_size
-    #        fo = z.open(book.filename)
-    #        s = fo.read()
 
     if zip_flag == "1":
         dio = io.BytesIO()
         with zipfile.ZipFile(dio, "w", zipfile.ZIP_DEFLATED) as zo:
             zo.writestr(transname, s.getvalue())
 
-        buf = dio.getvalue()
         response["Content-Length"] = str(dio.getbuffer().nbytes)
         response.write(dio)
     else:
         response["Content-Length"] = str(s.getbuffer().nbytes)
         response.write(s)
-
-    #    fo.close()
-    #    if z:
-    #        z.close()
-    #    if fz:
-    #        fz.close()
 
     return response
 
