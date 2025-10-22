@@ -7,3 +7,4 @@ apscheduler==3.11
 django-environ==0.12
 python-telegram-bot==22
 pymemcache==4
+ebookmeta==1.2.11
