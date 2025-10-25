@@ -3,6 +3,7 @@
 import zipfile
 import os
 import pytest
+import base64
 
 from constance import config
 from django.contrib.auth.models import User
@@ -48,6 +49,20 @@ class DownloadsTestCase(TestCase):
         config.SOPDS_AUTH = True
         self.c.login(username="test", password="secret")
         response = self.c.get(reverse("opds:download", args=(5, 0)))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Length"], "495373")
+
+    def test_basic_authentication(self) -> None:
+        config.SOPDS_AUTH = True
+        response = self.c.get(reverse("opds:download", args=(5, 0)))
+        self.assertEqual(response.status_code, 401)
+        credentials = "test:secret"
+        encoded_credentials = base64.b64encode(credentials.encode()).decode()
+        authorization_header = f"Basic {encoded_credentials}"
+        response = self.c.get(
+            reverse("opds:download", args=(5, 0)),
+            HTTP_AUTHORIZATION=authorization_header,
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Length"], "495373")
 
