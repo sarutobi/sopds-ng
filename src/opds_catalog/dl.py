@@ -22,7 +22,8 @@ from book_tools.format.mimetype import Mimetype
 from constance import config
 from PIL import Image
 
-from opds_catalog.middleware import BasicAuthMiddleware
+# from opds_catalog.middleware import BasicAuthMiddleware
+from opds_catalog.decorators import sopds_auth_validate
 
 
 def getFileName(book: Book) -> str:
@@ -170,6 +171,7 @@ def getFileDataMobi(book):
     return getFileDataConv(book, "mobi")
 
 
+@sopds_auth_validate
 def Download(request, book_id, zip_flag):
     # TODO это view, он должен быть в другом месте
     # TODO реорганизовать в части формирования ответа
@@ -177,11 +179,11 @@ def Download(request, book_id, zip_flag):
     book = Book.objects.get(id=book_id)
 
     if config.SOPDS_AUTH:
-        if not request.user.is_authenticated:
-            bau = BasicAuthMiddleware()
-            request = bau.process_request(request)
-            if not hasattr(request, "user"):
-                return request
+        #        if not request.user.is_authenticated:
+        #            bau = BasicAuthMiddleware()
+        #            request = bau.process_request(request)
+        #            if not hasattr(request, "user"):
+        #                return request
 
         if request.user.is_authenticated:
             bookshelf.objects.get_or_create(user=request.user, book=book)

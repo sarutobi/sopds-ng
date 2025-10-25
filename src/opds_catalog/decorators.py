@@ -1,0 +1,48 @@
+from functools import wraps
+
+import base64
+from django.http import HttpResponse
+from django.contrib import auth
+from constance import config
+
+
+def sopds_auth_validate(view_function):
+    @wraps(view_function)
+    def wrap(request, *args, **kwargs):
+        def _unauthed():
+            response = HttpResponse(
+                """<html><title>Auth required</title><body>
+                                    <h1>Authorization Required</h1></body></html>""",
+                content_type="text/html",
+            )
+            response["WWW-Authenticate"] = 'Basic realm="OPDS"'
+            response.status_code = 401
+            return response
+
+        header = "HTTP_AUTHORIZATION"
+        if not config.SOPDS_AUTH or request.user.is_authenticated:
+            return view_function(request, *args, **kwargs)
+
+        try:
+            authentication = request.META[header]
+        except KeyError:
+            return _unauthed()
+        try:
+            (auth_meth, auth_data) = authentication.split(" ", 1)
+        except ValueError:
+            return _unauthed()
+
+        if "basic" != auth_meth.lower():
+            return _unauthed()
+        auth_data = base64.b64decode(auth_data.strip()).decode("utf-8")
+        username, password = auth_data.split(":", 1)
+
+        user = auth.authenticate(username=username, password=password)
+        if user and user.is_active:
+            request.user = user
+            auth.login(request, user)
+            return view_function(request, *args, **kwargs)
+
+        return _unauthed()
+
+    return wrap
