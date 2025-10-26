@@ -52,7 +52,7 @@ build_release: (clean_release)
 # Build debug version
 build_dev: (clean_dev)
     mkdir -p build/debug
-    rm src/bootstrap.sh
+    rm -f src/bootstrap.sh
     cp -lr src/* build/debug
     cp -lr requirements build/debug
     cp pytest.ini build/debug/
