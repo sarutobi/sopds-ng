@@ -7,6 +7,8 @@ from constance import config
 
 
 def sopds_auth_validate(view_function):
+    """Декоратор для проверки и аутентификации пользователей."""
+
     @wraps(view_function)
     def wrap(request, *args, **kwargs):
         def _unauthed():
