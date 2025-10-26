@@ -19,7 +19,8 @@ from opds_catalog.models import (
 )
 from opds_catalog import models
 from opds_catalog import settings
-from opds_catalog.middleware import BasicAuthMiddleware
+
+# from opds_catalog.middleware import BasicAuthMiddleware
 from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
 
 from book_tools.format import mime_detector
@@ -1397,7 +1398,7 @@ class BooksFeed(AuthFeed):
 
     def get_object(self, request, lang_code=0, chars=None):
         self.lang_code = int(lang_code)
-        if chars == None:
+        if chars is None:
             chars = ""
         return (len(chars) + 1, chars.upper())
 

@@ -22,7 +22,6 @@ from book_tools.format.mimetype import Mimetype
 from constance import config
 from PIL import Image
 
-# from opds_catalog.middleware import BasicAuthMiddleware
 from opds_catalog.decorators import sopds_auth_validate
 
 
