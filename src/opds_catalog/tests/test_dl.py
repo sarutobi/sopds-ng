@@ -78,9 +78,6 @@ class DownloadsTestCase(TestCase):
         self.assertEqual(response["Content-Length"], "219508")
         print(response)
 
-    def test_download_cover(self):
-        pass
-
 
 class TestGetFileName(TestCase, BookFactoryMixin):
     def setUp(self) -> None:

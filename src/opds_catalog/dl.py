@@ -224,33 +224,37 @@ def Cover(request, book_id, thumbnail=False):
     """Загрузка обложки"""
     book = Book.objects.get(id=book_id)
     response = HttpResponse()
-    full_path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
-    if book.cat_type == opdsdb.CAT_INP:
-        # Убираем из пути INPX и INP файл
-        inp_path, zip_name = os.path.split(full_path)
-        inpx_path, inp_name = os.path.split(inp_path)
-        path, inpx_name = os.path.split(inpx_path)
-        full_path = os.path.join(path, zip_name)
+    full_path = get_fs_book_path(book)
+    # full_path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
+    # if book.cat_type == opdsdb.CAT_INP:
+    #     # Убираем из пути INPX и INP файл
+    #     inp_path, zip_name = os.path.split(full_path)
+    #     inpx_path, inp_name = os.path.split(inp_path)
+    #     path, inpx_name = os.path.split(inpx_path)
+    #     full_path = os.path.join(path, zip_name)
 
     try:
-        if book.cat_type == opdsdb.CAT_NORMAL:
-            file_path = os.path.join(full_path, book.filename)
-            fo = codecs.open(file_path, "rb")
-            book_data = create_bookfile(fo, book.filename)
-            image = book_data.extract_cover_memory()
-            # fb2.parse(fo, 0)
-            fo.close()
-        elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
-            fz = codecs.open(full_path, "rb")
-            z = zipfile.ZipFile(fz, "r", allowZip64=True)
-            fo = z.open(book.filename)
-            book_data = create_bookfile(fo, book.filename)
-            image = book_data.extract_cover_memory()
-            # fb2.parse(fo, 0)
-            fo.close()
-            z.close()
-            fz.close()
-    except:
+        book_data = create_bookfile(getFileData(book), book.filename)
+        image = book_data.extract_cover_memory()
+        # if book.cat_type == opdsdb.CAT_NORMAL:
+        #     file_path = os.path.join(full_path, book.filename)
+        #     fo = codecs.open(file_path, "rb")
+        #     book_data = create_bookfile(fo, book.filename)
+        #     image = book_data.extract_cover_memory()
+        #     # fb2.parse(fo, 0)
+        #     fo.close()
+        # elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
+        #     fz = codecs.open(full_path, "rb")
+        #     z = zipfile.ZipFile(fz, "r", allowZip64=True)
+        #     fo = z.open(book.filename)
+        #     book_data = create_bookfile(fo, book.filename)
+        #     image = book_data.extract_cover_memory()
+        #     # fb2.parse(fo, 0)
+        #     fo.close()
+        #     z.close()
+        #     fz.close()
+    except Exception as e:
+        print(e)
         book_data = None
         image = None
 
