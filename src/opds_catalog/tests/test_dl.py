@@ -342,7 +342,8 @@ def test_config_custom(manage_sopds_root_lib) -> None:
 
 @pytest.mark.django_db
 def test_get_book_cover(manage_sopds_root_lib, create_regular_book, client) -> None:
-    url = reverse("opds:cover", args=(1,))
+    book = create_regular_book
+    url = reverse("opds:cover", args=(book.id,))
     actual = client.get(url)
-    assert actual.status_code == 302
-    assert "sopds-ng-nocover.jpg" in actual.url
+    assert actual.status_code == 200
+    assert actual["Content-Length"] == "56360"
