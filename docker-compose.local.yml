@@ -40,7 +40,7 @@ services:
     command:
       - --conn-limit=64
       - --memory-limit=64
-      - --threads=2
+      - --threads=4
 
 volumes:
    sopds-ng-db:
