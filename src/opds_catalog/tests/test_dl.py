@@ -4,6 +4,7 @@ import zipfile
 import os
 import pytest
 import base64
+from opds_catalog import opdsdb
 
 from constance import config
 from django.contrib.auth.models import User
@@ -22,7 +23,12 @@ from opds_catalog.dl import (
 )
 from opds_catalog.models import Book
 
-from .helpers import read_file_as_iobytes, read_book_from_zip_file, BookFactoryMixin
+from .helpers import (
+    read_file_as_iobytes,
+    read_book_from_zip_file,
+    BookFactoryMixin,
+    create_book,
+)
 
 
 class DownloadsTestCase(TestCase):
@@ -74,22 +80,6 @@ class DownloadsTestCase(TestCase):
 
     def test_download_cover(self):
         pass
-
-
-@pytest.fixture
-def manage_sopds_root_lib():
-    backup = config.SOPDS_ROOT_LIB
-    config.SOPDS_ROOT_LIB = os.path.join(settings.BASE_DIR, "opds_catalog/tests/data/")
-    yield config
-    config.SOPDS_ROOT_LIB = backup
-
-
-@pytest.mark.django_db
-def test_config_custom(manage_sopds_root_lib) -> None:
-    conf = manage_sopds_root_lib
-    assert conf.SOPDS_ROOT_LIB == os.path.join(
-        settings.BASE_DIR, "opds_catalog/tests/data/"
-    )
 
 
 class TestGetFileName(TestCase, BookFactoryMixin):
@@ -325,3 +315,34 @@ class TestGetFileDataConv(TestCase):
 #        book = Book(filename="539273.fb2", cat_type=1, path="data/books.zip")
 #        actual = getFileDataConv(book, "epub")
 #        self.assertIsNotNone(actual)
+
+
+@pytest.fixture
+def manage_sopds_root_lib():
+    backup = config.SOPDS_ROOT_LIB
+    config.SOPDS_ROOT_LIB = os.path.join(settings.BASE_DIR, "opds_catalog/tests/data/")
+    yield config
+    config.SOPDS_ROOT_LIB = backup
+
+
+@pytest.fixture
+def create_regular_book():
+    book = create_book(filename="262001.fb2", cat_type=opdsdb.CAT_NORMAL, path=".")
+    book.save()
+    return book
+
+
+@pytest.mark.django_db
+def test_config_custom(manage_sopds_root_lib) -> None:
+    conf = manage_sopds_root_lib
+    assert conf.SOPDS_ROOT_LIB == os.path.join(
+        settings.BASE_DIR, "opds_catalog/tests/data/"
+    )
+
+
+@pytest.mark.django_db
+def test_get_book_cover(manage_sopds_root_lib, create_regular_book, client) -> None:
+    url = reverse("opds:cover", args=(1,))
+    actual = client.get(url)
+    assert actual.status_code == 302
+    assert "sopds-ng-nocover.jpg" in actual.url

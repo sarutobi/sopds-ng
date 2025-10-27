@@ -7,7 +7,7 @@ import zipfile
 from codecs import open
 
 from opds_catalog import opdsdb
-from opds_catalog.models import Book
+from opds_catalog.models import Book, Catalog
 
 
 def read_file_as_iobytes(file: str) -> io.BytesIO:
@@ -47,3 +47,47 @@ class BookFactoryMixin:
         return Book(
             title=title, format=format, filename=filename, cat_type=cat_type, path=path
         )
+
+
+def create_catalog(
+    cat_name: str = "Test catalog",
+    path: str = "test_path",
+) -> Catalog:
+    catalog = Catalog(cat_name=cat_name, path=path)
+    catalog.save()
+    return catalog
+
+
+def create_book(
+    filename: str = "test_book",
+    path: str = "test_path",
+    filesize: int = 0,
+    format: str = "fb2",
+    catalog: str = "test_catalog",
+    cat_type: int = opdsdb.CAT_NORMAL,
+    doc_date: str = "2025-01-01 00:00:00",
+    lang: str = "ru",
+    title: str = "Test Book",
+    annotation: str = "Lorem ipsum dolor sit....",
+    lang_code: int = 2,
+    avail: int = 2,
+) -> Book:
+    catalog = create_catalog(catalog, path)
+
+    book = Book(
+        filename=filename,
+        path=path,
+        filesize=filesize,
+        format=format,
+        catalog=catalog,
+        cat_type=cat_type,
+        docdate=doc_date,
+        lang=lang,
+        title=title,
+        search_title=title.upper(),
+        annotation=annotation,
+        lang_code=lang_code,
+        avail=avail,
+    )
+    book.save()
+    return book
