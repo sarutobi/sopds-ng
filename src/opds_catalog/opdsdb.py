@@ -39,6 +39,8 @@ from opds_catalog.models import (
     SIZE_SERIES,
 )
 
+from opds_catalog.models import SOPDS_LANG_CODE_OTHER
+
 
 ##########################################################################
 # типы каталогов (cat_type)
@@ -72,7 +74,7 @@ utfhigh = re.compile("[\U00010000-\U0010ffff]")
 
 
 def pg_optimize(verbose=False):
-    """TODO: Table optimizations for Postgre"""
+    """TODO: Table optimizations for Postgres"""
     if connection.vendor != "postgresql":
         if verbose:
             print("No PostgreSql connection backend detected...")
@@ -127,7 +129,7 @@ def getlangcode(s):
     Если переданная строка начинается с кириллического символа, то возвращается 1, если с латиницы - возвращается 2, если с цифры - возвращается 3
     """
 
-    langcode = 9
+    langcode = SOPDS_LANG_CODE_OTHER
     if len(s) == 0:
         return langcode
     for k in LangCodes.keys():
