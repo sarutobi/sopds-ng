@@ -30,7 +30,7 @@ shell +args:
 # Rebuid containers
 build_containers: 
     just down
-    @docker compose build --no-cache --progress=plain
+    @docker compose build --progress=plain
     just up
 
 # Clean release dir
@@ -72,4 +72,4 @@ prepare_foundation:
 
 # Run tests 
 tests *args:
-    docker compose exec -it web pytest --ds=sopds.settings.local {{args}}
+    @docker compose exec -it web pytest --ds=sopds.settings.local {{args}}
