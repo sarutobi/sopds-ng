@@ -4,7 +4,7 @@
 mkdir -p data
 
 # Run DB migrations
-python3 manage.py migrate
+./manage.py migrate
 
 # Run development server
-python3 manage.py runserver 0.0.0.0:8008
+./manage.py runserver 0.0.0.0:8008

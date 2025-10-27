@@ -1,0 +1,26 @@
+[project]
+name = "sopds-ng"
+version = "0.49.0"
+description = "New generation of Simple OPDS catalog"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "apscheduler==3.11",
+    "django==5.1",
+    "django-constance[database]==4.3.2",
+    "django-environ==0.12",
+    "ebookmeta==1.2.11",
+    "lxml>=4.3",
+    "pillow>=2.9.0",
+    "psycopg[binary]==3.2.6",
+    "pymemcache==4",
+    "python-telegram-bot==22",
+]
+
+[dependency-groups]
+dev = [
+    "django-debug-toolbar==5.2.0",
+    "pytest>=8.4.1",
+    "pytest-django>=4.11.1",
+]
+
