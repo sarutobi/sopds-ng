@@ -1,7 +1,9 @@
-import os, re
+import os
+import re
 from abc import abstractmethod, ABCMeta
 
 from book_tools.format.util import minify_cover
+
 
 class BookFile(object):
     __metaclass__ = ABCMeta
@@ -17,7 +19,7 @@ class BookFile(object):
         self.series_info = None
         self.language_code = None
         self.issues = []
-        self.docdate = ''
+        self.docdate = ""
 
     def __enter__(self):
         return self
@@ -65,7 +67,7 @@ class BookFile(object):
         if not sortkey:
             sortkey = name.split()[-1]
         sortkey = BookFile.__normalise_string__(sortkey).lower()
-        self.authors.append({'name': name, 'sortkey': sortkey})
+        self.authors.append({"name": name, "sortkey": sortkey})
 
     def __add_tag__(self, text):
         if text and BookFile.__is_text(text):
@@ -77,10 +79,28 @@ class BookFile(object):
     def __normalise_string__(text):
         if text is None:
             return None
-        return re.sub(r'\s+', ' ', text.strip())
+        return re.sub(r"\s+", " ", text.strip())
 
     def get_encryption_info(self):
         return {}
 
     def repair(self, working_dir):
         pass
+
+
+class BookMetaInfo(object):
+    """Класс для хранения информации о книге"""
+
+    def __init__(self, mimetype: str) -> None:
+        self.authors = []
+        self.genres = []
+        self.title: str = None
+        self.description: str = None
+        self.series: str = None
+        self.series_index: int = None
+        self.cover_file_type: str = None
+        self.cover_image: bytes = None
+        self.mimetype = mimetype
+        self.tags = []
+        self.language_code: str = None
+        self.docdate: str = None
