@@ -5,6 +5,7 @@ import zipfile
 from lxml import etree
 from abc import abstractmethod
 
+from io import BytesIO
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.util import list_zip_file_infos
@@ -228,32 +229,45 @@ class FB2(FB2Base):
 
 class FB2Zip(FB2Base):
     def __init__(self, file, original_filename):
-        self.__zip_file = zipfile.ZipFile(file)
-        try:
-            if self.__zip_file.testzip():
+        with zipfile.ZipFile(file, "r") as test:
+            if test.testzip():
+                # некорректный zip файл
                 raise FB2StructureException("broken zip archive")
-            self.__infos = list_zip_file_infos(self.__zip_file)
-            if len(self.__infos) != 1:
-                raise FB2StructureException(
-                    "archive contains %s files" % len(self.__infos)
-                )
-        except FB2StructureException as error:
-            self.__zip_file.close()
-            raise error
-        except Exception as error:
-            self.__zip_file.close()
-            raise FB2StructureException(error)
+            count = len(list_zip_file_infos(test))
+            if count != 1:
+                raise FB2StructureException("archive contains %s files" % count)
+        # self.__zip_file = zipfile.ZipFile(file)
+        # try:
+        #     if self.__zip_file.testzip():
+        #         raise FB2StructureException("broken zip archive")
+        #     self.__infos = list_zip_file_infos(self.__zip_file)
+        #     if len(self.__infos) != 1:
+        #         raise FB2StructureException(
+        #             "archive contains %s files" % len(self.__infos)
+        #         )
+        # except FB2StructureException as error:
+        #     self.__zip_file.close()
+        #     raise error
+        # except Exception as error:
+        #     self.__zip_file.close()
+        #     raise FB2StructureException(error)
 
         FB2Base.__init__(self, file, original_filename, Mimetype.FB2_ZIP)
 
     def __create_tree__(self):
-        with self.__zip_file.open(self.__infos[0]) as entry:
-            try:
-                return etree.fromstring(entry.read(50 * 1024 * 1024))
-            except:
-                raise FB2StructureException(
-                    "'%s' is not a valid XML" % self.__infos[0].filename
-                )
+        book = BytesIO()
+        with zipfile.ZipFile(self.file, "r") as zip:
+            bookname = list_zip_file_infos(zip)[0]
+            with zip.open(bookname, "r") as bf:
+                book.write(bf.read())
+
+        book.seek(0, 0)
+        try:
+            return etree.parse(book)
+        except:
+            raise FB2StructureException(
+                "'%s' is not a valid XML" % self.__infos[0].filename
+            )
 
     def __exit__(self, kind, value, traceback):
         self.__zip_file.__exit__(kind, value, traceback)
@@ -262,32 +276,16 @@ class FB2Zip(FB2Base):
 
 class FB2Base_new(object):
     def __init__(self, file, original_filename, mimetype):
-        BookFile.__init__(self, file, original_filename, mimetype)
         self.__namespaces = {"fb": Namespace.FICTION_BOOK20, "xlink": Namespace.XLINK}
-        try:
-            tree = self.__create_tree__()
-            self.__detect_namespaces(tree)
-            # self.__detect_title(tree)
-            # self.__detect_authors(tree)
-            # self.__detect_tags(tree)
-            # self.__detect_series_info(tree)
-            # self.__detect_language(tree)
-            # self.__detect_docdate(tree)
-            # description = self.__detect_description(tree)
-            # if description:
-            # self.description = description.strip()
-        except FB2StructureException as error:
-            raise error
-        except Exception as error:
-            raise FB2StructureException(error)
 
     @abstractmethod
-    def __create_tree__(self):
+    def __create_tree__(self, file):
         return None
 
     def parse_book_data(self, file, original_filename, mimetype) -> BookFile:
         bookfile = BookFile(file, original_filename, mimetype)
-        tree = self.__create_tree__()
+        tree = self.__create_tree__(file)
+        self.__detect_namespaces(tree)
         bookfile.__set_title__(self.__detect_title(tree))
         for author, sortkey in self.__detect_authors(tree):
             bookfile.__add_author__(author, sortkey)
@@ -472,10 +470,10 @@ class FB2_new(FB2Base_new):
     def __init__(self, file, original_filename):
         FB2Base_new.__init__(self, file, original_filename, Mimetype.FB2)
 
-    def __create_tree__(self):
+    def __create_tree__(self, file):
         try:
-            self.file.seek(0, 0)
-            return etree.parse(self.file)
+            file.seek(0, 0)
+            return etree.parse(file)
         except Exception as err:
             raise FB2StructureException("the file is not a valid XML (%s)" % err)
 
@@ -485,32 +483,32 @@ class FB2_new(FB2Base_new):
 
 class FB2Zip_new(FB2Base_new):
     def __init__(self, file, original_filename):
-        self.__zip_file = zipfile.ZipFile(file)
-        try:
-            if self.__zip_file.testzip():
+        with zipfile.ZipFile(file, "r") as test:
+            if test.testzip():
+                # некорректный zip файл
                 raise FB2StructureException("broken zip archive")
-            self.__infos = list_zip_file_infos(self.__zip_file)
-            if len(self.__infos) != 1:
-                raise FB2StructureException(
-                    "archive contains %s files" % len(self.__infos)
-                )
-        except FB2StructureException as error:
-            self.__zip_file.close()
-            raise error
-        except Exception as error:
-            self.__zip_file.close()
-            raise FB2StructureException(error)
+            count = len(list_zip_file_infos(test))
+            if count != 1:
+                raise FB2StructureException("archive contains %s files" % count)
 
         FB2Base_new.__init__(self, file, original_filename, Mimetype.FB2_ZIP)
 
-    def __create_tree__(self):
-        with self.__zip_file.open(self.__infos[0]) as entry:
-            try:
-                return etree.fromstring(entry.read(50 * 1024 * 1024))
-            except:
-                raise FB2StructureException(
-                    "'%s' is not a valid XML" % self.__infos[0].filename
-                )
+    def __create_tree__(self, file):
+        book = BytesIO()
+        with zipfile.ZipFile(file, "r") as zip:
+            bookname = list_zip_file_infos(zip)[0]
+            with zip.open(bookname, "r") as bf:
+                book.write(bf.read())
+
+            # with self.__zip_file.open(self.__infos[0]) as entry:
+        book.seek(0, 0)
+        try:
+            return etree.parse(book)
+        except:
+            raise FB2StructureException(
+                # "'%s' is not a valid XML" % self.__infos[0].filename
+                "'%s' is not a valid XML" % bookname
+            )
 
     def __exit__(self, kind, value, traceback):
         self.__zip_file.__exit__(kind, value, traceback)
