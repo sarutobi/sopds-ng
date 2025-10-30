@@ -57,8 +57,11 @@ coverage.xml
 *.pot
 
 # Django stuff:
-staticfiles/
-static/
+/*/staticfiles/*
+/*/static/*
+# But keep directories in tree
+!/*/staticfiles/.keep
+!/*/static/.keep
 # Sphinx documentation
 docs/_build/
 
