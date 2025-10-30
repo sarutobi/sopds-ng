@@ -14,8 +14,8 @@ services:
      - ${SOPDS_BOOK_PATH}:/books:ro
      - ./.env:/app/src/.env
      - ./bootstrap.sh:/app/src/bootstrap.sh
- #   environment:
- #     DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+    environment:
+      DJANGO_SETTINGS_MODULE: "${DJANGO_SETTINGS_MODULE:-sopds.settings.prod}"
  #     DEBUG: ${DEBUG}
  #     SECRET_KEY: ${SECRET_KEY}
     depends_on:
@@ -35,12 +35,6 @@ services:
     volumes:
       - sopds-ng-db:/var/lib/postgresql/data/
 
-  mc:
-    image: memcached:1.6-alpine
-    command:
-      - --conn-limit=64
-      - --memory-limit=64
-      - --threads=4
 
 volumes:
    sopds-ng-db:

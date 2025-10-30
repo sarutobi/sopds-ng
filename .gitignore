@@ -58,7 +58,7 @@ coverage.xml
 
 # Django stuff:
 staticfiles/
-
+static/
 # Sphinx documentation
 docs/_build/
 
@@ -339,4 +339,7 @@ vendors.js
 *.min.js.map
 /static/webpack_bundles/
 webpack-stats.json
+
+# Custom compose options
+docker-compose.override.yml
 

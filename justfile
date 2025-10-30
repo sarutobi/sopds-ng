@@ -1,5 +1,5 @@
 ## Variables
-export COMPOSE_FILE := "docker-compose.local.yml"
+#export COMPOSE_FILE := "docker-compose.local.yml"
 
 ## Receipts
 # Default command to run
