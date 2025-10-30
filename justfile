@@ -73,3 +73,11 @@ prepare_foundation:
 # Run tests 
 tests *args:
     @docker compose exec -it web pytest --ds=sopds.settings.local {{args}}
+
+# Run command to frontend
+run-yarn *args:
+    @docker run --rm -v ./assets/sopds-sass/package.json:/foundation/package.json \
+        -v ./assets/sopds-sass/gulpfile.babel.js:/foundation/gulpfile.babel.js \
+        -v ./assets/sopds-sass/config.yml:/foundation/config.yml \
+        -v ./tmp/target/:/foundation/target \
+        foundation yarn {{args}}
