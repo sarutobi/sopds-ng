@@ -100,15 +100,15 @@ wheels = [
 ]
 
 [[package]]
-name = "ebookmeta"
-version = "1.2.11"
+name = "gunicorn"
+version = "23.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "lxml" },
+    { name = "packaging" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f8/5f/715c3e8ecce7e6d4dadd873ae8d3caf6f92b95c2bffd5b0ec21d89b2080c/ebookmeta-1.2.11.tar.gz", hash = "sha256:94abd0e8c82a4d3f8ebecf0086ad0fb60c70bbb928ee9c55c4553bbb9ed1c74d", size = 40219, upload-time = "2022-12-10T17:49:12.421Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/34/72/9614c465dc206155d93eff0ca20d42e1e35afc533971379482de953521a4/gunicorn-23.0.0.tar.gz", hash = "sha256:f014447a0101dc57e294f6c18ca6b40227a4c90e9bdb586042628030cba004ec", size = 375031, upload-time = "2024-08-10T20:25:27.378Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/48/e6d15f7a9d98f7eee543e8e0720e64add22ef05eec734a79eef1c2bafbd0/ebookmeta-1.2.11-py3-none-any.whl", hash = "sha256:75ccdca8f99f1b3d4f3aaa3ba3ae529a3f4373e495144d43f8513df010fe76c4", size = 40108, upload-time = "2022-12-10T17:49:09.858Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/7d/6dac2a6e1eba33ee43f318edbed4ff29151a49b5d37f080aad1e6469bca4/gunicorn-23.0.0-py3-none-any.whl", hash = "sha256:ec400d38950de4dfd418cff8328b2c8faed0edb0d517d3394e457c317908ca4d", size = 85029, upload-time = "2024-08-10T20:25:24.996Z" },
 ]
 
 [[package]]
@@ -459,12 +459,13 @@ dependencies = [
     { name = "django" },
     { name = "django-constance" },
     { name = "django-environ" },
-    { name = "ebookmeta" },
+    { name = "gunicorn" },
     { name = "lxml" },
     { name = "pillow" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pymemcache" },
     { name = "python-telegram-bot" },
+    { name = "whitenoise" },
 ]
 
 [package.dev-dependencies]
@@ -481,12 +482,13 @@ requires-dist = [
     { name = "django", specifier = "==5.1" },
     { name = "django-constance", extras = ["database"], specifier = "==4.3.2" },
     { name = "django-environ", specifier = "==0.12" },
-    { name = "ebookmeta", specifier = "==1.2.11" },
+    { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "lxml", specifier = ">=4.3" },
     { name = "pillow", specifier = ">=2.9.0" },
     { name = "psycopg", extras = ["binary"], specifier = "==3.2.6" },
     { name = "pymemcache", specifier = "==4" },
     { name = "python-telegram-bot", specifier = "==22" },
+    { name = "whitenoise", specifier = "==6.11" },
 ]
 
 [package.metadata.requires-dev]
@@ -534,4 +536,13 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/8b/2e/c14812d3d4d9cd1773c6be938f89e5735a1f11a9f184ac3639b93cef35d5/tzlocal-5.3.1.tar.gz", hash = "sha256:cceffc7edecefea1f595541dbd6e990cb1ea3d19bf01b2809f362a03dd7921fd", size = 30761, upload-time = "2025-03-05T21:17:41.549Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c2/14/e2a54fabd4f08cd7af1c07030603c3356b74da07f7cc056e600436edfa17/tzlocal-5.3.1-py3-none-any.whl", hash = "sha256:eb1a66c3ef5847adf7a834f1be0800581b683b5608e74f86ecbcef8ab91bb85d", size = 18026, upload-time = "2025-03-05T21:17:39.857Z" },
+]
+
+[[package]]
+name = "whitenoise"
+version = "6.11.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/95/8c81ec6b6ebcbf8aca2de7603070ccf37dbb873b03f20708e0f7c1664bc6/whitenoise-6.11.0.tar.gz", hash = "sha256:0f5bfce6061ae6611cd9396a8231e088722e4fc67bc13a111be74c738d99375f", size = 26432, upload-time = "2025-09-18T09:16:10.995Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6c/e9/4366332f9295fe0647d7d3251ce18f5615fbcb12d02c79a26f8dba9221b3/whitenoise-6.11.0-py3-none-any.whl", hash = "sha256:b2aeb45950597236f53b5342b3121c5de69c8da0109362aee506ce88e022d258", size = 20197, upload-time = "2025-09-18T09:16:09.754Z" },
 ]
