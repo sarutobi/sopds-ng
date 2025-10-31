@@ -15,7 +15,7 @@ down:
     @docker compose down
 
 # Restart containers
-restart:
+restart-all:
     @docker compose restart
 
 # Show container log
@@ -28,21 +28,21 @@ shell +args:
     @docker compose exec -it {{args}} /bin/bash
 
 # Rebuid containers
-build_containers: 
+rebuild-containers: 
     just down
     @docker compose build --progress=plain
     just up
 
 # Clean release dir
-clean_release:
+clean-release:
     rm -rf ./build/release*
 
 # Clean debug dir
-clean_dev:
+clean-dev:
     rm -rf ./build/debug
 
 # Build release
-build_release: (clean_release)
+build-release: (clean-release)
     mkdir -p build/release
     cp -r src/ build/release/sopds-ng
     rm -rf build/release/sopds-ng/assets
@@ -50,25 +50,25 @@ build_release: (clean_release)
     find build/release -type f -name "local.*" -delete
 
 # Build debug version
-build_dev: (clean_dev)
-    mkdir -p build/debug
-    rm -f src/bootstrap.sh
-    cp -lr src/* build/debug
-    cp -lr requirements build/debug
-    cp pytest.ini build/debug/
-    cp bootstrap.sh build/debug/
+build-dev: (clean-dev)
+    @mkdir -p build/debug
+    @rm -f src/bootstrap.sh
+    @cp -lr src/* build/debug
+    @cp -lr requirements build/debug
+    @cp pytest.ini build/debug/
+    @cp bootstrap.sh build/debug/
 
-    chmod +x build/debug/bootstrap.sh
+    @chmod +x build/debug/bootstrap.sh
 
-    rm -rf build/debug/assets
-    rm -rf build/debug/static
-    rm -rf build/debug/.pytest_cache
+    @rm -rf build/debug/assets
+    @rm -rf build/debug/static
+    @rm -rf build/debug/.pytest_cache
 
     just build_containers
 
 # Create docker image for foundation
-prepare_foundation:
-    docker build -t foundation -f foundation/Dockerfile .
+prepare-foundation:
+    @docker build -t foundation -f compose/foundation/Dockerfile .
 
 # Run tests 
 tests *args:

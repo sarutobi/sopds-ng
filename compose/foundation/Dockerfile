@@ -30,9 +30,3 @@ USER foundation
 RUN git clone https://github.com/foundation/foundation-zurb-template .
 RUN yarn
 
-# FROM build
-#
-# COPY assets/sopds-sass/config.yml assets/sopds-sass/gulpfile.babel.js assets/sopds-sass/package.json .
-# COPY assets/sopds-sass/scss/_settings.scss src/assets/scss/
-# COPY assets/sopds-sass/scss/sopds.scss src/assets/scss/app.scss
-
