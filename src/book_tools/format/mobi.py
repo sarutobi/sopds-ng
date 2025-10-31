@@ -57,13 +57,13 @@ class Mobipocket_new(object):
         # BookFile.__init__(self, file, original_filename, Mimetype.MOBI)
         bm = BookMobi(file)
         self._encryption_method = bm["encryption"]
-        self.__set_title__(bm["title"])
-        self.__add_author__(bm["author"])
-        self.__set_docdate__(bm["modificationDate"].strftime("%Y-%m-%d"))
-        if bm["subject"]:
-            for tag in bm["subject"]:
-                self.__add_tag__(tag)
-        self.description = bm["description"]
+        # self.__set_title__(bm["title"])
+        # self.__add_author__(bm["author"])
+        # self.__set_docdate__(bm["modificationDate"].strftime("%Y-%m-%d"))
+        # if bm["subject"]:
+        #     for tag in bm["subject"]:
+        #         self.__add_tag__(tag)
+        # self.description = bm["description"]
 
     def __exit__(self, kind, value, traceback):
         pass
