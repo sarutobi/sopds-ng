@@ -1,8 +1,8 @@
 {% load i18n %}
 
 {% if user.is_authenticated or not sopds_auth %}
-<div class="cell">
-<div class="grid-x grid-margin-x expanded callout secondary">
+<div class="cell callout secondary">
+<div class="grid-x grid-margin-x">
     <!-- Bookshelf -->
     <div class="cell large-4" >
         {% if sopds_auth %} 
@@ -44,11 +44,11 @@
     </div>
 
     <!-- Random book -->
-    <div class="cell large-4">
-        <div class="cell">
+    <div class="cell auto">
+        <div class="cell large-12">
             <h5>{% trans "RANDOM BOOK" %}</h5>	
         </div>
-        <div class="large-12 columns clearfix">    
+        <div class="cell large-12 clearfix">
         {% if random_book %}
             <img class="float-left" src="{% url 'opds_catalog:thumb' random_book.id %}" type="image/jpeg" width="80px" style="padding:0.3rem;">
             <p style="font-size:80%;line-height:1rem;margin-bottom:0.25rem; margin-top:0.25rem;"><b><a href="{% url "web:searchbooks" %}?searchtype=i&searchterms={{random_book.id}}">{{ random_book.title }}</a> </b></p>
