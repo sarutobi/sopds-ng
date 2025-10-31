@@ -98,7 +98,7 @@ class fb2cover(fb2tag):
         result = fb2tag.tagopen(self, tag, attrs)
         if result:
             idvalue = self.getattr("id")
-            if idvalue is None:
+            if idvalue is not None:
                 idvalue = idvalue.lower()
                 if idvalue == self.cover_name:
                     self.iscover = True
