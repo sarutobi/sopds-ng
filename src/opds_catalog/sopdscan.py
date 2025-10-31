@@ -242,7 +242,7 @@ class opdsScanner:
             rel_path = os.path.relpath(full_path, config.SOPDS_ROOT_LIB)
             self.logger.debug("Attempt to add book " + rel_path + "/" + name)
             try:
-                if opdsdb.findbook(name, rel_path, 1) is not None:
+                if opdsdb.findbook(name, rel_path, 1) is None:
                     if archive == 0:
                         cat = opdsdb.addcattree(rel_path, archive)
 
