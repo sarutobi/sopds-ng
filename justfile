@@ -1,5 +1,5 @@
 ## Variables
-export COMPOSE_FILE := "docker-compose.local.yml"
+#export COMPOSE_FILE := "docker-compose.local.yml"
 
 ## Receipts
 # Default command to run
@@ -15,7 +15,7 @@ down:
     @docker compose down
 
 # Restart containers
-restart:
+restart-all:
     @docker compose restart
 
 # Show container log
@@ -28,21 +28,21 @@ shell +args:
     @docker compose exec -it {{args}} /bin/bash
 
 # Rebuid containers
-build_containers: 
+rebuild-containers: 
     just down
     @docker compose build --progress=plain
     just up
 
 # Clean release dir
-clean_release:
+clean-release:
     rm -rf ./build/release*
 
 # Clean debug dir
-clean_dev:
+clean-dev:
     rm -rf ./build/debug
 
 # Build release
-build_release: (clean_release)
+build-release: (clean-release)
     mkdir -p build/release
     cp -r src/ build/release/sopds-ng
     rm -rf build/release/sopds-ng/assets
@@ -50,26 +50,51 @@ build_release: (clean_release)
     find build/release -type f -name "local.*" -delete
 
 # Build debug version
-build_dev: (clean_dev)
-    mkdir -p build/debug
-    rm -f src/bootstrap.sh
-    cp -lr src/* build/debug
-    cp -lr requirements build/debug
-    cp pytest.ini build/debug/
-    cp bootstrap.sh build/debug/
+build-dev: (clean-dev)
+    @mkdir -p build/debug
+    @rm -f src/bootstrap.sh
+    @cp -lr src/* build/debug
+    @cp -lr requirements build/debug
+    @cp pytest.ini build/debug/
+    @cp bootstrap.sh build/debug/
 
-    chmod +x build/debug/bootstrap.sh
+    @chmod +x build/debug/bootstrap.sh
 
-    rm -rf build/debug/assets
-    rm -rf build/debug/static
-    rm -rf build/debug/.pytest_cache
+    @rm -rf build/debug/assets
+    @rm -rf build/debug/static
+    @rm -rf build/debug/.pytest_cache
 
     just build_containers
 
 # Create docker image for foundation
-prepare_foundation:
-    docker build -t foundation -f foundation/Dockerfile .
+prepare-foundation:
+    @docker build -t foundation -f compose/foundation/Dockerfile .
 
 # Run tests 
 tests *args:
     @docker compose exec -it web pytest --ds=sopds.settings.local {{args}}
+
+# Run commands to build frontend
+run-frontend *args:
+    @docker run --rm -v ./assets/sopds-sass/package.json:/foundation/package.json \
+        -v ./assets/sopds-sass/gulpfile.babel.js:/foundation/gulpfile.babel.js \
+        -v ./assets/sopds-sass/config.yml:/foundation/config.yml \
+        -v ./assets/sopds-sass/scss/:/foundation/src/assets/scss/ \
+        -v ./tmp/target/:/foundation/target \
+        foundation {{args}}
+
+# Build dev frontend
+build-dev-frontend:
+    @just run-frontend yarn buildd
+    @cp -r tmp/target/dist/assets/css src/sopds_web_backend/static/
+    @cp -r tmp/target/dist/assets/js src/sopds_web_backend/static/
+
+# Run shell in frontend container
+frontend-shell:
+    @docker run -it --rm -v ./assets/sopds-sass/package.json:/foundation/package.json \
+        -v ./assets/sopds-sass/gulpfile.babel.js:/foundation/gulpfile.babel.js \
+        -v ./assets/sopds-sass/config.yml:/foundation/config.yml \
+        -v ./assets/sopds-sass/scss/:/foundation/src/assets/scss/ \
+        -v ./tmp/target/:/foundation/target \
+        foundation /bin/bash
+

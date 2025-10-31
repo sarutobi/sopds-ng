@@ -3,8 +3,12 @@
 # Create data folder
 mkdir -p data
 
-# Run DB migrations
-./manage.py migrate
+# Collect statics files
+./manage.py collectstatic --skip-checks --no-input
 
-# Run development server
-./manage.py runserver 0.0.0.0:8008
+# Run DB migrations
+./manage.py migrate --skip-checks --no-input
+
+# Run server
+
+gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
