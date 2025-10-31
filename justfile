@@ -74,10 +74,27 @@ prepare_foundation:
 tests *args:
     @docker compose exec -it web pytest --ds=sopds.settings.local {{args}}
 
-# Run command to frontend
-run-yarn *args:
+# Run commands to build frontend
+run-frontend *args:
     @docker run --rm -v ./assets/sopds-sass/package.json:/foundation/package.json \
         -v ./assets/sopds-sass/gulpfile.babel.js:/foundation/gulpfile.babel.js \
         -v ./assets/sopds-sass/config.yml:/foundation/config.yml \
+        -v ./assets/sopds-sass/scss/:/foundation/src/assets/scss/ \
         -v ./tmp/target/:/foundation/target \
-        foundation yarn {{args}}
+        foundation {{args}}
+
+# Build dev frontend
+build-dev-frontend:
+    @just run-frontend yarn buildd
+    @cp -r tmp/target/dist/assets/css src/sopds_web_backend/static/
+    @cp -r tmp/target/dist/assets/js src/sopds_web_backend/static/
+
+# Run shell in frontend container
+frontend-shell:
+    @docker run -it --rm -v ./assets/sopds-sass/package.json:/foundation/package.json \
+        -v ./assets/sopds-sass/gulpfile.babel.js:/foundation/gulpfile.babel.js \
+        -v ./assets/sopds-sass/config.yml:/foundation/config.yml \
+        -v ./assets/sopds-sass/scss/:/foundation/src/assets/scss/ \
+        -v ./tmp/target/:/foundation/target \
+        foundation /bin/bash
+
