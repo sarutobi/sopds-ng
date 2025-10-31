@@ -98,3 +98,10 @@ frontend-shell:
         -v ./tmp/target/:/foundation/target \
         foundation /bin/bash
 
+# Execute commands for django
+django *args:
+    @docker compose exec -it web ./manage.py {{args}}
+
+collect-django-messages:
+    just django makemessages --locale ru --ignore book_tools --ignore inpx --ignore manage.py --ignore sopds
+

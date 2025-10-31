@@ -74,6 +74,12 @@ EXPOSE 8008/tcp
 
 SHELL ["/bin/sh", "-exc"]
 
+RUN <<EOF
+apt-get update --quiet
+apt-get install --quiet --no-install-recommends --assume-yes \
+  gettext
+rm -rf /var/lib/apt/lists/*
+EOF
 # Создаём группу и пользователя с нужными ID.
 # Если значение ID больше нуля (исключаем "root" ID) и в системе уже есть пользователь или группа с указанным ID,
 # пересоздаём пользователя или группу с именем "app".
