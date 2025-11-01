@@ -10,8 +10,8 @@ def test_tag() -> fb2tag:
 
 
 @pytest.fixture
-def test_rootlib() -> os.path:
-    test_module_path = os.path.dirname(
+def test_rootlib() -> str:
+    test_module_path: str = os.path.dirname(
         os.path.dirname(Path(__file__).resolve().parent.parent)
     )
     test_ROOTLIB = os.path.join(test_module_path, "opds_catalog/tests/data")
