@@ -16,7 +16,6 @@ from book_tools.format.fb2 import (
 )
 from book_tools.format.mimetype import Mimetype
 
-from book_tools.tests.format.helpers import book_file_are_equals
 from opds_catalog.tests.helpers import read_file_as_iobytes
 
 
@@ -111,20 +110,7 @@ def test_fb2_new(test_rootlib, book, expected_exception) -> None:
         book_new = FB2_new(file, "Test Book").parse_book_data(
             file, "Test Book", Mimetype.FB2
         )
-        assert book_actual is not None
-        assert book_new is not None
-
-        assert book_actual.file == book_new.file
-        assert book_actual.mimetype == book_new.mimetype
-        assert book_actual.original_filename == book_new.original_filename
-        assert book_actual.title == book_new.title
-        assert book_actual.description == book_new.description
-        assert book_actual.authors == book_new.authors
-        assert book_actual.tags == book_new.tags
-        assert book_actual.series_info == book_new.series_info
-        assert book_actual.language_code == book_new.language_code
-        assert book_actual.issues == book_new.issues
-        assert book_actual.docdate == book_new.docdate
+        assert book_actual == book_new
 
 
 @pytest.mark.parametrize(
@@ -143,4 +129,4 @@ def test_fb2zip_new(test_rootlib, book, expected_exception) -> None:
         book_new = FB2Zip_new(file, "Test Book").parse_book_data(
             file, "Test Book", Mimetype.FB2_ZIP
         )
-        assert book_file_are_equals(book_actual, book_new)
+        assert book_actual == book_new

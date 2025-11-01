@@ -87,6 +87,24 @@ class BookFile(object):
     def repair(self, working_dir):
         pass
 
+    def __eq__(self, other) -> bool:
+        if not (isinstance(other, BookFile)):
+            return NotImplemented
+
+        return (
+            self.file.getvalue() == other.file.getvalue()
+            and self.mimetype == other.mimetype
+            and self.original_filename == other.original_filename
+            and self.title == other.title
+            and self.description == other.description
+            and (sorted(self.authors) == sorted(other.authors))
+            and (sorted(self.tags) == sorted(other.tags))
+            and self.series_info == other.series_info
+            and self.language_code == other.language_code
+            and (sorted(self.issues) == sorted(other.issues))
+            and self.docdate == other.docdate
+        )
+
 
 class BookMetaInfo(object):
     """Класс для хранения информации о книге"""
