@@ -6,9 +6,7 @@ import os
 
 from zipfile import BadZipFile
 
-from pathlib import Path
-
-from book_tools.format.fb2sax import fb2tag, FB2sax, FB2sax_new, FB2StructureException
+from book_tools.format.fb2sax import FB2sax, FB2sax_new, FB2StructureException
 from book_tools.format.fb2 import (
     FB2,
     FB2_new,
@@ -18,12 +16,8 @@ from book_tools.format.fb2 import (
 )
 from book_tools.format.mimetype import Mimetype
 
+from book_tools.tests.format.helpers import book_file_are_equals
 from opds_catalog.tests.helpers import read_file_as_iobytes
-
-
-@pytest.fixture
-def test_tag() -> fb2tag:
-    return fb2tag(("description", "title-info", "author", "first-name"))
 
 
 def test_fb2tag_tagopen(test_tag) -> None:
@@ -63,15 +57,6 @@ def test_fb2tag_setvalue(test_tag) -> None:
     test_tag.setvalue("test")
     assert test_tag.process_value
     assert test_tag.current_value == "test"
-
-
-@pytest.fixture
-def test_rootlib() -> os.path:
-    test_module_path = os.path.dirname(
-        os.path.dirname(Path(__file__).resolve().parent.parent)
-    )
-    test_ROOTLIB = os.path.join(test_module_path, "opds_catalog/tests/data")
-    return test_ROOTLIB
 
 
 def test_fb2sax(test_rootlib) -> None:
@@ -158,17 +143,4 @@ def test_fb2zip_new(test_rootlib, book, expected_exception) -> None:
         book_new = FB2Zip_new(file, "Test Book").parse_book_data(
             file, "Test Book", Mimetype.FB2_ZIP
         )
-        assert book_actual is not None
-        assert book_new is not None
-
-        assert book_actual.file == book_new.file
-        assert book_actual.mimetype == book_new.mimetype
-        assert book_actual.original_filename == book_new.original_filename
-        assert book_actual.title == book_new.title
-        assert book_actual.description == book_new.description
-        assert book_actual.authors == book_new.authors
-        assert book_actual.tags == book_new.tags
-        assert book_actual.series_info == book_new.series_info
-        assert book_actual.language_code == book_new.language_code
-        assert book_actual.issues == book_new.issues
-        assert book_actual.docdate == book_new.docdate
+        assert book_file_are_equals(book_actual, book_new)
