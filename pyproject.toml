@@ -23,6 +23,9 @@ dev = [
     "django-debug-toolbar==5.2.0",
     "mypy>=1.18.2",
     "pytest>=8.4.1",
+    "pytest-cov==7.0",
     "pytest-django>=4.11.1",
 ]
 
+[tool.pytest.ini_options]
+addopts = "--cov=<project-name> --cov-report html"
