@@ -18,7 +18,7 @@ class Mobipocket(BookFile):
         if bm["subject"]:
             for tag in bm["subject"]:
                 self.__add_tag__(tag)
-        self.description = bm["description"]
+        self.description: str = bm["description"]
 
     def __exit__(self, kind, value, traceback):
         pass
@@ -88,9 +88,9 @@ class Mobipocket_new(object):
             else {}
         )
 
-    def extract_cover_internal(self, working_dir):
+    def extract_cover_internal(self, file, working_dir):
         tmp_dir = mkdtemp(dir=working_dir)
-        BookMobi(self.file).unpackMobi(tmp_dir + "/bookmobi")
+        BookMobi(file).unpackMobi(tmp_dir + "/bookmobi")
         try:
             if os.path.isfile(tmp_dir + "/bookmobi_cover.jpg"):
                 shutil.copy(tmp_dir + "/bookmobi_cover.jpg", working_dir)
@@ -100,9 +100,9 @@ class Mobipocket_new(object):
         finally:
             shutil.rmtree(tmp_dir)
 
-    def extract_cover_memory(self):
+    def extract_cover_memory(self, file):
         try:
-            image = BookMobi(self.file).unpackMobiCover()
+            image = BookMobi(file).unpackMobiCover()
         except Exception as err:
             print(err)
             image = None
