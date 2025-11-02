@@ -1,0 +1,13 @@
+class Mimetype:
+    OCTET_STREAM: str
+    XML: str
+    ZIP: str
+    EPUB: str
+    FB2: str
+    FB2_ZIP: str
+    PDF: str
+    MSWORD: str
+    MOBI: str
+    DJVU: str
+    TEXT: str
+    RTF: str
