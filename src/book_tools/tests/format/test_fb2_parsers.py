@@ -3,6 +3,7 @@ import pytest
 from contextlib import nullcontext
 
 import os
+from io import BytesIO
 
 from zipfile import BadZipFile
 
@@ -17,6 +18,7 @@ from book_tools.format.fb2 import (
 from book_tools.format.mimetype import Mimetype
 
 from opds_catalog.tests.helpers import read_file_as_iobytes
+from book_tools.tests.format.helpers import fb2_book_fabric
 
 
 def test_fb2tag_tagopen(test_tag) -> None:
@@ -59,8 +61,10 @@ def test_fb2tag_setvalue(test_tag) -> None:
 
 
 def test_fb2sax(test_rootlib) -> None:
-    file = read_file_as_iobytes(os.path.join(test_rootlib, "262001.fb2"))
-    book_file = FB2sax(file, "Test Book")
+    book = fb2_book_fabric(title="The Sanctuary Sparrow", docdate="30.1.2011")
+    print(book)
+    # file = read_file_as_iobytes(os.path.join(test_rootlib, "262001.fb2"))
+    book_file = FB2sax(BytesIO(book), "Test Book")
     assert book_file is not None
     assert book_file.docdate == "30.1.2011"
     assert book_file.title == "The Sanctuary Sparrow"

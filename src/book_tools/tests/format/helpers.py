@@ -50,6 +50,8 @@ class FictionBook(object):
         root = etree.Element("FictionBook", nsmap=nsmap)
         description = etree.SubElement(root, "description", nsmap=nsmap)
         title_info = etree.SubElement(description, "title-info", nsmap=nsmap)
+        document_info = etree.SubElement(description, "document-info", nsmap=nsmap)
+
         for g in self.genres:
             ge = etree.SubElement(
                 title_info,
@@ -75,9 +77,10 @@ class FictionBook(object):
 
         lang = etree.SubElement(title_info, "lang", nsmap=nsmap)
         lang.text = self.lang
+
         if self.docdate is not None:
             docdate = etree.SubElement(
-                title_info, "date", value=self.docdate, nsmap=nsmap
+                document_info, "date", value=self.docdate, nsmap=nsmap
             )
             docdate.text = self.docdate
 
