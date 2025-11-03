@@ -3,33 +3,36 @@ import os
 import traceback
 import zipfile
 from lxml import etree
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 from io import BytesIO
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.util import list_zip_file_infos
+from lxml.etree import _ElementTree
 
 
 class FB2StructureException(Exception):
     # TODO Удалить дублирование FB2StructureException
-    def __init__(self, error):
+    def __init__(self, error: str | Exception):
         Exception.__init__(self, "fb2 verification failed: %s" % error)
         if isinstance(error, Exception):
             print(traceback.print_exc())
 
 
 class Namespace(object):
-    # TODO Удалить доблирование Namespace
     FICTION_BOOK20 = "http://www.gribuser.ru/xml/fictionbook/2.0"
     FICTION_BOOK21 = "http://www.gribuser.ru/xml/fictionbook/2.1"
     XLINK = "http://www.w3.org/1999/xlink"
 
 
 class FB2Base(BookFile):
-    def __init__(self, file, original_filename, mimetype):
+    def __init__(self, file: BytesIO, original_filename: str, mimetype: str):
         BookFile.__init__(self, file, original_filename, mimetype)
-        self.__namespaces = {"fb": Namespace.FICTION_BOOK20, "xlink": Namespace.XLINK}
+        self.__namespaces: dict[str, str] = {
+            "fb": Namespace.FICTION_BOOK20,
+            "xlink": Namespace.XLINK,
+        }
         try:
             tree = self.__create_tree__()
             self.__detect_namespaces(tree)
@@ -39,7 +42,7 @@ class FB2Base(BookFile):
             self.__detect_series_info(tree)
             self.__detect_language(tree)
             self.__detect_docdate(tree)
-            description = self.__detect_description(tree)
+            description: str | bytes | None = self.__detect_description(tree)
             if description:
                 self.description = description.strip()
         except FB2StructureException as error:
@@ -48,18 +51,21 @@ class FB2Base(BookFile):
             raise FB2StructureException(error)
 
     @abstractmethod
-    def __create_tree__(self):
-        return None
+    def __create_tree__(self) -> _ElementTree:
+        ...
+        # return None
 
-    def extract_cover_internal(self, working_dir):
+    def extract_cover_internal(
+        self, working_dir: os.PathLike
+    ) -> tuple[str | None, bool]:
         try:
             tree = self.__create_tree__()
-            res = tree.xpath(
+            res: list[etree.node] = tree.xpath(
                 "/fb:FictionBook/fb:description/fb:title-info/fb:coverpage/fb:image",
                 namespaces=self.__namespaces,
             )
-            cover_id = res[0].get("{" + Namespace.XLINK + "}href")[1:]
-            res = tree.xpath(
+            cover_id: str = res[0].get("{" + Namespace.XLINK + "}href")[1:]
+            res: str = tree.xpath(
                 '/fb:FictionBook/fb:binary[@id="%s"]' % cover_id,
                 namespaces=self.__namespaces,
             )
@@ -67,10 +73,10 @@ class FB2Base(BookFile):
             with open(os.path.join(working_dir, "cover.jpeg"), "wb") as cover_file:
                 cover_file.write(content)
             return ("cover.jpeg", False)
-        except:
+        except Exception:
             return (None, False)
 
-    def extract_cover_memory(self):
+    def extract_cover_memory(self) -> bytes | None:
         try:
             tree = self.__create_tree__()
             res = tree.xpath(
@@ -82,7 +88,7 @@ class FB2Base(BookFile):
                     "/fb:FictionBook/fb:body//fb:image", namespaces=self.__namespaces
                 )
             cover_id = res[0].get("{" + Namespace.XLINK + "}href")[1:]
-            # print(cover_id)
+
             res = tree.xpath(
                 '/fb:FictionBook/fb:binary[@id="%s"]' % cover_id,
                 namespaces=self.__namespaces,
@@ -93,12 +99,12 @@ class FB2Base(BookFile):
             print("exception Extract %s" % err)
             return None
 
-    def __detect_namespaces(self, tree):
+    def __detect_namespaces(self, tree: etree._ElementTree) -> None:
         if tree.getroot().tag.find(Namespace.FICTION_BOOK21) > 0:
             self.__namespaces["fb"] = Namespace.FICTION_BOOK21
         return None
 
-    def __detect_title(self, tree):
+    def __detect_title(self, tree: etree._ElementTree) -> None:
         res = tree.xpath(
             "/fb:FictionBook/fb:description/fb:title-info/fb:book-title",
             namespaces=self.__namespaces,
@@ -112,7 +118,7 @@ class FB2Base(BookFile):
 
         return None
 
-    def __detect_docdate(self, tree):
+    def __detect_docdate(self, tree: etree._ElementTree) -> None:
         is_attrib = 1
         res = tree.xpath(
             "/fb:FictionBook/fb:description/fb:document-info/fb:date/@value",
@@ -134,15 +140,15 @@ class FB2Base(BookFile):
 
         return None
 
-    def __detect_authors(self, tree):
-        use_namespaces = True
+    def __detect_authors(self, tree: etree._ElementTree) -> None:
+        use_namespaces: bool = True
 
-        def subnode_text(node, name):
+        def subnode_text(node, name: str) -> str:
             if use_namespaces:
                 subnode = node.find("fb:" + name, namespaces=self.__namespaces)
             else:
                 subnode = node.find(name)
-            text = subnode.text if subnode is not None else ""
+            text: str = subnode.text if subnode is not None else ""
             return text or ""
 
         def add_author_from_node(node):
@@ -162,44 +168,44 @@ class FB2Base(BookFile):
         for node in res:
             add_author_from_node(node)
 
-    def __detect_language(self, tree):
+    def __detect_language(self, tree: etree._ElementTree) -> None:
         res = tree.xpath(
             "/fb:FictionBook/fb:description/fb:title-info/fb:lang",
             namespaces=self.__namespaces,
         )
         if len(res) == 0:
-            use_namespaces = False
+            # use_namespaces = False
             res = tree.xpath("/FictionBook/description/title-info/lang")
         if len(res) > 0:
             self.language_code = res[0].text
 
-    def __detect_tags(self, tree):
+    def __detect_tags(self, tree: etree._ElementTree) -> None:
         res = tree.xpath(
             "/fb:FictionBook/fb:description/fb:title-info/fb:genre",
             namespaces=self.__namespaces,
         )
         if len(res) == 0:
-            use_namespaces = False
+            # use_namespaces = False
             res = tree.xpath("/FictionBook/description/title-info/genre")
         for node in res:
             self.__add_tag__(node.text)
 
-    def __detect_series_info(self, tree):
+    def __detect_series_info(self, tree: _ElementTree) -> None:
         res = tree.xpath(
             "/fb:FictionBook/fb:description/fb:title-info/fb:sequence",
             namespaces=self.__namespaces,
         )
         if len(res) == 0:
-            use_namespaces = False
+            # use_namespaces = False
             res = tree.xpath("/FictionBook/description/title-info/sequence")
         if len(res) > 0:
-            title = BookFile.__normalise_string__(res[0].get("name"))
-            index = BookFile.__normalise_string__(res[0].get("number"))
+            title: str = BookFile.__normalise_string__(res[0].get("name"))
+            index: str = BookFile.__normalise_string__(res[0].get("number"))
 
             if title:
-                self.series_info = {"title": title, "index": index}
+                self.series_info: dict[str, str] = {"title": title, "index": index}
 
-    def __detect_description(self, tree):
+    def __detect_description(self, tree: etree._ElementTree) -> bytes | None:
         res = tree.xpath(
             "/fb:FictionBook/fb:description/fb:title-info/fb:annotation",
             namespaces=self.__namespaces,
@@ -213,10 +219,10 @@ class FB2Base(BookFile):
 
 
 class FB2(FB2Base):
-    def __init__(self, file, original_filename):
+    def __init__(self, file: BytesIO, original_filename: str):
         FB2Base.__init__(self, file, original_filename, Mimetype.FB2)
 
-    def __create_tree__(self):
+    def __create_tree__(self) -> etree._ElementTree:
         try:
             self.file.seek(0, 0)
             return etree.parse(self.file)
@@ -228,7 +234,7 @@ class FB2(FB2Base):
 
 
 class FB2Zip(FB2Base):
-    def __init__(self, file, original_filename):
+    def __init__(self, file: BytesIO, original_filename: str):
         with zipfile.ZipFile(file, "r") as test:
             if test.testzip():
                 # некорректный zip файл
@@ -254,7 +260,7 @@ class FB2Zip(FB2Base):
 
         FB2Base.__init__(self, file, original_filename, Mimetype.FB2_ZIP)
 
-    def __create_tree__(self):
+    def __create_tree__(self) -> etree._ElementTree:
         book = BytesIO()
         with zipfile.ZipFile(self.file, "r") as zip:
             bookname = list_zip_file_infos(zip)[0]
@@ -264,23 +270,69 @@ class FB2Zip(FB2Base):
         book.seek(0, 0)
         try:
             return etree.parse(book)
-        except:
-            raise FB2StructureException(
-                "'%s' is not a valid XML" % self.__infos[0].filename
-            )
+        except Exception:
+            raise FB2StructureException("'%s' is not a valid XML" % bookname)
 
-    def __exit__(self, kind, value, traceback):
-        self.__zip_file.__exit__(kind, value, traceback)
-        pass
+    # def __exit__(self, kind, value, traceback):
+    #     self.__zip_file.__exit__(kind, value, traceback)
+    #     pass
 
 
-class FB2Base_new(object):
-    def __init__(self, file, original_filename, mimetype):
-        self.__namespaces = {"fb": Namespace.FICTION_BOOK20, "xlink": Namespace.XLINK}
+class EbookMetaParser(ABC):
+    """Абстрактный класс парсера для электронной книги"""
+
+    def __init__(self, file: BytesIO):
+        self._file = file
 
     @abstractmethod
-    def __create_tree__(self, file):
-        return None
+    def parse_book(self) -> None: ...
+
+    @abstractmethod
+    def extract_cover(self) -> BytesIO | None: ...
+
+    @property
+    def title(self) -> str:
+        return self._title
+
+    @property
+    def description(self) -> str | None:
+        return self._description
+
+    @property
+    def authors(self) -> dict[str, str]:
+        return self._authors
+
+    @property
+    def tags(self) -> list[str]:
+        return self._tags
+
+    @property
+    def series_info(self) -> dict[str, str]:
+        return self._series_info
+
+    @property
+    def language_code(self) -> str:
+        return self._language_code
+
+    @property
+    def issues(self) -> list[str]:
+        return self._issues
+
+    @property
+    def docdate(self):
+        return self._docdate
+
+
+class FB2Base_new(ABC):
+    def __init__(self, file: BytesIO, original_filename: str, mimetype: str):
+        self.__namespaces: dict[str, str] = {
+            "fb": Namespace.FICTION_BOOK20,
+            "xlink": Namespace.XLINK,
+        }
+        self._mimetype: str = ""
+
+    @abstractmethod
+    def __create_tree__(self, file: BytesIO) -> etree._ElementTree: ...
 
     def parse_book_data(self, file, original_filename, mimetype) -> BookFile:
         bookfile = BookFile(file, original_filename, mimetype)
@@ -297,9 +349,9 @@ class FB2Base_new(object):
         bookfile.description = self.__detect_description(tree)
         return bookfile
 
-    def extract_cover_internal(self, working_dir):
+    def extract_cover_internal(self, file, working_dir):
         try:
-            tree = self.__create_tree__()
+            tree = self.__create_tree__(file)
             res = tree.xpath(
                 "/fb:FictionBook/fb:description/fb:title-info/fb:coverpage/fb:image",
                 namespaces=self.__namespaces,
@@ -313,12 +365,12 @@ class FB2Base_new(object):
             with open(os.path.join(working_dir, "cover.jpeg"), "wb") as cover_file:
                 cover_file.write(content)
             return ("cover.jpeg", False)
-        except:
+        except Exception:
             return (None, False)
 
-    def extract_cover_memory(self):
+    def extract_cover_memory(self, file):
         try:
-            tree = self.__create_tree__()
+            tree = self.__create_tree__(file)
             res = tree.xpath(
                 "/fb:FictionBook/fb:description/fb:title-info/fb:coverpage/fb:image",
                 namespaces=self.__namespaces,
@@ -417,7 +469,7 @@ class FB2Base_new(object):
             namespaces=self.__namespaces,
         )
         if len(res) == 0:
-            use_namespaces = False
+            # use_namespaces = False
             res = tree.xpath("/FictionBook/description/title-info/lang")
         if len(res) > 0:
             # self.language_code = res[0].text
@@ -430,7 +482,7 @@ class FB2Base_new(object):
             namespaces=self.__namespaces,
         )
         if len(res) == 0:
-            use_namespaces = False
+            # use_namespaces = False
             res = tree.xpath("/FictionBook/description/title-info/genre")
         for node in res:
             # self.__add_tag__(node.text)
@@ -442,7 +494,7 @@ class FB2Base_new(object):
             namespaces=self.__namespaces,
         )
         if len(res) == 0:
-            use_namespaces = False
+            # use_namespaces = False
             res = tree.xpath("/FictionBook/description/title-info/sequence")
         if len(res) > 0:
             title = BookFile.__normalise_string__(res[0].get("name"))
@@ -482,7 +534,7 @@ class FB2_new(FB2Base_new):
 
 
 class FB2Zip_new(FB2Base_new):
-    def __init__(self, file, original_filename):
+    def __init__(self, file: BytesIO, original_filename: str):
         with zipfile.ZipFile(file, "r") as test:
             if test.testzip():
                 # некорректный zip файл
@@ -493,7 +545,7 @@ class FB2Zip_new(FB2Base_new):
 
         FB2Base_new.__init__(self, file, original_filename, Mimetype.FB2_ZIP)
 
-    def __create_tree__(self, file):
+    def __create_tree__(self, file: BytesIO) -> _ElementTree:
         book = BytesIO()
         with zipfile.ZipFile(file, "r") as zip:
             bookname = list_zip_file_infos(zip)[0]
@@ -504,12 +556,12 @@ class FB2Zip_new(FB2Base_new):
         book.seek(0, 0)
         try:
             return etree.parse(book)
-        except:
+        except Exception:
             raise FB2StructureException(
                 # "'%s' is not a valid XML" % self.__infos[0].filename
                 "'%s' is not a valid XML" % bookname
             )
 
-    def __exit__(self, kind, value, traceback):
-        self.__zip_file.__exit__(kind, value, traceback)
-        pass
+    # def __exit__(self, kind, value, traceback):
+    #     self.__zip_file.__exit__(kind, value, traceback)
+    #     pass
