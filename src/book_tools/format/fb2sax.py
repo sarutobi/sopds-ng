@@ -60,19 +60,21 @@ class fb2tag:
 
     def gettext(self, divider="\n"):
         result = ""
-        if len(self.values) > 0:
+        # if len(self.values) > 0:
+        if self.values:
             result = divider.join(self.values)
         return result
 
     def getattr(self, attr):
-        if len(self.attrs) > 0:
+        # if len(self.attrs) > 0:
+        if self.attrs:
             val = self.attrs.get(attr)
         else:
             val = None
         return val
 
     def getattrs(self, attr):
-        if len(self.attrss) > 0:
+        if self.attrss:
             val = [a.get(attr) for a in self.attrss if attr in a]
         else:
             val = []

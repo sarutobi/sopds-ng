@@ -149,7 +149,7 @@ class FB2Base(BookFile):
             else:
                 subnode = node.find(name)
             text: str = subnode.text if subnode is not None else ""
-            return text or ""
+            return text
 
         def add_author_from_node(node):
             first_name = subnode_text(node, "first-name")
