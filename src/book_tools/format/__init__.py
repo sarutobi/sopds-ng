@@ -3,6 +3,7 @@ import os
 import zipfile
 from xml import sax
 from io import BytesIO
+from contextlib import suppress
 
 from book_tools.format.mimetype import Mimetype
 
@@ -31,7 +32,8 @@ class mime_detector:
             return Mimetype.ZIP
         elif fmt.lower() == "pdf":
             return Mimetype.PDF
-        elif fmt.lower() == "doc" or fmt.lower() == "docx":
+        # elif fmt.lower() == "doc" or fmt.lower() == "docx":
+        elif fmt.lower() in ("doc", "docx"):
             return Mimetype.MSWORD
         elif fmt.lower() == "djvu":
             return Mimetype.DJVU
@@ -39,8 +41,8 @@ class mime_detector:
             return Mimetype.TEXT
         elif fmt.lower() == "rtf":
             return Mimetype.RTF
-        else:
-            return Mimetype.OCTET_STREAM
+        # else:
+        return Mimetype.OCTET_STREAM
 
     @staticmethod
     def file(filename):
@@ -52,7 +54,8 @@ def detect_mime(file, original_filename):
     FB2_ROOT = "FictionBook"
     mime = mime_detector.file(original_filename)
 
-    try:
+    # try:
+    with suppress(Exception):
         if mime == Mimetype.XML:
             if FB2_ROOT == __xml_root_tag(file):
                 return Mimetype.FB2
@@ -63,22 +66,22 @@ def detect_mime(file, original_filename):
                     if len(infolist) == 1:
                         if FB2_ROOT == __xml_root_tag(zip_file.open(infolist[0])):
                             return Mimetype.FB2_ZIP
-                    try:
+                    with suppress(Exception):
                         with zip_file.open("mimetype") as mimetype_file:
                             if (
                                 mimetype_file.read(30).decode().rstrip("\n\r")
                                 == Mimetype.EPUB
                             ):
                                 return Mimetype.EPUB
-                    except Exception:
-                        pass
+                    # except Exception:
+                    #     pass
         elif mime == Mimetype.OCTET_STREAM:
             mobiflag = file.read(68)
             mobiflag = mobiflag[60:]
             if mobiflag.decode() == "BOOKMOBI":
                 return Mimetype.MOBI
-    except Exception:
-        pass
+    # except Exception:
+    #     pass
 
     return mime
 
@@ -100,13 +103,13 @@ def create_bookfile(file, original_filename):
         return FB2Zip(file, original_filename)
     elif mimetype == Mimetype.MOBI:
         return Mobipocket(file, original_filename)
-    elif mimetype in [
+    elif mimetype in (
         Mimetype.TEXT,
         Mimetype.PDF,
         Mimetype.MSWORD,
         Mimetype.RTF,
         Mimetype.DJVU,
-    ]:
+    ):
         return Dummy(file, original_filename, mimetype)
     else:
         raise Exception("File type '%s' is not supported, sorry" % mimetype)
