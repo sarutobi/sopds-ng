@@ -330,7 +330,27 @@ class EbookMetaParser(ABC):
 
 
 class FB2Base_new(ABC):
+    """Базовый класс для извлечения метаданных из книг в формате FB2 с помощью lxml"""
+
     def __init__(self, file: BytesIO, original_filename: str, mimetype: str):
+        """
+        Инициализация объекта. Автоматически устанавливает параметры
+            __namespaces
+            _mimetype
+
+        Параметры инициализации
+        -----------------------
+            file: BytesIO
+                Cодержимое файла книги для парсинга
+
+            original_filename: str
+                Наименовние оригинального файла книги. Если файл размещен в ФС, то это наименование файла в ФС.
+                Если файл книги находится в zip архиве, то это наименование файла внутри архива.
+
+            mimetype: str
+                Тип данных MIME для книги. Может быть либо Mimetype.FB2 либо Mimetype.FB2_ZIP
+        """
+
         self.__namespaces: dict[str, str] = {
             "fb": Namespace.FICTION_BOOK20,
             "xlink": Namespace.XLINK,
