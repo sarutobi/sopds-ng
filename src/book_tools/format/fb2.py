@@ -10,9 +10,12 @@ from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.util import list_zip_file_infos
 from lxml.etree import _ElementTree
+from dataclasses import dataclass
 
 
 class FB2StructureException(Exception):
+    """Описание исключения при извлечении метаданных из книги в формате fb2"""
+
     # TODO Удалить дублирование FB2StructureException
     def __init__(self, error: str | Exception):
         Exception.__init__(self, "fb2 verification failed: %s" % error)
@@ -20,10 +23,13 @@ class FB2StructureException(Exception):
             print(traceback.print_exc())
 
 
+@dataclass
 class Namespace(object):
-    FICTION_BOOK20 = "http://www.gribuser.ru/xml/fictionbook/2.0"
-    FICTION_BOOK21 = "http://www.gribuser.ru/xml/fictionbook/2.1"
-    XLINK = "http://www.w3.org/1999/xlink"
+    """Возможные пространства имен в xml файле fb2"""
+
+    FICTION_BOOK20: str = "http://www.gribuser.ru/xml/fictionbook/2.0"
+    FICTION_BOOK21: str = "http://www.gribuser.ru/xml/fictionbook/2.1"
+    XLINK: str = "http://www.w3.org/1999/xlink"
 
 
 class FB2Base(BookFile):
@@ -350,6 +356,7 @@ class FB2Base_new(ABC):
         return bookfile
 
     def extract_cover_internal(self, file, working_dir):
+        # TODO сохранение обложки в отдельный файл это не функция парсера
         try:
             tree = self.__create_tree__(file)
             res = tree.xpath(
@@ -529,11 +536,9 @@ class FB2_new(FB2Base_new):
         except Exception as err:
             raise FB2StructureException("the file is not a valid XML (%s)" % err)
 
-    def __exit__(self, kind, value, traceback):
-        pass
-
 
 class FB2Zip_new(FB2Base_new):
+    # TODO Необходимость отдельного класса парсера для fb2 в zip архиве
     def __init__(self, file: BytesIO, original_filename: str):
         with zipfile.ZipFile(file, "r") as test:
             if test.testzip():
