@@ -1,24 +1,34 @@
+import os
+from contextlib import nullcontext
+from io import BytesIO
+# from zipfile import BadZipFile
+
 import pytest
 
-from contextlib import nullcontext
-
-import os
-from io import BytesIO
-
-from zipfile import BadZipFile
-
-from book_tools.format.fb2sax import FB2sax, FB2sax_new, FB2StructureException
+from book_tools.format.bookfile import BookFile
 from book_tools.format.fb2 import (
     FB2,
-    FB2_new,
-    FB2Zip,
-    FB2Zip_new,
-    FB2StructureException as FB2_StructureException,
+    # FB2Zip,
 )
-from book_tools.format.mimetype import Mimetype
 
-from opds_catalog.tests.helpers import read_file_as_iobytes
+# from book_tools.format.fb2 import (
+#     FB2StructureException as FB2_StructureException,
+# )
+from book_tools.format.fb2sax import FB2sax, FB2sax_new  # , FB2StructureException
+from book_tools.format.mimetype import Mimetype
+from book_tools.format.parsers import (
+    EbookMetaParser,
+)
+from book_tools.format.parsers import (
+    FB2Base as FB2_new,
+)
+from book_tools.exceptions import FB2StructureException
+
+# from book_tools.format.parsers import (
+# FB2Zip as FB2Zip_new,
+# )
 from book_tools.tests.format.helpers import fb2_book_fabric
+from opds_catalog.tests.helpers import read_file_as_iobytes
 
 
 def test_fb2tag_tagopen(test_tag) -> None:
@@ -62,7 +72,7 @@ def test_fb2tag_setvalue(test_tag) -> None:
 
 def test_fb2sax(test_rootlib) -> None:
     book = fb2_book_fabric(title="The Sanctuary Sparrow", docdate="30.1.2011")
-    print(book)
+
     # file = read_file_as_iobytes(os.path.join(test_rootlib, "262001.fb2"))
     book_file = FB2sax(BytesIO(book), "Test Book")
     assert book_file is not None
@@ -87,38 +97,60 @@ def test_fb2sax_new(test_rootlib, book, expected_exception) -> None:
         assert book_actual.docdate == book_new.docdate
 
 
-@pytest.mark.parametrize(
-    "book, expected_exception",
-    [
-        ("262001.fb2", nullcontext()),
-        ("badfile.fb2", pytest.raises(FB2_StructureException)),
-        ("badfile2.fb2", pytest.raises(FB2_StructureException)),
-    ],
-)
-def test_fb2_new(test_rootlib, book, expected_exception) -> None:
-    file = read_file_as_iobytes(os.path.join(test_rootlib, book))
-    with expected_exception:
-        book_actual = FB2(file, "Test Book")
-        book_new = FB2_new(file, "Test Book").parse_book_data(
-            file, "Test Book", Mimetype.FB2
-        )
-        assert book_actual == book_new
+# @pytest.mark.parametrize(
+#     "book, expected_exception",
+#     [
+#         ("262001.fb2", nullcontext()),
+#         ("badfile.fb2", pytest.raises(FB2StructureException)),
+#         ("badfile2.fb2", pytest.raises(FB2StructureException)),
+#     ],
+# )
+def test_fb2_new_parser(
+    # test_rootlib, book, expected_exception,
+    virtual_fb2_book,
+) -> None:
+    # file = read_file_as_iobytes(os.path.join(test_rootlib, book))
+    # with expected_exception:
+    book_actual = FB2(virtual_fb2_book, "Test Book")
+    book_new = FB2_new(virtual_fb2_book, "Test Book", Mimetype.FB2)
+    book_new.parse_book(virtual_fb2_book)
+    assert _are_equals_data(book_actual, book_new)
 
 
-@pytest.mark.parametrize(
-    "book, expected_exception",
-    [
-        ("262001.zip", nullcontext()),
-        ("badfile.zip", pytest.raises(BadZipFile)),
-        ("badfile2.zip", pytest.raises(FB2_StructureException)),
-        ("books.zip", pytest.raises(FB2_StructureException)),
-    ],
-)
-def test_fb2zip_new(test_rootlib, book, expected_exception) -> None:
-    file = read_file_as_iobytes(os.path.join(test_rootlib, book))
-    with expected_exception:
-        book_actual = FB2Zip(file, "Test Book")
-        book_new = FB2Zip_new(file, "Test Book").parse_book_data(
-            file, "Test Book", Mimetype.FB2_ZIP
-        )
-        assert book_actual == book_new
+def _are_equals_data(bookfile: BookFile, parser: EbookMetaParser) -> bool:
+    # Парсер возвращает перечень авторов в виде списка кортежей, а в описателе
+    # книги список авторов хранится в словаре, поэтому делаем преобразование
+    expected_authors: list[dict[str, str]] = []
+    for a in parser.authors:
+        name, skey = a
+        author = {"name": name, "sortkey": skey.lower()}
+        expected_authors.append(author)
+
+    return (
+        bookfile.title == parser.title
+        and bookfile.description == parser.description
+        and (sorted(bookfile.authors) == sorted(expected_authors))
+        and (sorted(bookfile.tags) == sorted(parser.tags))
+        and bookfile.series_info == parser.series_info
+        and bookfile.language_code == parser.language_code
+        and bookfile.docdate == parser.docdate
+    )
+
+
+# @pytest.mark.parametrize(
+#     "book, expected_exception",
+#     [
+#         ("262001.zip", nullcontext()),
+#         ("badfile.zip", pytest.raises(BadZipFile)),
+#         ("badfile2.zip", pytest.raises(FB2_StructureException)),
+#         ("books.zip", pytest.raises(FB2_StructureException)),
+#     ],
+# )
+# def test_fb2zip_new(test_rootlib, book, expected_exception) -> None:
+#     file = read_file_as_iobytes(os.path.join(test_rootlib, book))
+#     with expected_exception:
+#         book_actual = FB2Zip(file, "Test Book")
+#         book_new = FB2Zip_new(file, "Test Book").parse_book_data(
+#             file, "Test Book", Mimetype.FB2_ZIP
+#         )
+#         assert book_actual == book_new

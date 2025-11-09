@@ -76,7 +76,6 @@ class DownloadsTestCase(TestCase):
         response = self.c.get(reverse("opds:download", args=(5, 1)))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Length"], "219508")
-        print(response)
 
 
 class TestGetFileName(TestCase, BookFactoryMixin):

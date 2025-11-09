@@ -1,11 +1,11 @@
 import xml.parsers.expat
-import traceback
 import base64
 import io
 
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.util import strip_symbols
+from book_tools.exceptions import FB2StructureException
 
 
 class fb2tag:
@@ -253,13 +253,6 @@ class fb2parser:
         except Exception as err:
             self.parse_errormsg = err
             self.parse_error = 1
-
-
-class FB2StructureException(Exception):
-    def __init__(self, error):
-        Exception.__init__(self, "fb2 verification failed: %s" % error)
-        if isinstance(error, Exception):
-            print(traceback.print_exc())
 
 
 class FB2sax(BookFile):

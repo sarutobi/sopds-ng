@@ -36,6 +36,8 @@ class FictionBook(object):
         self.docdate: str = None
         self.image: FictionBook._Image = None
         self.lang: str = None
+        self.series_name: str = None
+        self.series_no: str = None
 
     def add_author(
         self, fname: str | None = None, mname: str | None = None, lname: str = ""
@@ -52,22 +54,23 @@ class FictionBook(object):
         title_info = etree.SubElement(description, "title-info", nsmap=nsmap)
         document_info = etree.SubElement(description, "document-info", nsmap=nsmap)
 
-        for g in self.genres:
-            ge = etree.SubElement(
-                title_info,
-                "genre",
-                nsmap=nsmap,
-            )
-            ge.text = g
-
-        for a in self.authors:
-            ae = etree.SubElement(title_info, "author", nsmap=nsmap)
-            fn = etree.SubElement(ae, "first-name", nsmap=nsmap)
-            fn.text = a.first_name
-            mn = etree.SubElement(ae, "middle-name", nsmap=nsmap)
-            mn.text = a.middle_name
-            ln = etree.SubElement(ae, "last-name", nsmap=nsmap)
-            ln.text = a.last_name
+        if self.genres:
+            for g in self.genres:
+                ge = etree.SubElement(
+                    title_info,
+                    "genre",
+                    nsmap=nsmap,
+                )
+                ge.text = g
+        if self.authors:
+            for a in self.authors:
+                ae = etree.SubElement(title_info, "author", nsmap=nsmap)
+                fn = etree.SubElement(ae, "first-name", nsmap=nsmap)
+                fn.text = a.first_name
+                mn = etree.SubElement(ae, "middle-name", nsmap=nsmap)
+                mn.text = a.middle_name
+                ln = etree.SubElement(ae, "last-name", nsmap=nsmap)
+                ln.text = a.last_name
 
         title = etree.SubElement(title_info, "book-title", nsmap=nsmap)
         title.text = self.title
@@ -83,7 +86,14 @@ class FictionBook(object):
                 document_info, "date", value=self.docdate, nsmap=nsmap
             )
             docdate.text = self.docdate
-
+        if self.series_name is not None and self.series_no is not None:
+            etree.SubElement(
+                title_info,
+                "sequence",
+                name=self.series_name,
+                number=str(self.series_no),
+                nsmap=nsmap,
+            )
         return etree.tostring(root, xml_declaration=True)
 
 
@@ -96,9 +106,10 @@ def fb2_book_fabric(
     genres=["genre1", "genre2"],
     lang="en",
     docdate="01.01.1970",
-    series_name=None,
-    series_no=None,
+    series_name="test",
+    series_no=0,
     annotation="<p>Somedescription</p>",
+    correct=True,
 ) -> bytes:
     book = FictionBook()
     book.title = title
@@ -106,4 +117,10 @@ def fb2_book_fabric(
     book.genres = genres
     book.lang = lang
     book.docdate = docdate
-    return book.build(namespace)
+    book.annotation = annotation
+    book.series_name = series_name
+    book.series_no = series_no
+    data = book.build(namespace)
+    if not correct:
+        data = data.replace(b"genre>", b"genre", 1)
+    return data
