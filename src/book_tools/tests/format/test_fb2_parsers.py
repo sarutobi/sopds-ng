@@ -97,23 +97,9 @@ def test_fb2sax_new(test_rootlib, book, expected_exception) -> None:
         assert book_actual.docdate == book_new.docdate
 
 
-# @pytest.mark.parametrize(
-#     "book, expected_exception",
-#     [
-#         ("262001.fb2", nullcontext()),
-#         ("badfile.fb2", pytest.raises(FB2StructureException)),
-#         ("badfile2.fb2", pytest.raises(FB2StructureException)),
-#     ],
-# )
-def test_fb2_new_parser(
-    # test_rootlib, book, expected_exception,
-    virtual_fb2_book,
-) -> None:
-    # file = read_file_as_iobytes(os.path.join(test_rootlib, book))
-    # with expected_exception:
+def test_fb2_new_parser(virtual_fb2_book) -> None:
     book_actual = FB2(virtual_fb2_book, "Test Book")
     book_new = FB2_new(virtual_fb2_book, "Test Book", Mimetype.FB2)
-    book_new.parse_book(virtual_fb2_book)
     assert _are_equals_data(book_actual, book_new)
 
 
