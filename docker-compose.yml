@@ -14,8 +14,10 @@ services:
      - ${SOPDS_BOOK_PATH}:/books:ro
      - ./.env:/app/src/.env
      - ./bootstrap.sh:/app/src/bootstrap.sh
+     - ./pyproject.toml:/app/pyproject.toml
     environment:
       DJANGO_SETTINGS_MODULE: "${DJANGO_SETTINGS_MODULE:-sopds.settings.prod}"
+      PYTHONDONTWRITEBYTECODE: "${PYTHONDONTWRITEBYTECODE:-1}"
  #     DEBUG: ${DEBUG}
  #     SECRET_KEY: ${SECRET_KEY}
     depends_on:

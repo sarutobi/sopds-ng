@@ -113,7 +113,7 @@ EOF
 # PYTHONUNBUFFERED — отключает буферизацию для потоков stdout и stderr.
 # https://docs.python.org/3/using/cmdline.html#environment-variables
 ENV PATH="/$project_name/bin":$PATH \
-  PYTHONOPTIMIZE=1 \
+  PYTHONOPTIMIZE=0 \
   PYTHONFAULTHANDLER=1 \
   PYTHONUNBUFFERED=1
 
