@@ -1,12 +1,13 @@
 from .helpers import FictionBook, fb2_book_fabric
 from book_tools.format.fb2 import FB2
-import pytest
+
+# import pytest
 import io
 
 
-@pytest.fixture
-def fb_generator() -> FictionBook:
-    return FictionBook()
+# @pytest.fixture
+# def fb_generator() -> FictionBook:
+#     return FictionBook()
 
 
 def test_fictionbook_class() -> None:
@@ -42,7 +43,7 @@ def test_book_fabric() -> None:
     book = fb2_book_fabric()
     result = FB2(io.BytesIO(book), "test")
     assert result is not None
-    print(book)
+
     assert result.title == "Generated Book"
     assert len(result.tags) == 2
     assert result.language_code == "en"
