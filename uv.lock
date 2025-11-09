@@ -483,6 +483,15 @@ wheels = [
 ]
 
 [[package]]
+name = "py-cpuinfo"
+version = "9.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/37/a8/d832f7293ebb21690860d2e01d8115e5ff6f2ae8bbdc953f0eb0fa4bd2c7/py-cpuinfo-9.0.0.tar.gz", hash = "sha256:3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690", size = 104716, upload-time = "2022-10-25T20:38:06.303Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/a9/023730ba63db1e494a271cb018dcd361bd2c917ba7004c3e49d5daf795a2/py_cpuinfo-9.0.0-py3-none-any.whl", hash = "sha256:859625bc251f64e21f077d099d4162689c762b5d6a4c3c97553d56241c9674d5", size = 22335, upload-time = "2022-10-25T20:38:27.636Z" },
+]
+
+[[package]]
 name = "pygments"
 version = "2.19.2"
 source = { registry = "https://pypi.org/simple" }
@@ -514,6 +523,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a3/5c/00a0e072241553e1a7496d638deababa67c5058571567b92a7eaa258397c/pytest-8.4.2.tar.gz", hash = "sha256:86c0d0b93306b961d58d62a4db4879f27fe25513d4b969df351abdddb3c30e01", size = 1519618, upload-time = "2025-09-04T14:34:22.711Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a8/a4/20da314d277121d6534b3a980b29035dcd51e6744bd79075a6ce8fa4eb8d/pytest-8.4.2-py3-none-any.whl", hash = "sha256:872f880de3fc3a5bdc88a11b39c9710c3497a547cfa9320bc3c5e62fbf272e79", size = 365750, upload-time = "2025-09-04T14:34:20.226Z" },
+]
+
+[[package]]
+name = "pytest-benchmark"
+version = "5.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "py-cpuinfo" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d1/ff/82fd8c413eae2f9a3abb0eb8a13d73f2223bfae7b84cf318a3d9c278965a/pytest_benchmark-5.2.2.tar.gz", hash = "sha256:af6717b86a29a9fcd79eda8745883eff3a7fdd626326a6639db0d6cf4d334a89", size = 339608, upload-time = "2025-11-07T13:07:11.555Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/34/b0/56b035d19bf0848d3ef0ac428f2852aebed027e33fc0cb389686d3a91a12/pytest_benchmark-5.2.2-py3-none-any.whl", hash = "sha256:00a57d6b5c04e09052890bf04a0417192dd74427c7386a65e3db0a375753dc77", size = 44913, upload-time = "2025-11-07T13:07:09.435Z" },
 ]
 
 [[package]]
@@ -600,6 +622,7 @@ dev = [
     { name = "lxml-stubs" },
     { name = "mypy" },
     { name = "pytest" },
+    { name = "pytest-benchmark" },
     { name = "pytest-cov" },
     { name = "pytest-django" },
     { name = "refurb" },
@@ -627,6 +650,7 @@ dev = [
     { name = "lxml-stubs", specifier = ">=0.5.1" },
     { name = "mypy", specifier = ">=1.18.2" },
     { name = "pytest", specifier = ">=8.4.1" },
+    { name = "pytest-benchmark", specifier = ">=5.2.2" },
     { name = "pytest-cov", specifier = "==7.0" },
     { name = "pytest-django", specifier = ">=4.11.1" },
     { name = "refurb", specifier = ">=2.2.0" },
