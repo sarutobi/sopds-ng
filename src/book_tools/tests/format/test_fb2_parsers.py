@@ -14,7 +14,8 @@ from book_tools.format.fb2 import (
 # from book_tools.format.fb2 import (
 #     FB2StructureException as FB2_StructureException,
 # )
-from book_tools.format.fb2sax import FB2sax, FB2sax_new  # , FB2StructureException
+from book_tools.format.fb2sax import FB2sax
+from book_tools.format.parsers import FB2sax as FB2sax_new
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import (
     EbookMetaParser,
@@ -80,21 +81,10 @@ def test_fb2sax(test_rootlib) -> None:
     assert book_file.title == "The Sanctuary Sparrow"
 
 
-@pytest.mark.parametrize(
-    "book, expected_exception",
-    [
-        ("262001.fb2", nullcontext()),
-        ("badfile.fb2", pytest.raises(FB2StructureException)),
-        ("badfile2.fb2", pytest.raises(FB2StructureException)),
-    ],
-)
-def test_fb2sax_new(test_rootlib, book, expected_exception) -> None:
-    file = read_file_as_iobytes(os.path.join(test_rootlib, book))
-    with expected_exception:
-        book_actual = FB2sax(file, "Test Book")
-        book_new = FB2sax_new(file, "Test Book").parse_book_data(file, "Test Book")
-        assert book_actual == book_new
-        assert book_actual.docdate == book_new.docdate
+def test_fb2sax_new_parser(virtual_fb2_book) -> None:
+    book_actual = FB2sax(virtual_fb2_book, "Test Book")
+    book_new = FB2sax_new(virtual_fb2_book, "Test Book")
+    assert _are_equals_data(book_actual, book_new)
 
 
 def test_fb2_new_parser(virtual_fb2_book) -> None:

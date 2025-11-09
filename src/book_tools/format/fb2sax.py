@@ -1,6 +1,5 @@
 import xml.parsers.expat
 import base64
-import io
 
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
@@ -338,118 +337,6 @@ class FB2sax(BookFile):
         if len(self.fb2parser.annotation.getvalue()) > 0:
             res = "\n".join(self.fb2parser.annotation.getvalue())
         if len(res) > 0:
-            return res
-        return None
-
-    def __exit__(self, kind, value, traceback):
-        pass
-
-
-class FB2sax_new(object):
-    def __init__(self, file, original_filename):
-        # self.bookfile = BookFile(file, original_filename, Mimetype.FB2)
-        # BookFile.__init__(self, file, original_filename, Mimetype.FB2)
-        self.fb2parser = fb2parser(1)
-        # self.bookfile.file.seek(0, 0)
-        # self.fb2parser.parse(self.bookfile.file)
-        # if self.fb2parser.parse_error != 0:
-        # raise FB2StructureException(
-        # "FB2sax parse error (%s)" % self.fb2parser.parse_errormsg
-        # )
-        # self.__detect_title()
-        # self.__detect_authors()
-        # self.__detect_tags()
-        # self.__detect_series_info()
-        # self.__detect_language()
-        # self.__detect_docdate()
-        # self.description = self.__detect_description()
-
-    def parse_book_data(self, file: io.BytesIO, original_filename: str) -> BookFile:
-        bookfile = BookFile(file, original_filename, Mimetype.FB2)
-        file.seek(0, 0)
-        self.fb2parser.parse(file)
-        if self.fb2parser.parse_error != 0:
-            raise FB2StructureException(
-                "FB2sax parse error (%s)" % self.fb2parser.parse_errormsg
-            )
-
-        bookfile.__set_title__(self.__detect_title())
-        for author, sortkey in self.__detect_authors():
-            bookfile.__add_author__(author, sortkey)
-        for tag in self.__detect_tags():
-            bookfile.__add_tag__(tag)
-        bookfile.series_info = self.__detect_series_info()
-        bookfile.language_code = self.__detect_language()
-        bookfile.__set_docdate__(self.__detect_docdate())
-        bookfile.description = self.__detect_description()
-        return bookfile
-
-    def extract_cover_memory(self):
-        imgfb2parser = fb2parser(1)
-        self.file.seek(0, 0)
-        imgfb2parser.parse(self.file)
-        if len(imgfb2parser.cover_image.cover_data) > 0:
-            try:
-                s = imgfb2parser.cover_image.cover_data
-                content = base64.b64decode(s)
-                return content
-            except Exception:
-                return None
-        return None
-
-    def __detect_title(self):
-        res = ""
-        if len(self.fb2parser.book_title.getvalue()) > 0:
-            res = self.fb2parser.book_title.getvalue()[0].strip(strip_symbols)
-        # if len(res) > 0:
-        # self.bookfile.__set_title__(res)
-        return res
-
-    def __detect_docdate(self):
-        res = self.fb2parser.docdate.getattr("value") or ""
-        if len(res) == 0 and len(self.fb2parser.docdate.getvalue()) > 0:
-            res = self.fb2parser.docdate.getvalue()[0].strip()
-        # if len(res) > 0:
-        #     self.bookfile.__set_docdate__(res)
-        return res
-
-    def __detect_authors(self):
-        for idx, author in enumerate(self.fb2parser.author_last.getvalue()):
-            last_name = author.strip(strip_symbols)
-            first_name = self.fb2parser.author_first.getvalue()[idx].strip(
-                strip_symbols
-            )
-            # self.bookfile.__add_author__(" ".join([first_name, last_name]), last_name)
-            yield (" ".join([first_name, last_name]), last_name)
-
-    def __detect_language(self):
-        res = ""
-        if len(self.fb2parser.lang.getvalue()) > 0:
-            res = self.fb2parser.lang.getvalue()[0].strip(strip_symbols)
-        # if len(res) > 0:
-        #     self.language_code = res
-        return res
-
-    def __detect_tags(self):
-        for genre in self.fb2parser.genre.getvalue():
-            yield genre.lower().strip(strip_symbols)
-
-    def __detect_series_info(self):
-        if len(self.fb2parser.series.attrss) > 0:
-            s = self.fb2parser.series.attrss[0]
-            ser_name = s.get("name")
-            if ser_name:
-                title = ser_name.strip(strip_symbols)
-                index = s.get("number", "0").strip(strip_symbols)
-
-                return {"title": title, "index": index}
-        return None
-
-    def __detect_description(self):
-        res = ""
-        if len(self.fb2parser.annotation.getvalue()) > 0:
-            res = "\n".join(self.fb2parser.annotation.getvalue())
-            # if len(res) > 0:
             return res
         return None
 
