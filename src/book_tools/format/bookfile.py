@@ -91,6 +91,9 @@ class BookFile(object):
         if not (isinstance(other, BookFile)):
             return NotImplemented
 
+        # print(self.authors)
+        # print(other.authors)
+
         return (
             self.file.getvalue() == other.file.getvalue()
             and self.mimetype == other.mimetype
@@ -101,7 +104,7 @@ class BookFile(object):
             and (sorted(self.tags) == sorted(other.tags))
             and self.series_info == other.series_info
             and self.language_code == other.language_code
-            and (sorted(self.issues) == sorted(other.issues))
+            # and (sorted(self.issues) == sorted(other.issues))
             and self.docdate == other.docdate
         )
 
