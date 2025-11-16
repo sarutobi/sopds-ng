@@ -45,6 +45,7 @@ class opdsScanner:
         self.books_in_archives = 0
 
     def init_parser(self):
+        # FIXME: Указан фиксированный парсер
         self.fb2parser = fb2parse.fb2parser(False)
 
     def log_options(self):
@@ -195,6 +196,7 @@ class opdsScanner:
             self.logger.info("Start process INPX file = " + file)
             opdsdb.addcattree(rel_file, opdsdb.CAT_INPX, inpx_size)
             inpx = inpx_parser.Inpx(file, self.inpx_callback, self.inpskip_callback)
+            # FIXME: Неизвестные атрибуты inpx_parser
             inpx.INPX_TEST_ZIP = config.SOPDS_INPX_TEST_ZIP
             inpx.INPX_TEST_FILES = config.SOPDS_INPX_TEST_FILES
             inpx.parse()
@@ -206,6 +208,7 @@ class opdsScanner:
             self.arch_skipped += 1
             self.logger.debug("Skip ZIP archive " + rel_file + ". Already scanned.")
         else:
+            # TODO Обработка файлов в ФС должна быть описана в одном месте
             zip_process_error = 0
             try:
                 z = zipfile.ZipFile(file, "r", allowZip64=True)
@@ -258,6 +261,7 @@ class opdsScanner:
                         )
                         self.bad_books += 1
 
+                    # TODO объект BookData должен сам выполнять валидацию своих полей при создании
                     if book_data:
                         lang = (
                             book_data.language_code.strip(strip_symbols)
@@ -304,6 +308,7 @@ class opdsScanner:
                                 strip_symbols
                             )
                             # Если в имени автора нет запятой, то фамилию переносим из конца в начало
+                            # FIXME: информация об авторе не должна трансформироваться
                             if author_name and author_name.find(",") < 0:
                                 author_names = author_name.split()
                                 author_name = " ".join(
@@ -318,6 +323,7 @@ class opdsScanner:
                                 opdsdb.addgenre(genre.lower().strip(strip_symbols)),
                             )
 
+                        # FIXME: series_info определяется только по наличию названия серии, номер в серии устанавливается в 0 если не указан
                         if book_data.series_info:
                             ser = opdsdb.addseries(book_data.series_info["title"])
                             ser_no = book_data.series_info["index"] or "0"

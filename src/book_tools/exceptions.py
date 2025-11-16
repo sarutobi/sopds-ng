@@ -14,6 +14,9 @@ class FB2StructureException(EbookParserException):
     def __init__(self, error: str | Exception):
         super().__init__(f"fb2 verification failed: {error}")
 
-    class EpubStructureException(EbookParserException):
-        def __init__(self, message):
-            super().__init__(f"ePub verification failed: {message}")
+
+class EpubStructureException(EbookParserException):
+    """Исключение при парсинге epub"""
+
+    def __init__(self, message):
+        super().__init__(f"ePub verification failed: {message}")
