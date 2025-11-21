@@ -1,2 +1,0 @@
-#host:port:db:user:pass
-*:5432:sopds:postgres:Pa$$W00rD
