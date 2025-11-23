@@ -28,6 +28,7 @@ dev = [
     "pytest-benchmark>=5.2.2",
     "pytest-cov==7.0",
     "pytest-django>=4.11.1",
+    "pytest-factory>=0.0.1.dev0",
     "refurb>=2.2.0",
 ]
 
