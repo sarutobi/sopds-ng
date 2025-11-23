@@ -1,10 +1,38 @@
 ## Variables
 #export COMPOSE_FILE := "docker-compose.local.yml"
 
+db_name := 'sopds'
+db_user := 'postgres'
+db_port := '5433'
+db_host := 'localhost'
+db_password := '123456'
+
+set quiet
+
 ## Receipts
 # Default command to run
 default:
     @just --list
+
+# Run uv commands
+_run *args:
+    uv run --directory=src --env-file={{ invocation_directory() }}/.test.env {{ args }}
+
+# kill postgres container
+postgres_stop:
+    docker rm -f sopds-postgres-test
+
+# run postgres container
+postgres_start:
+    just postgres_stop
+    docker run -d -e POSTGRES_DB={{ db_name }} -e POSTGRES_USER={{ db_user }} -e POSTGRES_PASSWORD={{ db_password }} -p {{ db_port }}:5432 --name sopds-postgres-test postgres:17
+
+# Run postgres tests
+postgres_tests *args:
+    just postgres_start
+    just _run pytest {{ args }}
+    just postgres_stop
+
 
 # Start up containers
 up:
