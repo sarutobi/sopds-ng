@@ -16,13 +16,13 @@ from book_tools.tests.format.helpers import fb2_book_fabric
 
 @pytest.fixture
 def test_tag() -> fb2tag:
-    # TODO перенести фиктсуру в пакет тестов fb2sax
+    # TODO: перенести фиктсуру в пакет тестов fb2sax
     return fb2tag(("description", "title-info", "author", "first-name"))
 
 
 @pytest.fixture
 def test_rootlib() -> str:
-    # TODO Перенести фиктуру в общие для проекта фикстуры
+    # TODO: Перенести фиктуру в общие для проекта фикстуры
     test_module_path: str = os.path.dirname(os.path.dirname(Path(__file__).resolve()))
     test_ROOTLIB = os.path.join(test_module_path, "opds_catalog/tests/data")
     return test_ROOTLIB
@@ -136,7 +136,7 @@ def fb_generator() -> FictionBook:
 
 @pytest.fixture
 def manage_sopds_root_lib():
-    # TODO перенести фиктсуру в общие фиктуры проекта
+    # TODO: перенести фиктсуру в общие фиктуры проекта
     backup = config.SOPDS_ROOT_LIB
     config.SOPDS_ROOT_LIB = os.path.join(settings.BASE_DIR, "opds_catalog/tests/data/")
     yield config
@@ -145,7 +145,7 @@ def manage_sopds_root_lib():
 
 @pytest.fixture
 def create_regular_book():
-    # TODO переименовать фикстуру
+    # TODO: переименовать фикстуру
     book = create_book(filename="262001.fb2", cat_type=opdsdb.CAT_NORMAL, path=".")
     book.save()
     return book
