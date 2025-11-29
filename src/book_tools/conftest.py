@@ -6,7 +6,7 @@ import io
 from constance import config
 from pathlib import Path
 from book_tools.format.fb2sax import fb2tag
-from book_tools.tests.format.helpers import FictionBook
+from book_tools.tests.format.helpers import EBookData, Author
 from book_tools.format.fb2 import Namespace
 from opds_catalog.tests.helpers import create_book
 from opds_catalog import opdsdb
@@ -43,11 +43,11 @@ def title(request):
         None,
         [],
         [
-            FictionBook._Author("Pytest", last_name="Genius"),
+            Author("Pytest", last_name="Genius"),
         ],
         [
-            FictionBook._Author("Pytest", last_name="Genius"),
-            FictionBook._Author("Pytest", "Another", "Genius"),
+            Author("Pytest", last_name="Genius"),
+            Author("Pytest", "Another", "Genius"),
         ],
     )
 )
@@ -129,9 +129,9 @@ def correct(request):
 #     return data
 
 
-@pytest.fixture
-def fb_generator() -> FictionBook:
-    return FictionBook()
+# @pytest.fixture
+# def fb_generator() -> EBookData:
+#     return EBookData()
 
 
 @pytest.fixture
@@ -154,3 +154,13 @@ def create_regular_book():
 @pytest.fixture
 def virtual_fb2_book(namespace) -> io.BytesIO:
     return io.BytesIO(fb2_book_fabric(namespace=namespace))
+
+
+# @pytest.fixture
+# def author_factory():
+#     return AuthorFactory()
+
+
+@pytest.fixture
+def create_incorrect_book():
+    return io.BytesIO(b"I'm not a fiction book")

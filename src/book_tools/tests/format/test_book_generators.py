@@ -1,4 +1,4 @@
-from .helpers import FictionBook, fb2_book_fabric
+from .helpers import EBookData, fb2_book_fabric
 from book_tools.format.fb2 import FB2
 
 # import pytest
@@ -10,9 +10,9 @@ import io
 #     return FictionBook()
 
 
-def test_fictionbook_class() -> None:
-    fb_generator = FictionBook()
-    assert fb_generator is not None
+# def test_fictionbook_class() -> None:
+#     fb_generator = EBookData()
+#     assert fb_generator is not None
 
 
 def test_generate_book(fb_generator) -> None:

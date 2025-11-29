@@ -10,7 +10,7 @@ dependencies = [
     "django-constance[database]==4.3.2",
     "django-environ==0.12",
     "gunicorn>=23.0.0",
-    "lxml>=4.3",
+    "lxml>=6.0.2",
     "pillow>=2.9.0",
     "psycopg[binary]==3.2.6",
     "pymemcache==4",
@@ -22,13 +22,14 @@ dependencies = [
 dev = [
     "django-debug-toolbar==5.2.0",
     "django-stubs==5.1",
+    "faker>=38.2.0",
     "lxml-stubs>=0.5.1",
     "mypy>=1.18.2",
     "pytest>=8.4.1",
     "pytest-benchmark>=5.2.2",
     "pytest-cov==7.0",
     "pytest-django>=4.11.1",
-    "pytest-factory>=0.0.1.dev0",
+    "pytest-factoryboy>=2.8.1",
     "refurb>=2.2.0",
 ]
 
@@ -44,4 +45,3 @@ warn_return_any = true
 exclude_gitignore = false
 mypy_path = "src/"
 follow_imports = "skip"
-
