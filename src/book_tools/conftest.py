@@ -136,7 +136,7 @@ def correct(request):
 
 @pytest.fixture
 def manage_sopds_root_lib():
-    # TODO: перенести фиктсуру в общие фиктуры проекта
+    # TODO: перенести фикстуру в общие фиктуры проекта
     backup = config.SOPDS_ROOT_LIB
     config.SOPDS_ROOT_LIB = os.path.join(settings.BASE_DIR, "opds_catalog/tests/data/")
     yield config

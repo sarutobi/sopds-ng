@@ -1,10 +1,12 @@
 from lxml import etree
+import datetime
 
 # from book_tools.format.fb2 import Namespace
 # from pytest_factoryboy import register
 from dataclasses import dataclass
 
 import factory
+import factory.fuzzy
 from faker import Faker
 
 
@@ -115,7 +117,7 @@ class EBookData(object):
         authors: list[Author],
         title: str,
         annotation: str,
-        docdate: str,
+        docdate: datetime.date,
         image: Image,
         lang: str,
         series: Series,
@@ -129,14 +131,9 @@ class EBookData(object):
         self.lang = lang
         self.series = series
 
-    def add_author(
-        self, fname: str | None = None, mname: str | None = None, lname: str = ""
-    ) -> None:
-        self.authors.append(Author(fname, mname, lname))
-
-    def build(self, namespace: str | None = None) -> bytes:
+    def as_fb2(self, namespace: str | None = None) -> bytes:
         if namespace is not None:
-            nsmap = {self._nsname: namespace}
+            nsmap = {"fb": namespace}
         else:
             nsmap = None
         root = etree.Element("FictionBook", nsmap=nsmap)
@@ -172,10 +169,14 @@ class EBookData(object):
         lang.text = self.lang
 
         if self.docdate is not None:
+            strdate = self.docdate.strftime("%Y-%m-%d")
             docdate = etree.SubElement(
-                document_info, "date", value=self.docdate, nsmap=nsmap
+                document_info,
+                "date",
+                value=strdate,
+                nsmap=nsmap,
             )
-            docdate.text = self.docdate
+            docdate.text = strdate
         if self.series is not None:
             etree.SubElement(
                 title_info,
@@ -191,18 +192,37 @@ class EBookDataFactory(factory.Factory):
     class Meta:
         model = EBookData
 
-    genres = [factory.Sequence(lambda n: f"genre{n}")]
-    authors = [factory.SubFactory(AuthorFactory)]
+    class Params:
+        a1 = factory.SubFactory(AuthorFactory)
+        a2 = factory.SubFactory(AuthorFactory)
+
+    genres = [f"genre{n}" for n in range(1, 3)]
+    # Solution from https://github.com/pytest-dev/pytest-factoryboy/issues/61
+    authors = factory.LazyAttribute(lambda o: [o.a1, o.a2])
     title = faker.sentence(nb_words=3)
     annotation = factory.Faker("text")
-    docdate = faker.date(pattern="%Y-%M-%d")
+    docdate = factory.fuzzy.FuzzyDate(datetime.date(2008, 1, 1))
     image = factory.SubFactory(ImageFactory)
     lang = factory.LazyAttribute(lambda n: "ru")
     series = factory.SubFactory(SeriesFactory)
 
 
-def fb2_book_fabric():
-    pass
+class FB2_Builder(object):
+    """Генерация книг в формате FB2 для тестов"""
+
+    def __init__(self):
+        self.book_data = EBookDataFactory()
+
+
+def fb2_book_fabric(namespace: str | None = None, **kwargs) -> bytes:
+    book: EBookData = EBookDataFactory.build()
+    if "title" in kwargs.keys():
+        book.title = kwargs["title"]
+    if "docdate" in kwargs.keys():
+        book.docdate = kwargs["docdate"]
+    if "authors" in kwargs.keys():
+        book.authors = kwargs["authors"]
+    return book.as_fb2(namespace)
 
 
 #     namespace: str | None = Namespace.FICTION_BOOK20,

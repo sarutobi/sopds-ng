@@ -100,7 +100,10 @@ class BookFile(object):
             and self.original_filename == other.original_filename
             and self.title == other.title
             and self.description == other.description
-            and (sorted(self.authors) == sorted(other.authors))
+            and (
+                sorted(self.authors, key=lambda a: a["name"])
+                == sorted(other.authors, key=lambda a: a["name"])
+            )
             and (sorted(self.tags) == sorted(other.tags))
             and self.series_info == other.series_info
             and self.language_code == other.language_code

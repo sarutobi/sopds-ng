@@ -1,5 +1,6 @@
 # import os
 # from contextlib import nullcontext
+from datetime import datetime
 from io import BytesIO
 # from zipfile import BadZipFile
 
@@ -72,12 +73,15 @@ def test_fb2tag_setvalue(test_tag) -> None:
 
 
 def test_fb2sax(test_rootlib) -> None:
-    book = fb2_book_fabric(title="The Sanctuary Sparrow", docdate="30.1.2011")
+    book = fb2_book_fabric(
+        title="The Sanctuary Sparrow",
+        docdate=datetime.strptime("30.1.2011", "%d.%m.%Y"),
+    )
 
     # file = read_file_as_iobytes(os.path.join(test_rootlib, "262001.fb2"))
     book_file = FB2sax(BytesIO(book), "Test Book")
     assert book_file is not None
-    assert book_file.docdate == "30.1.2011"
+    assert book_file.docdate == "2011-01-30"
     assert book_file.title == "The Sanctuary Sparrow"
 
 
@@ -105,7 +109,10 @@ def _are_equals_data(bookfile: BookFile, parser: EbookMetaParser) -> bool:
     return (
         bookfile.title == parser.title
         and bookfile.description == parser.description
-        and (sorted(bookfile.authors) == sorted(expected_authors))
+        and (
+            sorted(bookfile.authors, key=lambda a: a["name"])
+            == sorted(expected_authors, key=lambda a: a["name"])
+        )
         and (sorted(bookfile.tags) == sorted(parser.tags))
         and bookfile.series_info == parser.series_info
         and bookfile.language_code == parser.language_code

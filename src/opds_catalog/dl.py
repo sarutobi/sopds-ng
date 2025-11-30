@@ -254,7 +254,6 @@ def Cover(request, book_id, thumbnail=False):
         #     z.close()
         #     fz.close()
     except Exception as e:
-        print(e)
         book_data = None
         image = None
 
