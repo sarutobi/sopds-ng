@@ -1,6 +1,6 @@
 [project]
 name = "sopds-ng"
-version = "0.49.0"
+version = "0.48.0"
 description = "New generation of Simple OPDS catalog"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -34,10 +34,28 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--cov=<project-name> --cov-report html"
-markers = [
-  "slow: this test is slow",
+addopts = [
+    "-rA",
+    "-q",
+    "-vvv",
+    "--cov=.",
+    "--cov-report=html",
+    "--cov-report=term",
+    # "--cov-report=annotate",
+    # "--cov-append",
+    "--capture=no",
 ]
+markers = ["slow: this test is slow", "optional: marks test as optional"]
+
+[tool.coverage.run]
+relative_files = true
+omit = ["*/sopds/*", "*tests*", "*conftest.py", "*migrations*"]
+include = ["src/book_tools"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = ["pragma: no cover"]
+omit = ["*/sopds/*", "*tests*", "*conftest.py", "*migrations*"]
 
 [tool.mypy]
 warn_unused_configs = true
