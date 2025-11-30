@@ -483,8 +483,8 @@ class BookMobi(object):
         print("Dump image")
         img_idx_base = int(self.mobi["firstImageIndex"])
         img_pattern = (
-            b"""<img\s+recindex=['"](\d+)['"]""",
-            b"""<img\s+src=['"]kindle:embed:(\d+)\?mime=image/jpg['"]""",
+            toByte(r"""<img\s+recindex=['"](\d+)['"]"""),
+            toByte(r"""<img\s+src=['"]kindle:embed:(\d+)\?mime=image/jpg['"]"""),
         )
         for pattern in img_pattern:
             regex = re.compile(pattern, re.I)
