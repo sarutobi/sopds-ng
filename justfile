@@ -27,6 +27,10 @@ postgres_start:
     just postgres_stop
     docker run -d -e POSTGRES_DB={{ db_name }} -e POSTGRES_USER={{ db_user }} -e POSTGRES_PASSWORD={{ db_password }} -p {{ db_port }}:5432 --name sopds-postgres-test postgres:17
 
+# Run sqlite3 tests
+simple_tests *args:
+    just _run pytest {{ args }}
+
 # Run postgres tests
 postgres_tests *args:
     just postgres_start
