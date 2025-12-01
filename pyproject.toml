@@ -37,20 +37,24 @@ dev = [
 addopts = [
     "-rA",
     "-q",
-    "-vvv",
-    "--cov=.",
+    # "-vvv",
+    # "--cov=src/",
     "--cov-report=html",
     "--cov-report=term",
     # "--cov-report=annotate",
     # "--cov-append",
     "--capture=no",
+    "--no-summary",
 ]
+
+python_files = ["test_*.py", "*_test.py"]
 markers = ["slow: this test is slow", "optional: marks test as optional"]
 
 [tool.coverage.run]
+
 relative_files = true
-omit = ["*/sopds/*", "*tests*", "*conftest.py", "*migrations*"]
-include = ["src/book_tools"]
+source = ["src/book_tools", "src/opds_catalog", "src/sopds_web-backend"]
+# omit = ["*/sopds/*", "*tests*", "*conftest.py", "*migrations*"]
 
 [tool.coverage.report]
 show_missing = true
