@@ -6,6 +6,7 @@ import pytest
 import base64
 from opds_catalog import opdsdb
 
+from pathlib import Path
 from constance import config
 from django.contrib.auth.models import User
 from django.conf import settings
@@ -23,7 +24,7 @@ from opds_catalog.dl import (
 )
 from opds_catalog.models import Book
 
-from .helpers import (
+from tests.opds_catalog.helpers import (
     read_file_as_iobytes,
     read_book_from_zip_file,
     BookFactoryMixin,
@@ -112,7 +113,7 @@ class TestReadFromRegularFile(TestCase, BookFactoryMixin):
 
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
-        config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
+        config.SOPDS_ROOT_LIB = os.path.dirname(Path(__file__))
 
     def tearDown(self) -> None:
         config.SOPDS_ROOT_LIB = self.root_library
@@ -143,7 +144,7 @@ class TestReadFromZippedFile(TestCase, BookFactoryMixin):
 
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
-        config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
+        config.SOPDS_ROOT_LIB = os.path.dirname(Path(__file__))
 
     def tearDown(self) -> None:
         config.SOPDS_ROOT_LIB = self.root_library
@@ -180,7 +181,7 @@ class TestReadFromZippedFile(TestCase, BookFactoryMixin):
 class TestGetFileData(TestCase, BookFactoryMixin):
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
-        config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
+        config.SOPDS_ROOT_LIB = os.path.dirname(Path(__file__))
 
     def tearDown(self) -> None:
         config.SOPDS_ROOT_LIB = self.root_library
@@ -207,7 +208,8 @@ class TestGetFileData(TestCase, BookFactoryMixin):
 
     def test_read_book_from_inp_file(self) -> None:
         expected = read_book_from_zip_file(
-            "opds_catalog/tests/data/books.zip", "539273.fb2"
+            os.path.join(os.path.dirname(Path(__file__)), "data/books.zip"),
+            "539273.fb2",
         )
         self.assertIsNotNone(expected)
 
@@ -241,14 +243,16 @@ class TestGetFileData(TestCase, BookFactoryMixin):
 class TestGetFileDataZip(TestCase):
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
-        config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
+        config.SOPDS_ROOT_LIB = os.path.dirname(Path(__file__))
 
     def tearDown(self) -> None:
         config.SOPDS_ROOT_LIB = self.root_library
 
     def test_create_zip_stream(self) -> None:
         expected_file_name = "zip_book.fb2"
-        expected_content = read_file_as_iobytes("opds_catalog/tests/data/262001.fb2")
+        expected_content = read_file_as_iobytes(
+            os.path.join(os.path.dirname(Path(__file__)), "data/262001.fb2")
+        )
         book = Book(
             title="zip book",
             format="fb2",

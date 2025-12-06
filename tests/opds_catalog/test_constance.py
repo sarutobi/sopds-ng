@@ -7,7 +7,7 @@ from constance import config
 from django.core.management import call_command
 from django.test import TestCase
 
-# from opds_catalog import zipf as zipfile
+from opds_catalog import zipf as zipfile
 
 
 class constanceTestCase(TestCase):

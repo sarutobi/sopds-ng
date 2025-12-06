@@ -12,8 +12,8 @@ from constance import config
 
 
 class scanTestCase(TestCase):
-    test_module_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    test_ROOTLIB = os.path.join(test_module_path, "tests/data")
+    test_module_path = os.path.dirname(os.path.abspath(__file__))
+    test_ROOTLIB = os.path.join(test_module_path, "data")
     test_fb2 = "262001.fb2"
     test_epub = "mirer.epub"
     test_mobi = "robin_cook.mobi"
