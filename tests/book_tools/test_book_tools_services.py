@@ -3,7 +3,7 @@ import pytest
 from io import BytesIO
 from contextlib import nullcontext
 from book_tools.services import extract_fb2_metadata_service
-from book_tools.tests.format.helpers import fb2_book_fabric
+from tests.book_tools.format.helpers import fb2_book_fabric
 
 from book_tools.format.fb2 import (
     FB2,

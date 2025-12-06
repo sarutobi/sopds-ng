@@ -32,14 +32,18 @@ from tests.opds_catalog.helpers import (
 )
 
 
+def test_rootlib() -> str:
+    test_module_path: str = os.path.dirname(os.path.dirname(Path(__file__).resolve()))
+    test_ROOTLIB = os.path.join(test_module_path, "opds_catalog/data")
+    return test_ROOTLIB
+
+
 class DownloadsTestCase(TestCase):
     fixtures = ["testdb.json"]
 
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
-        config.SOPDS_ROOT_LIB = os.path.join(
-            settings.BASE_DIR, "opds_catalog/tests/data/"
-        )
+        config.SOPDS_ROOT_LIB = test_rootlib()
         config.SOPDS_AUTH = False
         User.objects.create_user("test", "test@sopds.ng", "secret")
         self.c = Client()
@@ -54,6 +58,7 @@ class DownloadsTestCase(TestCase):
 
     def test_authorized_download_book(self):
         config.SOPDS_AUTH = True
+        print(config.SOPDS_ROOT_LIB)
         self.c.login(username="test", password="secret")
         response = self.c.get(reverse("opds:download", args=(5, 0)))
         self.assertEqual(response.status_code, 200)
@@ -113,15 +118,15 @@ class TestReadFromRegularFile(TestCase, BookFactoryMixin):
 
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
-        config.SOPDS_ROOT_LIB = os.path.dirname(Path(__file__))
+        config.SOPDS_ROOT_LIB = test_rootlib()
 
     def tearDown(self) -> None:
         config.SOPDS_ROOT_LIB = self.root_library
 
     def test_read_book_from_regular_file(self) -> None:
-        book = self.setup_regular_book(filename="262001.fb2", path="data")
+        book = self.setup_regular_book(filename="262001.fb2", path=".")
         expected = read_file_as_iobytes(
-            os.path.join(config.SOPDS_ROOT_LIB, book.path, book.filename)
+            os.path.join(config.SOPDS_ROOT_LIB, book.filename)
         )
         self.assertIsNotNone(expected)
 
@@ -132,7 +137,7 @@ class TestReadFromRegularFile(TestCase, BookFactoryMixin):
 
     def test_read_from_unexistent_file(self) -> None:
         # book = Book(filename="263001.fb2", cat_type=0, path="data")
-        book = self.setup_regular_book(filename="263001.fb2", path="data")
+        book = self.setup_regular_book(filename="263001.fb2", path=".")
         actual = read_from_regular_file(
             os.path.join(get_fs_book_path(book), book.filename)
         )
@@ -144,13 +149,13 @@ class TestReadFromZippedFile(TestCase, BookFactoryMixin):
 
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
-        config.SOPDS_ROOT_LIB = os.path.dirname(Path(__file__))
+        config.SOPDS_ROOT_LIB = test_rootlib()
 
     def tearDown(self) -> None:
         config.SOPDS_ROOT_LIB = self.root_library
 
     def test_read_book_from_zip_file(self):
-        book = self.setup_zipped_book(filename="539273.fb2", path="data/books.zip")
+        book = self.setup_zipped_book(filename="539273.fb2", path="books.zip")
         expected = read_book_from_zip_file(
             os.path.join(config.SOPDS_ROOT_LIB, book.path), book.filename
         )
@@ -162,7 +167,7 @@ class TestReadFromZippedFile(TestCase, BookFactoryMixin):
         self.assertEqual(actual.getvalue(), expected.getvalue())
 
     def test_no_book_in_zip_file(self):
-        book = self.setup_zipped_book(filename="559273.fb2", path="data/books.zip")
+        book = self.setup_zipped_book(filename="559273.fb2", path="books.zip")
 
         actual = read_from_zipped_file(
             os.path.join(config.SOPDS_ROOT_LIB, book.path), book.filename
@@ -170,7 +175,7 @@ class TestReadFromZippedFile(TestCase, BookFactoryMixin):
         self.assertIsNone(actual)
 
     def test_read_book_from_non_existent_zip_file(self):
-        book = self.setup_zipped_book(filename="559273.fb2", path="data/books1.zip")
+        book = self.setup_zipped_book(filename="559273.fb2", path="books1.zip")
 
         actual = read_from_zipped_file(
             os.path.join(config.SOPDS_ROOT_LIB, book.path), book.filename
@@ -181,15 +186,15 @@ class TestReadFromZippedFile(TestCase, BookFactoryMixin):
 class TestGetFileData(TestCase, BookFactoryMixin):
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
-        config.SOPDS_ROOT_LIB = os.path.dirname(Path(__file__))
+        config.SOPDS_ROOT_LIB = test_rootlib()
 
     def tearDown(self) -> None:
         config.SOPDS_ROOT_LIB = self.root_library
 
     def test_read_book_from_regular_file(self) -> None:
-        book = self.setup_regular_book(filename="262001.fb2", path="data")
+        book = self.setup_regular_book(filename="262001.fb2", path=".")
         expected = read_file_as_iobytes(
-            os.path.join(config.SOPDS_ROOT_LIB, book.path, book.filename)
+            os.path.join(config.SOPDS_ROOT_LIB, book.filename)
         )
         self.assertIsNotNone(expected)
 
@@ -197,7 +202,7 @@ class TestGetFileData(TestCase, BookFactoryMixin):
         self.assertEqual(actual.getvalue(), expected.getvalue())
 
     def test_read_book_from_zip_file(self) -> None:
-        book = self.setup_zipped_book(filename="539273.fb2", path="data/books.zip")
+        book = self.setup_zipped_book(filename="539273.fb2", path="books.zip")
         expected = read_book_from_zip_file(
             os.path.join(config.SOPDS_ROOT_LIB, book.path), book.filename
         )
@@ -213,7 +218,7 @@ class TestGetFileData(TestCase, BookFactoryMixin):
         )
         self.assertIsNotNone(expected)
 
-        book = Book(filename="539273.fb2", cat_type=3, path="data/inpx/inp/books.zip")
+        book = Book(filename="539273.fb2", cat_type=3, path="inpx/inp/books.zip")
         actual = getFileData(book)
         self.assertEqual(actual.getvalue(), expected.getvalue())
 
@@ -243,7 +248,7 @@ class TestGetFileData(TestCase, BookFactoryMixin):
 class TestGetFileDataZip(TestCase):
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
-        config.SOPDS_ROOT_LIB = os.path.dirname(Path(__file__))
+        config.SOPDS_ROOT_LIB = test_rootlib()
 
     def tearDown(self) -> None:
         config.SOPDS_ROOT_LIB = self.root_library
@@ -258,7 +263,7 @@ class TestGetFileDataZip(TestCase):
             format="fb2",
             filename="262001.fb2",
             cat_type=0,
-            path="data",
+            path=".",
         )
 
         actual = getFileDataZip(book)
@@ -271,19 +276,19 @@ class TestGetFileDataZip(TestCase):
 class TestGetFsBookPath(TestCase):
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
-        config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
+        config.SOPDS_ROOT_LIB = "opds_catalog/tests/data/"
 
     def tearDown(self) -> None:
         config.SOPDS_ROOT_LIB = self.root_library
 
     def test_inp_book_path(self) -> None:
-        book = Book(filename="539273.fb2", cat_type=3, path="data/inpx/inp/books.zip")
+        book = Book(filename="539273.fb2", cat_type=3, path="inpx/inp/books.zip")
         expected_path = "opds_catalog/tests/data/books.zip"
         actual_path = get_fs_book_path(book)
         self.assertEqual(actual_path, expected_path)
 
     def test_normal_book_path(self) -> None:
-        book = Book(filename="539273.fb2", cat_type=0, path="data/books.zip")
+        book = Book(filename="539273.fb2", cat_type=0, path="books.zip")
         expected_path = "opds_catalog/tests/data/books.zip"
         actual_path = get_fs_book_path(book)
         self.assertIsNotNone(actual_path)
@@ -293,7 +298,7 @@ class TestGetFsBookPath(TestCase):
 class TestGetFileDataConv(TestCase):
     def setUp(self) -> None:
         self.root_library = config.SOPDS_ROOT_LIB
-        config.SOPDS_ROOT_LIB = "opds_catalog/tests/"
+        config.SOPDS_ROOT_LIB = test_rootlib()
 
     def tearDown(self) -> None:
         config.SOPDS_ROOT_LIB = self.root_library
@@ -320,7 +325,9 @@ class TestGetFileDataConv(TestCase):
 @pytest.fixture
 def manage_sopds_root_lib():
     backup = config.SOPDS_ROOT_LIB
-    config.SOPDS_ROOT_LIB = os.path.join(settings.BASE_DIR, "opds_catalog/tests/data/")
+    config.SOPDS_ROOT_LIB = os.path.join(
+        os.path.dirname(settings.BASE_DIR), "tests/opds_catalog/data/"
+    )
     yield config
     config.SOPDS_ROOT_LIB = backup
 
@@ -336,13 +343,15 @@ def create_regular_book():
 def test_config_custom(manage_sopds_root_lib) -> None:
     conf = manage_sopds_root_lib
     assert conf.SOPDS_ROOT_LIB == os.path.join(
-        settings.BASE_DIR, "opds_catalog/tests/data/"
+        os.path.dirname(settings.BASE_DIR), "tests/opds_catalog/data/"
     )
 
 
 @pytest.mark.django_db
 def test_get_book_cover(manage_sopds_root_lib, create_regular_book, client) -> None:
     book = create_regular_book
+    print(get_fs_book_path(book))
+    assert getFileData(book)
     url = reverse("opds:cover", args=(book.id,))
     actual = client.get(url)
     assert actual.status_code == 200

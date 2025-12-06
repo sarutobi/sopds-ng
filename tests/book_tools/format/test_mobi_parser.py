@@ -3,7 +3,7 @@ import os
 
 from book_tools.format.mobi import Mobipocket, Mobipocket_new
 
-from opds_catalog.tests.helpers import read_file_as_iobytes
+from tests.opds_catalog.helpers import read_file_as_iobytes
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,6 @@
 import pytest
 from pytest_factoryboy import register
-from book_tools.tests.format.helpers import (
+from tests.book_tools.format.helpers import (
     Author,
     AuthorFactory,
     Image,

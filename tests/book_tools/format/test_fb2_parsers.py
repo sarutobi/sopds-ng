@@ -4,7 +4,7 @@ from datetime import datetime
 from io import BytesIO
 # from zipfile import BadZipFile
 
-# import pytest
+import pytest
 
 from book_tools.format.bookfile import BookFile
 from book_tools.format.fb2 import (
@@ -29,7 +29,7 @@ from book_tools.format.parsers import (
 # from book_tools.format.parsers import (
 # FB2Zip as FB2Zip_new,
 # )
-from book_tools.tests.format.helpers import fb2_book_fabric
+from tests.book_tools.format.helpers import fb2_book_fabric
 # from opds_catalog.tests.helpers import read_file_as_iobytes
 
 
@@ -120,18 +120,22 @@ def _are_equals_data(bookfile: BookFile, parser: EbookMetaParser) -> bool:
     )
 
 
+@pytest.mark.benchmark
 def test_benchmark_fb2sax_new_parser(benchmark, virtual_fb2_book):
     benchmark(FB2sax_new, virtual_fb2_book, "benchmark")
 
 
+@pytest.mark.benchmark
 def test_benchmark_fb2sax_parser(benchmark, virtual_fb2_book):
     benchmark(FB2sax, virtual_fb2_book, "benchmark")
 
 
+@pytest.mark.benchmark
 def test_benchmark_fb2_new_parser(benchmark, virtual_fb2_book):
     benchmark(FB2_new, virtual_fb2_book, "benchmark", "test")
 
 
+@pytest.mark.benchmark
 def test_benchmark_fb2_parser(benchmark, virtual_fb2_book):
     benchmark(FB2, virtual_fb2_book, "benchmark")
 

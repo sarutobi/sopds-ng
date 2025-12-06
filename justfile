@@ -29,7 +29,11 @@ postgres_start:
 
 # Run sqlite3 tests
 simple_tests *args:
-    just _run pytest {{ args }}
+    just _run pytest --benchmark-disable {{ args }}
+
+# Run only benchmarks
+benchmark:
+    just simple_tests --benchmark-enable -m benchmark
 
 # Run postgres tests
 postgres_tests *args:

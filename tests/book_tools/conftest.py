@@ -6,12 +6,12 @@ import io
 from constance import config
 from pathlib import Path
 from book_tools.format.fb2sax import fb2tag
-from book_tools.tests.format.helpers import EBookData, Author
+from tests.book_tools.format.helpers import EBookData, Author
 from book_tools.format.fb2 import Namespace
-from opds_catalog.tests.helpers import create_book
+from tests.opds_catalog.helpers import create_book
 from opds_catalog import opdsdb
 from django.conf import settings
-from book_tools.tests.format.helpers import fb2_book_fabric
+from tests.book_tools.format.helpers import fb2_book_fabric
 
 
 @pytest.fixture
