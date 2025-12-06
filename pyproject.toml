@@ -33,28 +33,23 @@ dev = [
     "refurb>=2.2.0",
 ]
 
-[tool.pytest.ini_options]
-addopts = [
-    "-rA",
-    "-q",
-    # "-vvv",
-    # "--cov=src/",
-    "--cov-report=html",
-    "--cov-report=term",
-    # "--cov-report=annotate",
-    # "--cov-append",
-    "--capture=no",
-    "--no-summary",
-]
+[tool.pytest]
+minversion = "9.0"
+addopts = ["-rA", "-q"]
 
+testpaths = ["tests"]
+pythonpath = [".", "src"]
 python_files = ["test_*.py", "*_test.py"]
-markers = ["slow: this test is slow", "optional: marks test as optional"]
+markers = [
+    "slow: this test is slow",
+    "optional: marks test as optional",
+    "benchmark: this test is benchmark",
+]
 
 [tool.coverage.run]
 
 relative_files = true
 source = ["src/book_tools", "src/opds_catalog", "src/sopds_web-backend"]
-# omit = ["*/sopds/*", "*tests*", "*conftest.py", "*migrations*"]
 
 [tool.coverage.report]
 show_missing = true

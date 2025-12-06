@@ -16,7 +16,7 @@ default:
 
 # Run uv commands
 _run *args:
-    uv run --directory=src --env-file={{ invocation_directory() }}/.test.env {{ args }}
+    uv run --env-file={{ invocation_directory() }}/.test.env {{ args }}
 
 # kill postgres container
 postgres_stop:
