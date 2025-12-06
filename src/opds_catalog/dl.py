@@ -35,7 +35,7 @@ def getFileName(book: Book) -> str:
     return utils.to_ascii(transname)
 
 
-def get_fs_book_path(book: Book) -> os.path:
+def get_fs_book_path(book: Book) -> str:
     """Формирует полный путь в файловой системе библиотеки для файла книги"""
     path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
     if book.cat_type == opdsdb.CAT_INP:
@@ -48,7 +48,7 @@ def get_fs_book_path(book: Book) -> os.path:
         return path
 
 
-def read_from_regular_file(file_path: os.path) -> io.BytesIO:
+def read_from_regular_file(file_path: str) -> io.BytesIO | None:
     """Читает содержимое обычного файла из файловой системы"""
 
     if not os.path.isfile(file_path):
@@ -63,7 +63,7 @@ def read_from_regular_file(file_path: os.path) -> io.BytesIO:
     return content
 
 
-def read_from_zipped_file(zip_path: os.path, filename: str) -> io.BytesIO:
+def read_from_zipped_file(zip_path: str, filename: str) -> io.BytesIO | None:
     """Читает содержимое файла filename из zip файла в файловой системе"""
 
     if not os.path.isfile(zip_path):
@@ -85,7 +85,7 @@ def read_from_zipped_file(zip_path: os.path, filename: str) -> io.BytesIO:
         return None
 
 
-def getFileData(book: Book) -> io.BytesIO:
+def getFileData(book: Book) -> io.BytesIO | None:
     """Поиск и считывание файла книги из ФС"""
     full_path = get_fs_book_path(book)
 
