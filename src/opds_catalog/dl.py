@@ -172,8 +172,8 @@ def getFileDataMobi(book):
 
 @sopds_auth_validate
 def Download(request, book_id, zip_flag):
-    # TODO это view, он должен быть в другом месте
-    # TODO реорганизовать в части формирования ответа
+    # TODO: это view, он должен быть в другом месте
+    # TODO: реорганизовать в части формирования ответа
     """Загрузка файла книги"""
     book = Book.objects.get(id=book_id)
 
