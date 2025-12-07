@@ -18,23 +18,26 @@ default:
 _run *args:
     uv run --env-file={{ invocation_directory() }}/.test.env {{ args }}
 
-# kill postgres container
+# Kill postgres container
 postgres_stop:
     docker rm -f sopds-postgres-test
 
-# run postgres container
+# Run postgres container
 postgres_start:
     just postgres_stop
     docker run -d -e POSTGRES_DB={{ db_name }} -e POSTGRES_USER={{ db_user }} -e POSTGRES_PASSWORD={{ db_password }} -p {{ db_port }}:5432 --name sopds-postgres-test postgres:17
 
 # Run sqlite3 tests
-simple_tests *args:
+test *args:
     just _run pytest --benchmark-disable {{ args }}
 
 # Run only benchmarks
 benchmark:
-    just simple_tests --benchmark-enable -m benchmark
+    just test --benchmark-enable -m benchmark
 
+# Generate coverage report
+coverage *args:
+    just test --cov=src --cov-report=term-missing:skip-covered --cov-report=html
 # Run postgres tests
 postgres_tests *args:
     just postgres_start
@@ -106,9 +109,6 @@ build-dev: (clean-dev)
 prepare-foundation:
     @docker build -t foundation -f compose/foundation/Dockerfile .
 
-# Run tests 
-tests *args:
-    @docker compose exec -it web pytest --ds=sopds.settings.local {{args}}
 
 # Run commands to build frontend
 run-frontend *args:

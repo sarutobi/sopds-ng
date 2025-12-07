@@ -35,7 +35,7 @@ dev = [
 
 [tool.pytest]
 minversion = "9.0"
-addopts = ["-rA", "-q"]
+addopts = ["-ra", "-q"]
 
 testpaths = ["tests"]
 pythonpath = [".", "src"]
@@ -49,12 +49,13 @@ markers = [
 [tool.coverage.run]
 
 relative_files = true
-source = ["src/book_tools", "src/opds_catalog", "src/sopds_web-backend"]
+# source = ["src/book_tools", "src/opds_catalog", "src/sopds_web-backend"]
+omit = ["manage.py", "*/migrations/*", "*/sopds/*", "src/inpx/*"]
 
 [tool.coverage.report]
 show_missing = true
 exclude_lines = ["pragma: no cover"]
-omit = ["*/sopds/*", "*tests*", "*conftest.py", "*migrations*"]
+# omit = ["*/sopds/*", "*tests*", "*conftest.py", "*migrations*"]
 
 [tool.mypy]
 warn_unused_configs = true
