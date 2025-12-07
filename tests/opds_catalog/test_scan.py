@@ -1,23 +1,16 @@
 import os
-from pathlib import Path
 
 import pytest
 from constance import config
 
 from opds_catalog import opdsdb
-
 from opds_catalog.models import Author, Book, Catalog, Genre, Series
 from opds_catalog.sopdscan import opdsScanner
 
-pytestmark = pytest.mark.override_config(
-    SOPDS_ROOT_LIB=os.path.join(
-        os.path.dirname(os.path.dirname(Path(__file__))), "opds_catalog/data/"
-    )
-)
-
 
 @pytest.mark.django_db
-class TestScanCases(object):
+@pytest.mark.usefixtures("fake_sopds_root_lib")
+class TestBookScaner(object):
     test_module_path = os.path.dirname(os.path.abspath(__file__))
     test_ROOTLIB = os.path.join(test_module_path, "data")
     test_fb2 = "262001.fb2"
