@@ -1,17 +1,23 @@
 import os
+from pathlib import Path
 
-from django.test import TestCase
-
-from opds_catalog import opdsdb
-from opds_catalog.sopdscan import opdsScanner
-
-# from opds_catalog import settings
-from opds_catalog.models import Book, Catalog, Author, Genre, Series
-
+import pytest
 from constance import config
 
+from opds_catalog import opdsdb
 
-class scanTestCase(TestCase):
+from opds_catalog.models import Author, Book, Catalog, Genre, Series
+from opds_catalog.sopdscan import opdsScanner
+
+pytestmark = pytest.mark.override_config(
+    SOPDS_ROOT_LIB=os.path.join(
+        os.path.dirname(os.path.dirname(Path(__file__))), "opds_catalog/data/"
+    )
+)
+
+
+@pytest.mark.django_db
+class TestScanCases(object):
     test_module_path = os.path.dirname(os.path.abspath(__file__))
     test_ROOTLIB = os.path.join(test_module_path, "data")
     test_fb2 = "262001.fb2"
@@ -19,11 +25,10 @@ class scanTestCase(TestCase):
     test_mobi = "robin_cook.mobi"
     test_zip = "books.zip"
 
-    def setUp(self):
-        config.SOPDS_ROOT_LIB = self.test_ROOTLIB
-
-    def test_processfile_fb2(self):
+    @pytest.mark.parametrize("fb2sax", [True, False])
+    def test_processfile_fb2(self, fb2sax):
         """Тестирование процедуры processfile (извлекает метаданные из книги FB2 и помещает в БД)"""
+        config.SOPDS_FB2SAX = fb2sax
         opdsdb.clear_all()
         scanner = opdsScanner()
         scanner.processfile(
@@ -35,40 +40,33 @@ class scanTestCase(TestCase):
             495373,
         )
         book = Book.objects.get(filename=self.test_fb2)
-        self.assertIsNotNone(book)
-        self.assertEqual(scanner.books_added, 1)
-        self.assertEqual(book.filename, self.test_fb2)
-        self.assertEqual(book.path, ".")
-        self.assertEqual(book.format, "fb2")
-        self.assertEqual(book.cat_type, 0)
+        assert book is not None
+        assert scanner.books_added == 1
+        assert book.filename == self.test_fb2
+        assert book.path == "."
+        assert book.format == "fb2"
+        assert book.cat_type == 0
         # self.assertGreaterEqual(book.registerdate, )
-        self.assertEqual(book.docdate, "30.1.2011")
-        self.assertEqual(book.lang, "en")
-        self.assertEqual(book.title, "The Sanctuary Sparrow")
-        self.assertEqual(book.search_title, "The Sanctuary Sparrow".upper())
-        self.assertEqual(book.annotation, "")
-        self.assertEqual(book.avail, 2)
-        self.assertEqual(book.catalog.path, ".")
-        self.assertEqual(book.catalog.cat_name, ".")
-        self.assertEqual(book.catalog.cat_type, 0)
-        self.assertEqual(book.filesize, 495373)
+        assert book.docdate == "30.1.2011"
+        assert book.lang == "en"
+        assert book.title == "The Sanctuary Sparrow"
+        assert book.search_title == "The Sanctuary Sparrow".upper()
+        assert book.annotation == ""
+        assert book.avail == 2
+        assert book.catalog.path == "."
+        assert book.catalog.cat_name == "."
+        assert book.catalog.cat_type == 0
+        assert book.filesize == 495373
 
-        self.assertEqual(book.authors.count(), 1)
-        self.assertEqual(
-            book.authors.get(full_name="Peters Ellis").search_full_name, "PETERS ELLIS"
+        assert book.authors.count() == 1
+        assert (
+            book.authors.get(full_name="Peters Ellis").search_full_name
+            == "PETERS ELLIS"
         )
 
-        self.assertEqual(book.genres.count(), 1)
-        self.assertEqual(book.genres.get(genre="antique").section, opdsdb.unknown_genre)
-        self.assertEqual(book.genres.get(genre="antique").subsection, "antique")
-
-    def test_processfile_fb2sax(self):
-        config.SOPDS_FB2SAX = True
-        self.test_processfile_fb2()
-
-    def test_processfile_fb2xpath(self):
-        config.SOPDS_FB2SAX = False
-        self.test_processfile_fb2()
+        assert book.genres.count() == 1
+        assert book.genres.get(genre="antique").section == opdsdb.unknown_genre
+        assert book.genres.get(genre="antique").subsection == "antique"
 
     def test_processfile_epub(self):
         """Тестирование процедуры processfile (извлекает метаданные из книги EPUB и помещает в БД)"""
@@ -83,35 +81,34 @@ class scanTestCase(TestCase):
             491279,
         )
         book = Book.objects.get(filename=self.test_epub)
-        self.assertIsNotNone(book)
-        self.assertEqual(scanner.books_added, 1)
-        self.assertEqual(book.filename, self.test_epub)
-        self.assertEqual(book.path, ".")
-        self.assertEqual(book.format, "epub")
-        self.assertEqual(book.cat_type, 0)
-        # self.assertGreaterEqual(book.registerdate, )
-        self.assertEqual(book.docdate, "2015")
-        self.assertEqual(book.lang, "ru")
-        self.assertEqual(book.title, "У меня девять жизней (шф (продолжатели))")
-        self.assertEqual(
-            book.search_title, "У меня девять жизней (шф (продолжатели))".upper()
-        )
-        self.assertEqual(book.annotation, "Собрание произведений. Том 2")
-        self.assertEqual(book.avail, 2)
-        self.assertEqual(book.catalog.path, ".")
-        self.assertEqual(book.catalog.cat_name, ".")
-        self.assertEqual(book.catalog.cat_type, 0)
-        self.assertEqual(book.filesize, 491279)
+        assert book is not None
+        assert scanner.books_added == 1
+        assert book.filename == self.test_epub
+        assert book.path == "."
+        assert book.format == "epub"
+        assert book.cat_type == 0
+        # assertGreater book.registerdate== )
+        assert book.docdate == "2015"
+        assert book.lang == "ru"
+        assert book.title == "У меня девять жизней (шф (продолжатели))"
+        assert book.search_title == "У меня девять жизней (шф (продолжатели))".upper()
 
-        self.assertEqual(book.authors.count(), 1)
-        self.assertEqual(
-            book.authors.get(full_name="Мирер Александр").search_full_name,
-            "МИРЕР АЛЕКСАНДР",
+        assert book.annotation == "Собрание произведений. Том 2"
+        assert book.avail == 2
+        assert book.catalog.path == "."
+        assert book.catalog.cat_name == "."
+        assert book.catalog.cat_type == 0
+        assert book.filesize == 491279
+
+        assert book.authors.count() == 1
+        assert (
+            book.authors.get(full_name="Мирер Александр").search_full_name
+            == "МИРЕР АЛЕКСАНДР"
         )
 
-        self.assertEqual(book.genres.count(), 1)
-        self.assertEqual(book.genres.get(genre="sf").section, opdsdb.unknown_genre)
-        self.assertEqual(book.genres.get(genre="sf").subsection, "sf")
+        assert book.genres.count() == 1
+        assert book.genres.get(genre="sf").section == opdsdb.unknown_genre
+        assert book.genres.get(genre="sf").subsection == "sf"
 
     def test_processfile_mobi(self):
         """Тестирование процедуры processfile (извлекает метаданные из книги EPUB и помещает в БД)"""
@@ -126,28 +123,26 @@ class scanTestCase(TestCase):
             542811,
         )
         book = Book.objects.get(filename=self.test_mobi)
-        self.assertIsNotNone(book)
-        self.assertEqual(scanner.books_added, 1)
-        self.assertEqual(book.filename, self.test_mobi)
-        self.assertEqual(book.path, ".")
-        self.assertEqual(book.format, "mobi")
-        self.assertEqual(book.cat_type, 0)
-        # self.assertGreaterEqual(book.registerdate, )
-        self.assertEqual(book.docdate, "2011-11-20")
-        self.assertEqual(book.lang, "")
-        self.assertEqual(book.title, "Vector")
-        self.assertEqual(book.search_title, "Vector".upper())
-        self.assertEqual(book.annotation, "")
-        self.assertEqual(book.avail, 2)
-        self.assertEqual(book.catalog.path, ".")
-        self.assertEqual(book.catalog.cat_name, ".")
-        self.assertEqual(book.catalog.cat_type, 0)
-        self.assertEqual(book.filesize, 542811)
+        assert book is not None
+        assert scanner.books_added == 1
+        assert book.filename == self.test_mobi
+        assert book.path == "."
+        assert book.format == "mobi"
+        assert book.cat_type == 0
+        # self.assertGreaterEqual(book.registerdate ==
+        assert book.docdate == "2011-11-20"
+        assert book.lang == ""
+        assert book.title == "Vector"
+        assert book.search_title == "Vector".upper()
+        assert book.annotation == ""
+        assert book.avail == 2
+        assert book.catalog.path == "."
+        assert book.catalog.cat_name == "."
+        assert book.catalog.cat_type == 0
+        assert book.filesize == 542811
 
-        self.assertEqual(book.authors.count(), 1)
-        self.assertEqual(
-            book.authors.get(full_name="Cook Robin").search_full_name, "COOK ROBIN"
-        )
+        assert book.authors.count() == 1
+        assert book.authors.get(full_name="Cook Robin").search_full_name == "COOK ROBIN"
 
     def test_processzip(self):
         """Тестирование процедуры processzip (извлекает метаданные из книг, помещенных в архив и помещает их БД)"""
@@ -158,50 +153,46 @@ class scanTestCase(TestCase):
             self.test_ROOTLIB,
             os.path.join(self.test_ROOTLIB, self.test_zip),
         )
-        self.assertEqual(scanner.books_added, 3)
-        self.assertEqual(Book.objects.all().count(), 3)
-        self.assertEqual(Catalog.objects.all().count(), 2)
+        assert scanner.books_added == 3
+        assert Book.objects.all().count() == 3
+        assert Catalog.objects.all().count() == 2
 
         book = Book.objects.get(filename="539603.fb2")
-        self.assertEqual(book.filesize, 15194)
-        self.assertEqual(book.path, self.test_zip)
-        self.assertEqual(book.cat_type, 1)
-        self.assertEqual(book.catalog.path, self.test_zip)
-        self.assertEqual(book.catalog.cat_name, self.test_zip)
-        self.assertEqual(book.catalog.cat_type, 1)
-        self.assertEqual(book.docdate, "2014-09-15")
-        self.assertEqual(book.title, "Любовь в жизни Обломова")
-        self.assertEqual(book.avail, 2)
-        self.assertEqual(book.authors.count(), 1)
-        self.assertEqual(
-            book.authors.get(full_name="Логинов Святослав").search_full_name,
-            "ЛОГИНОВ СВЯТОСЛАВ",
+        assert book.filesize == 15194
+        assert book.path == self.test_zip
+        assert book.cat_type == 1
+        assert book.catalog.path == self.test_zip
+        assert book.catalog.cat_name == self.test_zip
+        assert book.catalog.cat_type == 1
+        assert book.docdate == "2014-09-15"
+        assert book.title == "Любовь в жизни Обломова"
+        assert book.avail == 2
+        assert book.authors.count() == 1
+        assert (
+            book.authors.get(full_name="Логинов Святослав").search_full_name
+            == "ЛОГИНОВ СВЯТОСЛАВ"
         )
-        self.assertEqual(book.genres.count(), 1)
-        self.assertEqual(
-            book.genres.get(genre="nonf_criticism").section, opdsdb.unknown_genre
-        )
-        self.assertEqual(
-            book.genres.get(genre="nonf_criticism").subsection, "nonf_criticism"
-        )
+
+        assert book.genres.count() == 1
+        assert book.genres.get(genre="nonf_criticism").section == opdsdb.unknown_genre
+
+        assert book.genres.get(genre="nonf_criticism").subsection == "nonf_criticism"
 
         book = Book.objects.get(filename="539485.fb2")
-        self.assertEqual(book.filesize, 12293)
-        self.assertEqual(book.path, self.test_zip)
-        self.assertEqual(book.cat_type, 1)
-        self.assertEqual(book.title, "Китайски сладкиш с късметче")
-        self.assertEqual(
-            book.authors.get(full_name="Фрич Чарлз").search_full_name, "ФРИЧ ЧАРЛЗ"
-        )
+        assert book.filesize == 12293
+        assert book.path == self.test_zip
+        assert book.cat_type == 1
+        assert book.title == "Китайски сладкиш с късметче"
+        assert book.authors.get(full_name="Фрич Чарлз").search_full_name == "ФРИЧ ЧАРЛЗ"
 
         book = Book.objects.get(filename="539273.fb2")
-        self.assertEqual(book.filesize, 21722)
-        self.assertEqual(book.path, self.test_zip)
-        self.assertEqual(book.cat_type, 1)
-        self.assertEqual(book.title, "Драконьи Услуги")
-        self.assertEqual(
-            book.authors.get(full_name="Куприянов Денис").search_full_name,
-            "КУПРИЯНОВ ДЕНИС",
+        assert book.filesize == 21722
+        assert book.path == self.test_zip
+        assert book.cat_type == 1
+        assert book.title == "Драконьи Услуги"
+        assert (
+            book.authors.get(full_name="Куприянов Денис").search_full_name
+            == "КУПРИЯНОВ ДЕНИС"
         )
 
     def test_scanall(self):
@@ -209,10 +200,10 @@ class scanTestCase(TestCase):
         opdsdb.clear_all()
         scanner = opdsScanner()
         scanner.scan_all()
-        self.assertEqual(scanner.books_added, 7)
-        self.assertEqual(scanner.bad_books, 3)
-        self.assertEqual(Book.objects.all().count(), 7)
-        self.assertEqual(Author.objects.all().count(), 6)
-        self.assertEqual(Genre.objects.all().count(), 5)
-        self.assertEqual(Series.objects.all().count(), 1)
-        self.assertEqual(Catalog.objects.all().count(), 4)
+        assert scanner.books_added == 7
+        assert scanner.bad_books == 3
+        assert Book.objects.all().count() == 7
+        assert Author.objects.all().count() == 6
+        assert Genre.objects.all().count() == 5
+        assert Series.objects.all().count() == 1
+        assert Catalog.objects.all().count() == 4
