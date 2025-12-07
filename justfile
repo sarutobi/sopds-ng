@@ -29,7 +29,7 @@ postgres_start:
 
 # Run sqlite3 tests
 test *args:
-    just _run pytest --benchmark-disable {{ args }}
+    just _run pytest --benchmark-disable --ds=sopds.settings.test {{ args }}
 
 # Run only benchmarks
 benchmark:
