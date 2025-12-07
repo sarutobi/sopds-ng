@@ -3,14 +3,12 @@
 import pytest
 import os
 import io
-from constance import config
 from pathlib import Path
 from book_tools.format.fb2sax import fb2tag
 from tests.book_tools.format.helpers import EBookData, Author
 from book_tools.format.fb2 import Namespace
 from tests.opds_catalog.helpers import create_book
 from opds_catalog import opdsdb
-from django.conf import settings
 from tests.book_tools.format.helpers import fb2_book_fabric
 
 
@@ -134,13 +132,13 @@ def correct(request):
 #     return EBookData()
 
 
-@pytest.fixture
-def manage_sopds_root_lib():
-    # TODO: перенести фикстуру в общие фиктуры проекта
-    backup = config.SOPDS_ROOT_LIB
-    config.SOPDS_ROOT_LIB = os.path.join(settings.BASE_DIR, "opds_catalog/tests/data/")
-    yield config
-    config.SOPDS_ROOT_LIB = backup
+# @pytest.fixture
+# def manage_sopds_root_lib():
+#     # TODO: перенести фикстуру в общие фиктуры проекта
+#     backup = config.SOPDS_ROOT_LIB
+#     config.SOPDS_ROOT_LIB = os.path.join(settings.BASE_DIR, "opds_catalog/tests/data/")
+#     yield config
+#     config.SOPDS_ROOT_LIB = backup
 
 
 @pytest.fixture
