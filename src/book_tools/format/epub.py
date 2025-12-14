@@ -178,7 +178,7 @@ class EPub(BookFile):
             try:
                 fileinfo = self.__zip_file.getinfo(path)
             except:
-                fileinfo = self.__zip_file.getinfo(urllib.unquote(path))
+                fileinfo = self.__zip_file.getinfo(urllib.parse.unquote(path))
             mime = node.get("media-type")
             info = {"filename": fileinfo.filename, "mime": mime}
             if mime.startswith("image/"):
@@ -708,7 +708,7 @@ class EPub_new(object):
             try:
                 fileinfo = self.__zip_file.getinfo(path)
             except:
-                fileinfo = self.__zip_file.getinfo(urllib.unquote(path))
+                fileinfo = self.__zip_file.getinfo(urllib.parse.unquote(path))
             mime = node.get("media-type")
             info = {"filename": fileinfo.filename, "mime": mime}
             if mime.startswith("image/"):
