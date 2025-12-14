@@ -533,6 +533,7 @@ class EPub(BookFile):
 
 
 class EPub_new(object):
+    # TODO: Рассмореть вариант с созданием файлов с помощью Jinja 2
     class Issue(object):
         FIRST_ITEM_NOT_MIMETYPE = 1
         MIMETYPE_ITEM_IS_DEFLATED = 2
