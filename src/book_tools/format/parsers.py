@@ -41,7 +41,7 @@ class EbookMetaParser(ABC):
         self._file = file
 
     @abstractmethod
-    def extract_cover(self) -> BytesIO | None: ...
+    def extract_cover(self) -> bytes | None: ...
 
     @abstractmethod
     def title(self) -> str: ...
@@ -65,7 +65,7 @@ class EbookMetaParser(ABC):
     def docdate(self) -> str: ...
 
 
-class FB2Base(EbookMetaParser):
+class FB2(EbookMetaParser):
     """Базовый класс для извлечения метаданных из книг в формате FB2 с помощью lxml"""
 
     def __init__(self, file: BytesIO, original_filename: str, mimetype: str):
@@ -116,18 +116,21 @@ class FB2Base(EbookMetaParser):
         if "l" not in self._namespaces.keys():
             self._namespaces["l"] = FB2Namespace.XLINK
 
-    def extract_cover(self):
+    def extract_cover(self) -> bytes | None:
         try:
-            res: str = self._etree.xpath(
+            res = self._etree.xpath(
                 "/fb:FictionBook/fb:description/fb:title-info/fb:coverpage/fb:image",
                 namespaces=self._namespaces,
             )
+
             if len(res) == 0:
-                res = self._etree.xpath(
-                    "/fb:FictionBook/fb:body//fb:image", namespaces=self._namespaces
+                res = str(
+                    self._etree.xpath(
+                        "/fb:FictionBook/fb:body//fb:image", namespaces=self._namespaces
+                    )
                 )
             cover_id: str = res[0].get("{" + FB2Namespace.XLINK + "}href")[1:]
-            # print(cover_id)
+
             res = self._etree.xpath(
                 '/fb:FictionBook/fb:binary[@id="%s"]' % cover_id,
                 namespaces=self._namespaces,

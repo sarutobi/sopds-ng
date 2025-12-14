@@ -22,7 +22,7 @@ from book_tools.format.parsers import (
     EbookMetaParser,
 )
 from book_tools.format.parsers import (
-    FB2Base as FB2_new,
+    FB2 as FB2_new,
 )
 # from book_tools.exceptions import FB2StructureException
 
@@ -138,6 +138,24 @@ def test_benchmark_fb2_new_parser(benchmark, virtual_fb2_book):
 @pytest.mark.benchmark
 def test_benchmark_fb2_parser(benchmark, virtual_fb2_book):
     benchmark(FB2, virtual_fb2_book, "benchmark")
+
+
+def test_fb2_cover_extraction(fb2_book_from_fs) -> None:
+    """Проверка извлечения обложки старым и новым парсером FB2"""
+    cover_actual = FB2(fb2_book_from_fs, "Test book").extract_cover_memory()
+    cover_expected = FB2_new(
+        fb2_book_from_fs, "Test book", Mimetype.FB2
+    ).extract_cover()
+    assert cover_actual is not None
+    assert cover_actual == cover_expected
+
+
+def test_fb2sax_cover_extraction(fb2_book_from_fs) -> None:
+    """Проверка извлечения обложки старым и новым парсером FB2sax"""
+    cover_actual = FB2sax(fb2_book_from_fs, "Test book").extract_cover_memory()
+    cover_expected = FB2sax_new(fb2_book_from_fs, "Test book").extract_cover()
+    assert cover_actual is not None
+    assert cover_actual == cover_expected
 
 
 # @pytest.mark.parametrize(

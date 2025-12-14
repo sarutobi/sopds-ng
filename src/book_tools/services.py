@@ -4,7 +4,7 @@ from io import BytesIO
 from .format.bookfile import BookFile
 
 # from .format.fb2sax import FB2sax
-from .format.parsers import FB2Base
+from .format.parsers import FB2
 from .format.mimetype import Mimetype
 
 
@@ -22,7 +22,7 @@ def extract_fb2_metadata_service(data: BytesIO, original_filename: str) -> BookF
         FB2StructureException
 
     """
-    parser = FB2Base(data, original_filename, Mimetype.FB2)
+    parser = FB2(data, original_filename, Mimetype.FB2)
     book_file = BookFile(data, original_filename, Mimetype.FB2)
     book_file.mimetype = Mimetype.FB2
     book_file.__set_title__(parser.title)
