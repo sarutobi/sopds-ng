@@ -2,7 +2,7 @@ import os
 import re
 from abc import abstractmethod, ABCMeta
 
-from book_tools.format.util import minify_cover
+from book_tools.format.util import minify_cover, normalize_string
 
 
 class BookFile(object):
@@ -59,14 +59,14 @@ class BookFile(object):
     def __add_author__(self, name, sortkey=None):
         if not name or not BookFile.__is_text(name):
             return
-        name = BookFile.__normalise_string__(name)
+        name = normalize_string(name)
         if not name:
             return
         if sortkey:
             sortkey = sortkey.strip()
         if not sortkey:
             sortkey = name.split()[-1]
-        sortkey = BookFile.__normalise_string__(sortkey).lower()
+        sortkey = normalize_string(sortkey).lower()
         self.authors.append({"name": name, "sortkey": sortkey})
 
     def __add_tag__(self, text):
@@ -75,11 +75,11 @@ class BookFile(object):
             if text:
                 self.tags.append(text)
 
-    @staticmethod
-    def __normalise_string__(text):
-        if text is None:
-            return None
-        return re.sub(r"\s+", " ", text.strip())
+    # @staticmethod
+    # def __normalise_string__(text):
+    #     if text is None:
+    #         return None
+    #     return re.sub(r"\s+", " ", text.strip())
 
     def get_encryption_info(self):
         return {}
@@ -90,9 +90,6 @@ class BookFile(object):
     def __eq__(self, other) -> bool:
         if not (isinstance(other, BookFile)):
             return NotImplemented
-
-        # print(self.authors)
-        # print(other.authors)
 
         return (
             self.file.getvalue() == other.file.getvalue()

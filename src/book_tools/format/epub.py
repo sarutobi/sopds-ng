@@ -8,7 +8,7 @@ from tempfile import mktemp
 from book_tools.format.aes import encrypt
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
-from book_tools.format.util import list_zip_file_infos
+from book_tools.format.util import list_zip_file_infos, normalize_string
 
 
 class EPub(BookFile):
@@ -142,16 +142,14 @@ class EPub(BookFile):
             namespaces=namespaces,
         )
         if len(res) > 0:
-            series = BookFile.__normalise_string__(res[0].get("content"))
+            series = normalize_string(res[0].get("content"))
             if series:
                 res = tree.xpath(
                     '/opf:package/opf:metadata/opf:meta[@name="calibre:series_index"]',
                     namespaces=namespaces,
                 )
                 index = (
-                    BookFile.__normalise_string__(res[0].get("content"))
-                    if len(res) > 0
-                    else None
+                    normalize_string(res[0].get("content")) if len(res) > 0 else None
                 )
                 self.series_info = {"title": series, "index": index or None}
 
@@ -674,16 +672,14 @@ class EPub_new(object):
             namespaces=namespaces,
         )
         if len(res) > 0:
-            series = BookFile.__normalise_string__(res[0].get("content"))
+            series = normalize_string(res[0].get("content"))
             if series:
                 res = tree.xpath(
                     '/opf:package/opf:metadata/opf:meta[@name="calibre:series_index"]',
                     namespaces=namespaces,
                 )
                 index = (
-                    BookFile.__normalise_string__(res[0].get("content"))
-                    if len(res) > 0
-                    else None
+                    normalize_string(res[0].get("content")) if len(res) > 0 else None
                 )
                 book_file.series_info = {"title": series, "index": index or None}
 

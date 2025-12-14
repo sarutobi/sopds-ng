@@ -7,7 +7,7 @@ from abc import abstractmethod
 from io import BytesIO
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
-from book_tools.format.util import list_zip_file_infos
+from book_tools.format.util import list_zip_file_infos, normalize_string
 from lxml.etree import _ElementTree
 from dataclasses import dataclass
 from book_tools.exceptions import FB2StructureException
@@ -195,8 +195,8 @@ class FB2Base(BookFile):
             # use_namespaces = False
             res = tree.xpath("/FictionBook/description/title-info/sequence")
         if len(res) > 0:
-            title: str = BookFile.__normalise_string__(res[0].get("name"))
-            index: str = BookFile.__normalise_string__(res[0].get("number"))
+            title: str = normalize_string(res[0].get("name"))
+            index: str = normalize_string(res[0].get("number"))
 
             if title:
                 self.series_info: dict[str, str] = {"title": title, "index": index}
