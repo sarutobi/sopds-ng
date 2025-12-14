@@ -67,7 +67,7 @@ def read_from_zipped_file(zip_path: str, filename: str) -> io.BytesIO | None:
     """Читает содержимое файла filename из zip файла в файловой системе"""
 
     if not os.path.isfile(zip_path):
-        # TODO залоггировать ошибку
+        # TODO: залоггировать ошибку
         return None
 
     content = io.BytesIO()

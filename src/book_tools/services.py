@@ -1,5 +1,6 @@
 # Сервисы для работы с электронными книгами
 from io import BytesIO
+import zipfile
 
 from .format.bookfile import BookFile
 
@@ -13,7 +14,7 @@ def extract_fb2_metadata_service(data: BytesIO, original_filename: str) -> BookF
     Извлечение метаданных книги в формате fb2
 
     Args:
-        data(BytesIO): Содержимое книги fb2
+        data(BytesIO): Содержимое книги fb2. Может быть упковано в формат zip
 
     Returns:
         BookFile: извлеченные метаданные книги
@@ -22,7 +23,19 @@ def extract_fb2_metadata_service(data: BytesIO, original_filename: str) -> BookF
         FB2StructureException
 
     """
-    parser = FB2(data, original_filename, Mimetype.FB2)
+    if zipfile.is_zipfile(data):
+        with zipfile.ZipFile(data, "r") as z:
+            if len(z.infolist()) > 1:
+                raise Exception("Incorrect fb2 zip archive!")
+            fn = z.namelist()[0]
+            with z.open(fn, "r") as d:
+                content = BytesIO()
+                content.write(d.read())
+
+    else:
+        content = data
+
+    parser = FB2(content, original_filename, Mimetype.FB2)
     book_file = BookFile(data, original_filename, Mimetype.FB2)
     book_file.mimetype = Mimetype.FB2
     book_file.__set_title__(parser.title)

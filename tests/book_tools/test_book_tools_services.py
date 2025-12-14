@@ -65,7 +65,17 @@ def test_book_parsing(virtual_fb2_book) -> None:
     assert result is not None
 
 
-def test_fb2_metadata_service_returns_the_same(virtual_fb2_book) -> None:
-    actual = extract_fb2_metadata_service(virtual_fb2_book, "Test Book")
-    expected = FB2(virtual_fb2_book, "Test Book")
+def test_fb2_metadata_service_returns_the_same(fb2_book_from_fs) -> None:
+    """Тест сервиса метаданных книги в формате fb2"""
+    actual = extract_fb2_metadata_service(fb2_book_from_fs, "Test Book")
+    expected = FB2(fb2_book_from_fs, "Test Book")
+    assert actual == expected
+
+
+def test_fb2_metadata_service_returns_the_same_zipped(
+    fb2_book_from_fs, zipped_fb2_book_from_fs
+) -> None:
+    """Тест сервиса метаданных книги в формате FB2, сжатой zip"""
+    actual = extract_fb2_metadata_service(zipped_fb2_book_from_fs, "Test book")
+    expected = extract_fb2_metadata_service(fb2_book_from_fs, "Test book")
     assert actual == expected

@@ -92,8 +92,8 @@ class BookFile(object):
             return NotImplemented
 
         return (
-            self.file.getvalue() == other.file.getvalue()
-            and self.mimetype == other.mimetype
+            # self.file.getvalue() == other.file.getvalue()
+            self.mimetype == other.mimetype
             and self.original_filename == other.original_filename
             and self.title == other.title
             and self.description == other.description
