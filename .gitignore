@@ -58,6 +58,7 @@ coverage.xml
 *.pot
 
 # Django stuff:
+secret_key.txt
 /*/staticfiles/*
 /*/static/*
 # But keep directories in tree
