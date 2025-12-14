@@ -154,7 +154,7 @@ def test_fb2sax_cover_extraction(fb2_book_from_fs) -> None:
     """Проверка извлечения обложки старым и новым парсером FB2sax"""
     cover_actual = FB2sax(fb2_book_from_fs, "Test book").extract_cover_memory()
     cover_expected = FB2sax_new(fb2_book_from_fs, "Test book").extract_cover()
-    assert cover_actual is not None
+    assert cover_expected is not None
     assert cover_actual == cover_expected
 
 

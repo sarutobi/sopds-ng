@@ -269,6 +269,8 @@ class FB2(EbookMetaParser):
 
 
 class FB2sax(EbookMetaParser):
+    """SAX парсер для книг FB2"""
+
     def __init__(self, file, original_filename):
         self._log = logging.getLogger()
         self.fb2parser = fb2parser(1)
