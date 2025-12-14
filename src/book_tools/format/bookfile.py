@@ -1,5 +1,4 @@
 import os
-import re
 from abc import abstractmethod, ABCMeta
 
 from book_tools.format.util import minify_cover, normalize_string
@@ -74,12 +73,6 @@ class BookFile(object):
             text = text.strip()
             if text:
                 self.tags.append(text)
-
-    # @staticmethod
-    # def __normalise_string__(text):
-    #     if text is None:
-    #         return None
-    #     return re.sub(r"\s+", " ", text.strip())
 
     def get_encryption_info(self):
         return {}

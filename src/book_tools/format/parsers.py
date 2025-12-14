@@ -1,15 +1,12 @@
 # Парсеры для разных форматов электронных книг
+from lxml.etree import _Element
 import os
-import shutil
 from urllib.parse import unquote
 import zipfile
 from lxml import etree
-from tempfile import mkstemp
 
-from book_tools.format.aes import encrypt
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
-from book_tools.format.util import list_zip_file_infos
 
 import base64
 from abc import ABC, abstractmethod
@@ -87,14 +84,17 @@ class FB2(EbookMetaParser):
                 Тип данных MIME для книги. Может быть либо Mimetype.FB2 либо Mimetype.FB2_ZIP
         """
         # Инициализация полей объекта
+        super().__init__(file)
         self._etree: etree._ElementTree = None
         self._namespaces: dict[str, str] = {}
         self._log = logging.getLogger(str(self.__class__))
+        self.parse()
 
-        # Парсинг полученного содержимого файла
+    def parse(self):
+        """Парсинг полученного файла"""
         try:
-            file.seek(0, 0)
-            self._etree = etree.parse(file)
+            self._file.seek(0, 0)
+            self._etree = etree.parse(self._file)
         except Exception as e:
             self._log.exception(e)
             raise FB2StructureException(f"The file is not a valid XML: {e}")
@@ -117,23 +117,21 @@ class FB2(EbookMetaParser):
             self._namespaces["l"] = FB2Namespace.XLINK
 
     def extract_cover(self) -> bytes | None:
+        """Извлечение обложки книги"""
         try:
-            res = self._etree.xpath(
-                "/fb:FictionBook/fb:description/fb:title-info/fb:coverpage/fb:image",
-                namespaces=self._namespaces,
+            res = self._find_elements_with_namespaces(
+                "/fb:FictionBook/fb:description/fb:title-info/fb:coverpage/fb:image"
             )
 
             if len(res) == 0:
-                res = str(
-                    self._etree.xpath(
-                        "/fb:FictionBook/fb:body//fb:image", namespaces=self._namespaces
-                    )
+                res = self._find_elements_with_namespaces(
+                    "/fb:FictionBook/fb:body//fb:image"
                 )
+
             cover_id: str = res[0].get("{" + FB2Namespace.XLINK + "}href")[1:]
 
-            res = self._etree.xpath(
-                '/fb:FictionBook/fb:binary[@id="%s"]' % cover_id,
-                namespaces=self._namespaces,
+            res = self._find_elements_with_namespaces(
+                '/fb:FictionBook/fb:binary[@id="%s"]' % cover_id
             )
             content = base64.b64decode(res[0].text)
             return content
@@ -141,32 +139,38 @@ class FB2(EbookMetaParser):
             print("exception Extract %s" % err)
             return None
 
+    def _find_elements(self, xpath: str) -> list[_Element]:
+        return self._etree.xpath(xpath)
+
+    def _find_elements_with_namespaces(self, xpath: str) -> list[etree._Element]:
+        res: list[_Element] = self._etree.xpath(xpath, namespaces=self._namespaces)
+        return res
+
     @property
     def title(self) -> str:
-        res = self._etree.xpath(
+        nodes = self._find_elements_with_namespaces(
             "/fb:FictionBook/fb:description/fb:title-info/fb:book-title",
-            namespaces=self._namespaces,
         )
-        if len(res) == 0:
-            res = self._etree.xpath(
+        if len(nodes) == 0:
+            nodes = self._find_elements(
                 '/*[local-name() = "FictionBook"]/*[local-name() = "description"]/*[local-name() = "title-info"]/*[local-name() = "book-title"]'
             )
-        if len(res) > 0:
-            res = res[0].text
-            # self.__set_title__(res[0].text)
+        if len(nodes) > 0:
+            res: str = nodes[0].text
 
         return res
 
     @property
     def description(self) -> bytes | None:
-        res = self._etree.xpath(
-            "/fb:FictionBook/fb:description/fb:title-info/fb:annotation",
-            namespaces=self._namespaces,
+        nodes = self._find_elements_with_namespaces(
+            "/fb:FictionBook/fb:description/fb:title-info/fb:annotation"
         )
-        if len(res) == 0:
-            res = self._etree.xpath("/FictionBook/description/title-info/annotation")
-        if len(res) > 0:
-            return etree.tostring(res[0], encoding="utf-8", method="text")
+        if len(nodes) == 0:
+            nodes = self._find_elements(
+                "/FictionBook/description/title-info/annotation"
+            )
+        if len(nodes) > 0:
+            return etree.tostring(nodes[0], encoding="utf-8", method="text")
 
         return None
 
@@ -189,13 +193,12 @@ class FB2(EbookMetaParser):
             # self.__add_author__(" ".join([first_name, last_name]), last_name)
             return (" ".join([first_name, last_name]), last_name)
 
-        res = self._etree.xpath(
-            "/fb:FictionBook/fb:description/fb:title-info/fb:author",
-            namespaces=self._namespaces,
+        res = self._find_elements_with_namespaces(
+            "/fb:FictionBook/fb:description/fb:title-info/fb:author"
         )
         if len(res) == 0:
             use_namespaces = False
-            res = self._etree.xpath("/FictionBook/description/title-info/author")
+            res = self._find_elements("/FictionBook/description/title-info/author")
 
         authors: list[tuple[str, str]] = []
         for node in res:
@@ -204,72 +207,62 @@ class FB2(EbookMetaParser):
 
     @property
     def tags(self) -> list[str]:
-        res = self._etree.xpath(
-            "/fb:FictionBook/fb:description/fb:title-info/fb:genre",
-            namespaces=self._namespaces,
+        res = self._find_elements_with_namespaces(
+            "/fb:FictionBook/fb:description/fb:title-info/fb:genre"
         )
         if len(res) == 0:
-            # use_namespaces = False
-            res = self._etree.xpath("/FictionBook/description/title-info/genre")
+            res = self._find_elements("/FictionBook/description/title-info/genre")
         tags: list[str] = []
         for node in res:
-            # self.__add_tag__(node.text)
             tags.append(node.text)
         return tags
 
     @property
     def series_info(self):
-        res = self._etree.xpath(
-            "/fb:FictionBook/fb:description/fb:title-info/fb:sequence",
-            namespaces=self._namespaces,
+        res = self._find_elements_with_namespaces(
+            "/fb:FictionBook/fb:description/fb:title-info/fb:sequence"
         )
         if len(res) == 0:
-            # use_namespaces = False
-            res = self._etree.xpath("/FictionBook/description/title-info/sequence")
+            res = self._find_elements("/FictionBook/description/title-info/sequence")
         if len(res) > 0:
             title = res[0].get("name")
             index = res[0].get("number")
 
             if title:
-                # self.series_info = {"title": title, "index": index}
                 return {"title": title, "index": index}
         return None
 
     @property
     def language_code(self):
-        res = self._etree.xpath(
-            "/fb:FictionBook/fb:description/fb:title-info/fb:lang",
-            namespaces=self._namespaces,
+        res = self._find_elements_with_namespaces(
+            "/fb:FictionBook/fb:description/fb:title-info/fb:lang"
         )
         if len(res) == 0:
-            res = self._etree.xpath("/FictionBook/description/title-info/lang")
+            res = self._find_elements("/FictionBook/description/title-info/lang")
         if len(res) > 0:
             return res[0].text
         return None
 
     @property
     def docdate(self):
-        # TODO оптимизация выдачи результата
+        # TODO: оптимизация выдачи результата
         is_attrib: int = 1
-        res = self._etree.xpath(
-            "/fb:FictionBook/fb:description/fb:document-info/fb:date/@value",
-            namespaces=self._namespaces,
+        res = self._find_elements_with_namespaces(
+            "/fb:FictionBook/fb:description/fb:document-info/fb:date/@value"
         )
         if len(res) == 0:
-            res = self._etree.xpath(
+            res = self._find_elements(
                 "/FictionBook/description/document-info/date/@value"
             )
         if len(res) == 0:
             is_attrib = 0
-            res = self._etree.xpath(
-                "/fb:FictionBook/fb:description/fb:document-info/fb:date",
-                namespaces=self._namespaces,
+            res = self._find_elements_with_namespaces(
+                "/fb:FictionBook/fb:description/fb:document-info/fb:date"
             )
         if len(res) == 0:
             is_attrib = 0
-            res = self._etree.xpath("/FictionBook/description/document-info/date")
+            res = self._find_elements("/FictionBook/description/document-info/date")
         if len(res) > 0:
-            # self.__set_docdate__(res[0] if is_attrib else res[0].text)
             return res[0] if is_attrib else res[0].text
 
         return None
