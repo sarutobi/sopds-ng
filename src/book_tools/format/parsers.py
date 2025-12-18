@@ -1,5 +1,5 @@
 # Парсеры для разных форматов электронных книг
-from lxml.etree import _Element
+from typing import Any
 import os
 from urllib.parse import unquote
 import zipfile
@@ -139,12 +139,11 @@ class FB2(EbookMetaParser):
             print("exception Extract %s" % err)
             return None
 
-    def _find_elements(self, xpath: str) -> list[_Element]:
+    def _find_elements(self, xpath: str) -> Any:
         return self._etree.xpath(xpath)
 
-    def _find_elements_with_namespaces(self, xpath: str) -> list[etree._Element]:
-        res: list[_Element] = self._etree.xpath(xpath, namespaces=self._namespaces)
-        return res
+    def _find_elements_with_namespaces(self, xpath: str) -> Any:
+        return self._etree.xpath(xpath, namespaces=self._namespaces)
 
     @property
     def title(self) -> str:
@@ -659,7 +658,7 @@ class EPub(EbookMetaParser):
                 '/opf:package/opf:manifest/opf:item[@properties="cover-image"]'
             )
             return image_infos(node)
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -669,7 +668,7 @@ class EPub(EbookMetaParser):
                     '/opf:package/opf:manifest/opf:item[@id="%s"]' % node.get("content")
                 )
             )
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -679,7 +678,7 @@ class EPub(EbookMetaParser):
                     '/opf:package/opf:manifest/opf:item[@id="%s"]' % node.get("content")
                 )
             )
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -687,7 +686,7 @@ class EPub(EbookMetaParser):
             return image_infos(
                 xpath('/package/manifest/item[@id="%s"]' % node.get("content"))
             )
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -695,7 +694,7 @@ class EPub(EbookMetaParser):
                 '/opf:package/opf:guide/opf:reference[@type="other.ms-coverimage-standard"][@title="Cover"]'
             )
             return image_infos(item_for_href(node.get("href")))
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -703,13 +702,13 @@ class EPub(EbookMetaParser):
                 '/opf:package/opf:guide/opf:reference[@type="other.ms-coverimage-standard"]'
             )
             return image_infos(item_for_href(node.get("href")))
-        except Exception as err:
+        except Exception:
             pass
 
         try:
             node = xpath('/opf:package/opf:manifest/opf:item[@id="cover"]')
             return image_infos(node)
-        except Exception as err:
+        except Exception:
             pass
 
         return []
