@@ -28,3 +28,9 @@ def test_rootlib() -> str:
 def fb2_book_from_fs(test_rootlib) -> io.BytesIO:
     """Предоставляет считанную из ФС книгу в формате FB2"""
     return read_file_as_iobytes(os.path.join(test_rootlib, "262001.fb2"))
+
+
+@pytest.fixture
+def zipped_fb2_book_from_fs(test_rootlib) -> io.BytesIO:
+    """Предоставляет считанную из ФС книгу в формате FB2"""
+    return read_file_as_iobytes(os.path.join(test_rootlib, "262001.zip"))
