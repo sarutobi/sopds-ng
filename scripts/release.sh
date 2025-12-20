@@ -10,6 +10,7 @@ cp LICENSE build/release
 cp pyproject.toml build/release
 cp base.env build/release
 cp version.txt build/release
+cp scripts/create_key.sh build/release
 
 echo "Очистка"
 rm -rf build/release/inpx
@@ -21,5 +22,8 @@ version=$(<version.txt)
 echo "Создание релиза $version"
 cwd=$(pwd)
 cd build/release
-tar -czvf ../release_${version}.tar.gz .
+tar -czf ../release_${version}.tar.gz .
+cd ..
+rm -rf release/
 cd $cwd
+echo "Релиз ${version} создан"
