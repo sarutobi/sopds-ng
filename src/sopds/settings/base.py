@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 
 # Инициализация для чтения переменных окружения из файла
 # https://django-environ.readthedocs.io/en/latest/quickstart.html
-env = environ.FileAwareEnv()
+env = environ.FileAwareEnv(DEBUG=(bool, False))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -59,7 +59,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "sopds.urls"
+ROOT_URLCONF = "sopds.urls.base"
 
 TEMPLATES = [
     {
