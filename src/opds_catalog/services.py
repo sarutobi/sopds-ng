@@ -5,9 +5,12 @@ from book_tools.format.parsers import FB2, FB2sax
 from constance import config
 import os
 import zipfile
+from contextlib import suppress
 
 
-def extract_fb2_cover(file: BytesIO, original_filename: str, mimetype: str):
+def extract_fb2_cover(
+    file: BytesIO, original_filename: str, mimetype: str
+) -> bytes | None:
     if config.SOPDS_FB2SAX:
         parser = FB2sax(file, original_filename)
     else:

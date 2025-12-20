@@ -9,6 +9,7 @@ def test_extract_fb2_cover_service(fb2_book_from_fs) -> None:
     """Тест получения обложки из книги fb2"""
     cover = extract_fb2_cover(fb2_book_from_fs, "", "")
     assert cover is not None
+    assert len(cover) == 56360
 
 
 @pytest.mark.parametrize(
