@@ -10,7 +10,7 @@ cp LICENSE build/release
 cp pyproject.toml build/release
 cp base.env build/release
 cp version.txt build/release
-cp scripts/create_key.sh build/release
+cp scripts/start_server.sh build/release
 
 echo "Очистка"
 rm -rf build/release/inpx
