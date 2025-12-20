@@ -71,16 +71,15 @@ class FB2(EbookMetaParser):
             __namespaces
             _mimetype
 
-        Параметры инициализации
-        -----------------------
-            file: BytesIO
+        Args:
+            file (BytesIO):
                 Cодержимое файла книги для парсинга
 
-            original_filename: str
+            original_filename (str):
                 Наименовние оригинального файла книги. Если файл размещен в ФС, то это наименование файла в ФС.
                 Если файл книги находится в zip архиве, то это наименование файла внутри архива.
 
-            mimetype: str
+            mimetype (str):
                 Тип данных MIME для книги. Может быть либо Mimetype.FB2 либо Mimetype.FB2_ZIP
         """
         # Инициализация полей объекта
