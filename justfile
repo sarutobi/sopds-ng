@@ -1,5 +1,6 @@
 ## Variables
 #export COMPOSE_FILE := "docker-compose.local.yml"
+export PYTHONDONTWRITEBYTECODE := '1'
 
 db_name := 'sopds'
 db_user := 'postgres'
