@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from book_tools.format.parsers import FB2
 
 import os
 import codecs
@@ -110,8 +111,8 @@ def getFileDataZip(book: Book) -> io.BytesIO:
 
 
 def getFileDataConv(book, convert_type):
-    # TODO необходимо настроить конверторы
-    # TODO дополнить тесты
+    # TODO: необходимо настроить конверторы
+    # TODO: дополнить тесты
     if book.format != "fb2":
         return None
 
@@ -227,8 +228,14 @@ def Cover(request, book_id, thumbnail=False):
     # full_path = get_fs_book_path(book)
 
     try:
-        book_data = create_bookfile(getFileData(book), book.filename)
-        image = book_data.extract_cover_memory()
+        if book.format == "fb2":
+            content = getFileData(book)
+            assert content is not None
+            parser = FB2(content, book.filename, Mimetype.FB2)
+            image = parser.extract_cover()
+        else:
+            book_data = create_bookfile(getFileData(book), book.filename)
+            image = book_data.extract_cover_memory()
     except Exception as e:
         book_data = None
         image = None

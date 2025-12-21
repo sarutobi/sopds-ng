@@ -1,4 +1,5 @@
 # import magic
+from book_tools.services import extract_fb2_metadata_service
 import os
 import zipfile
 from xml import sax
@@ -14,6 +15,7 @@ from book_tools.format.fb2sax import FB2sax
 from book_tools.format.other import Dummy
 from book_tools.format.mobi import Mobipocket
 
+from book_tools.format.parsers import FB2sax as FB2sax2, FB2 as FB2_
 from constance import config
 
 
@@ -94,11 +96,11 @@ def create_bookfile(file, original_filename):
     if mimetype == Mimetype.EPUB:
         return EPub(file, original_filename)
     elif mimetype == Mimetype.FB2:
-        return (
-            FB2sax(file, original_filename)
-            if config.SOPDS_FB2SAX
-            else FB2(file, original_filename)
-        )
+        return extract_fb2_metadata_service(file, original_filename)
+        #     FB2sax2(file, original_filename)
+        #     if config.SOPDS_FB2SAX
+        #     else FB2_(file, original_filename, Mimetype.FB2)
+        # )
     elif mimetype == Mimetype.FB2_ZIP:
         return FB2Zip(file, original_filename)
     elif mimetype == Mimetype.MOBI:

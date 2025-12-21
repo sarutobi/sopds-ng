@@ -305,10 +305,13 @@ class TestGetFileDataConv(object):
 
 
 @pytest.mark.django_db
-def test_get_book_cover(fake_sopds_root_lib, create_regular_book, client) -> None:
+@pytest.mark.parametrize("use_sax", [(True), (False)])
+def test_get_book_cover(
+    fake_sopds_root_lib, create_regular_book, client, override_config, use_sax
+) -> None:
     book = create_regular_book
-    assert getFileData(book)
     url = reverse("opds:cover", args=(book.id,))
-    actual = client.get(url)
-    assert actual.status_code == 200
-    assert actual["Content-Length"] == "56360"
+    with override_config(SOPDS_FB2SAX=use_sax):
+        actual = client.get(url)
+        assert actual.status_code == 200
+        assert actual["Content-Length"] == "56360"

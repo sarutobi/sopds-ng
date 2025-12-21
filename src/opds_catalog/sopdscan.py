@@ -261,7 +261,7 @@ class opdsScanner:
                         )
                         self.bad_books += 1
 
-                    # TODO объект BookData должен сам выполнять валидацию своих полей при создании
+                    # TODO: объект BookData должен сам выполнять валидацию своих полей при создании
                     if book_data:
                         lang = (
                             book_data.language_code.strip(strip_symbols)
