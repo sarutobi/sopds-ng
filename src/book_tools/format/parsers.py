@@ -115,6 +115,9 @@ class FB2(EbookMetaParser):
         if "l" not in self._namespaces.keys():
             self._namespaces["l"] = FB2Namespace.XLINK
 
+    def extract_cover_memory(self):
+        return self.extract_cover()
+
     def extract_cover(self) -> bytes | None:
         """Извлечение обложки книги"""
         try:
@@ -280,6 +283,7 @@ class FB2sax(EbookMetaParser):
             )
 
     def extract_cover(self):
+        print("here")
         if len(self.fb2parser.cover_image.cover_data) > 0:
             try:
                 s = self.fb2parser.cover_image.cover_data
@@ -288,6 +292,9 @@ class FB2sax(EbookMetaParser):
             except Exception:
                 return None
         return None
+
+    def extract_cover_memory(self):
+        return self.extract_cover()
 
     @property
     def title(self):
