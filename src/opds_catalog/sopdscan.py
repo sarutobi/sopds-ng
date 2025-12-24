@@ -208,7 +208,7 @@ class opdsScanner:
             self.arch_skipped += 1
             self.logger.debug("Skip ZIP archive " + rel_file + ". Already scanned.")
         else:
-            # TODO Обработка файлов в ФС должна быть описана в одном месте
+            # TODO:Обработка файлов в ФС должна быть описана в одном месте
             zip_process_error = 0
             try:
                 z = zipfile.ZipFile(file, "r", allowZip64=True)

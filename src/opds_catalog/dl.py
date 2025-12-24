@@ -8,7 +8,7 @@ import codecs
 import io
 import subprocess
 
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpRequest
 # from django.views.decorators.cache import cache_page
 
 from opds_catalog.models import Book, bookshelf
@@ -221,8 +221,24 @@ def Download(request, book_id, zip_flag):
 
 # Новая версия (0.42) процедуры извлечения обложек из файлов книг fb2, epub, mobi
 # @cache_page(config.SOPDS_CACHE_TIME)
-def Cover(request, book_id, thumbnail=False):
-    """Загрузка обложки"""
+def Cover(
+    request: HttpRequest, book_id: int, thumbnail=False
+) -> HttpResponse | HttpResponseRedirect:
+    # FIXME: Это view, он должен находиться в другом файле
+    """
+    Загрузка обложки
+
+    Args:
+        request(HttpRequest): поступивший django запрос
+
+        book_id(int): идентификатор книги
+
+        thumbnail(bool): требуется ли создавать превью обложки
+
+    Returns:
+       HttpResponse: изображение обложки, если обложка была найдена в книге
+       HttpResponseRedirect: ссылка на стандартную обложку, если обложка не бла найдена в книге
+    """
     book = Book.objects.get(id=book_id)
     response = HttpResponse()
     # full_path = get_fs_book_path(book)

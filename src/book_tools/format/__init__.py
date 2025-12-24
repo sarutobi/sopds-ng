@@ -1,5 +1,5 @@
 # import magic
-from book_tools.services import extract_fb2_metadata_service
+from book_tools.services import create_bookfile_service, detect_mime_service
 import os
 import zipfile
 from xml import sax
@@ -92,11 +92,11 @@ def create_bookfile(file, original_filename):
     if isinstance(file, str):
         file = open(file, "rb")
     file = BytesIO(file.read())
-    mimetype = detect_mime(file, original_filename)
+    mimetype = detect_mime_service(file, original_filename)
     if mimetype == Mimetype.EPUB:
         return EPub(file, original_filename)
     elif mimetype == Mimetype.FB2:
-        return extract_fb2_metadata_service(file, original_filename)
+        return create_bookfile_service(file, original_filename)
         #     FB2sax2(file, original_filename)
         #     if config.SOPDS_FB2SAX
         #     else FB2_(file, original_filename, Mimetype.FB2)
