@@ -58,20 +58,20 @@
     </div><!-- footer -->
 </div><!-- conntainer -->
 
-  <script src="{% static "js/vendor/jquery.min.js" %}"></script>
-  <script src="{% static "js/vendor/foundation.min.js" %}"></script>
+  <script src="{% static "js/vendor/jquery.js" %}"></script>
+  <script src="{% static "js/vendor/foundation.js" %}"></script>
   <script src="{% static "js/app.js" %}"></script>
 
 
   <script>
 
-    function length_validator($el,required,parent) {
-         if ($('#main_searchbox')[0].value.length < 3)
-                return false;
-         return true;
-    };
-	Foundation.Abide.defaults.validators["check_search"] = length_validator; 
-    $(document).foundation();
+//	Foundation.Abide.defaults.validators["check_search"] = function length_validator($el,required,parent) {
+//         if ($el.val().length < 3)
+//                return false;
+//         return true;
+//    };
+
+//    $(document).foundation();
 	
     function logout(to_url) {
 	    var out = window.location.href.replace(/:\/\//, '://log:out@');

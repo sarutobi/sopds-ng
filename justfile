@@ -116,6 +116,7 @@ run-frontend *args:
     @docker run --rm -v ./assets/sopds-sass/package.json:/foundation/package.json \
         -v ./assets/sopds-sass/gulpfile.babel.js:/foundation/gulpfile.babel.js \
         -v ./assets/sopds-sass/config.yml:/foundation/config.yml \
+        -v ./assets/sopds-sass/js/:/foundation/src/assets/js/ \
         -v ./assets/sopds-sass/scss/:/foundation/src/assets/scss/ \
         -v ./tmp/target/:/foundation/target \
         foundation {{args}}
@@ -132,6 +133,7 @@ frontend-shell:
         -v ./assets/sopds-sass/gulpfile.babel.js:/foundation/gulpfile.babel.js \
         -v ./assets/sopds-sass/config.yml:/foundation/config.yml \
         -v ./assets/sopds-sass/scss/:/foundation/src/assets/scss/ \
+        -v ./assets/sopds-sass/js/:/foundation/src/assets/js/ \
         -v ./tmp/target/:/foundation/target \
         foundation /bin/bash
 

@@ -20962,19 +20962,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var what_input__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(what_input__WEBPACK_IMPORTED_MODULE_1__);
 
 
-
-// Foundation JS relies on a global variable. In ES6, all imports are hoisted
-// to the top of the file so if we used `import` to import Foundation,
-// it would execute earlier than we have assigned the global variable.
-// This is why we have to use CommonJS require() here since it doesn't
-// have the hoisting behavior.
 window.jQuery = (jquery__WEBPACK_IMPORTED_MODULE_0___default());
 __webpack_require__(/*! foundation-sites */ "./node_modules/foundation-sites/dist/js/foundation.esm.js");
 
-// If you want to pick and choose which modules to include, comment out the above and uncomment
-// the line below
-//import './lib/foundation-explicit-pieces';
-
+// Add search field validator
+Foundation.Abide.defaults.validators["SearchLenghtValidator"] = function ($el, required, parent) {
+  return $el.val().length >= 3;
+};
 jquery__WEBPACK_IMPORTED_MODULE_0___default()(document).foundation();
 }();
 /******/ })()

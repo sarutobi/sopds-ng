@@ -10,11 +10,11 @@
   <form method="get" action="{% url "web:searchbooks" %}" id="searchform" data-abide>
   {% csrf_token %}
     <div class="input-group button-group">  
-		<input class="input-group-field" type="search" name="searchterms" placeholder="Search" id="main_searchbox" data-validator="check_search" required >
+		<input class="input-group-field" type="search" name="searchterms" placeholder="Search" id="main_searchbox" data-validator="SearchLenghtValidator" required >
 
 		<div class="input-group-button">
 		     <button class="button" type="submit" data-close="search-dropdown" name="submit_form" style="margin:1">{% trans "Search" %}</button>	   
-		     <a class="dropdown button sopds-arrow-only align-self-middle" data-toggle="search-dropdown" ></a>
+		     <a id="search_selector" class="dropdown button sopds-arrow-only align-self-middle" data-toggle="search-dropdown" ></a>
 		</div>
 
 		<input type="hidden" name="page" value="0">		
@@ -43,7 +43,7 @@ function SetSearch() {
     if (searchtype == "author") $('#searchform').attr( "action","{% url "web:searchauthors" %}");
     if (searchtype == "series") $('#searchform').attr( "action","{% url "web:searchseries" %}");
 
-    $('#search-dropdown').foundation('close');         
+    $('#search_selector')[0].click();
 }
 </script>
   
