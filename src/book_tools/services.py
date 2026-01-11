@@ -4,7 +4,6 @@ import os
 import zipfile
 from abc import ABC, abstractmethod
 from contextlib import suppress
-from dataclasses import dataclass
 from io import BytesIO
 
 from lxml import etree
@@ -41,7 +40,7 @@ def create_bookfile_service(data: BytesIO, original_filename: str) -> BookFile:
     else:
         content = data
 
-    parser = FB2(content, original_filename, Mimetype.FB2)
+    parser = FB2(content)
     book_file = BookFile(data, original_filename, Mimetype.FB2)
     book_file.mimetype = Mimetype.FB2
     book_file.__set_title__(parser.title)

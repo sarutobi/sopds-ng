@@ -1,36 +1,22 @@
-# import os
-# from contextlib import nullcontext
 from datetime import datetime
 from io import BytesIO
-# from zipfile import BadZipFile
 
 import pytest
 
 from book_tools.format.bookfile import BookFile
 from book_tools.format.fb2 import (
     FB2,
-    # FB2Zip,
 )
 
-# from book_tools.format.fb2 import (
-#     FB2StructureException as FB2_StructureException,
-# )
 from book_tools.format.fb2sax import FB2sax
 from book_tools.format.parsers import FB2sax as FB2sax_new
-from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import (
     EbookMetaParser,
 )
 from book_tools.format.parsers import (
     FB2 as FB2_new,
 )
-# from book_tools.exceptions import FB2StructureException
-
-# from book_tools.format.parsers import (
-# FB2Zip as FB2Zip_new,
-# )
 from tests.book_tools.format.helpers import fb2_book_fabric
-# from opds_catalog.tests.helpers import read_file_as_iobytes
 
 
 def test_fb2tag_tagopen(test_tag) -> None:
@@ -93,7 +79,7 @@ def test_fb2sax_new_parser(virtual_fb2_book) -> None:
 
 def test_fb2_new_parser(virtual_fb2_book) -> None:
     book_actual = FB2(virtual_fb2_book, "Test Book")
-    book_new = FB2_new(virtual_fb2_book, "Test Book", Mimetype.FB2)
+    book_new = FB2_new(virtual_fb2_book)
     assert _are_equals_data(book_actual, book_new)
 
 
@@ -132,7 +118,7 @@ def test_benchmark_fb2sax_parser(benchmark, virtual_fb2_book):
 
 @pytest.mark.benchmark
 def test_benchmark_fb2_new_parser(benchmark, virtual_fb2_book):
-    benchmark(FB2_new, virtual_fb2_book, "benchmark", "test")
+    benchmark(FB2_new, virtual_fb2_book)
 
 
 @pytest.mark.benchmark
@@ -143,9 +129,7 @@ def test_benchmark_fb2_parser(benchmark, virtual_fb2_book):
 def test_fb2_cover_extraction(fb2_book_from_fs) -> None:
     """Проверка извлечения обложки старым и новым парсером FB2"""
     cover_actual = FB2(fb2_book_from_fs, "Test book").extract_cover_memory()
-    cover_expected = FB2_new(
-        fb2_book_from_fs, "Test book", Mimetype.FB2
-    ).extract_cover()
+    cover_expected = FB2_new(fb2_book_from_fs).extract_cover()
     assert cover_actual is not None
     assert cover_actual == cover_expected
 

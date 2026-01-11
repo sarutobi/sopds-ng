@@ -4,17 +4,14 @@ from book_tools.format.parsers import FB2
 import os
 import codecs
 
-# import base64
 import io
 import subprocess
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpRequest
-# from django.views.decorators.cache import cache_page
 
 from opds_catalog.models import Book, bookshelf
-from opds_catalog import settings, utils, opdsdb  # , fb2parse
+from opds_catalog import settings, utils, opdsdb
 
-# import opds_catalog.zipf as zipfile
 import zipfile
 
 from book_tools.format import create_bookfile, mime_detector
@@ -53,7 +50,7 @@ def read_from_regular_file(file_path: str) -> io.BytesIO | None:
     """Читает содержимое обычного файла из файловой системы"""
 
     if not os.path.isfile(file_path):
-        # TODO залоггировать ошибку
+        # TODO: залоггировать ошибку
         return None
 
     content = io.BytesIO()
@@ -75,14 +72,14 @@ def read_from_zipped_file(zip_path: str, filename: str) -> io.BytesIO | None:
     try:
         with open(zip_path, "rb") as zip:
             with zipfile.ZipFile(zip, "r", allowZip64=True) as zc:
-                # TODO Проверка существования нужного файла в архиве
+                # TODO: Проверка существования нужного файла в архиве
                 with zc.open(filename, "r") as book:
                     content.write(book.read())
 
         content.seek(0)
         return content
     except KeyError:
-        # TODO Залоггировать ошибку
+        # TODO: Залоггировать ошибку
         return None
 
 
@@ -247,7 +244,7 @@ def Cover(
         if book.format == "fb2":
             content = getFileData(book)
             assert content is not None
-            parser = FB2(content, book.filename, Mimetype.FB2)
+            parser = FB2(content)
             image = parser.extract_cover()
         else:
             book_data = create_bookfile(getFileData(book), book.filename)
@@ -260,7 +257,9 @@ def Cover(
         response["Content-Type"] = "image/jpeg"
         if thumbnail:
             thumb = Image.open(io.BytesIO(image)).convert("RGB")
-            thumb.thumbnail((settings.THUMB_SIZE, settings.THUMB_SIZE), Image.LANCZOS)
+            thumb.thumbnail(
+                (settings.THUMB_SIZE, settings.THUMB_SIZE), Image.Resampling.LANCZOS
+            )
             tfile = io.BytesIO()
             thumb.save(tfile, "JPEG")
             image = tfile.getvalue()
@@ -315,6 +314,7 @@ def ConvertFB2(request, book_id, convert_type):
         tmp_fb2_path = None
         file_path = os.path.join(full_path, book.filename)
     elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
+        # FIXME: Исправить работу c codecs
         try:
             fz = codecs.open(full_path, "rb")
         except FileNotFoundError:
