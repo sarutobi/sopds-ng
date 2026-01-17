@@ -3,7 +3,7 @@
 import os
 import re
 
-from django.db.models import Q
+# from django.db.models import Q
 from django.utils.translation import gettext as _, gettext_noop as _noop
 from django.db import transaction, connection
 
@@ -16,8 +16,8 @@ from opds_catalog.models import (
     bseries,
     bauthor,
     bgenre,
-    bookshelf,
-    Counter,
+    # bookshelf,
+    # Counter,
     LangCodes,
 )
 from opds_catalog.models import (
@@ -34,7 +34,7 @@ from opds_catalog.models import (
     SIZE_CAT_PATH,
     SIZE_AUTHOR_NAME,
     SIZE_GENRE,
-    SIZE_GENRE_SECTION,
+    # SIZE_GENRE_SECTION,
     SIZE_GENRE_SUBSECTION,
     SIZE_SERIES,
 )
@@ -80,11 +80,18 @@ def pg_optimize(verbose=False):
             print("No PostgreSql connection backend detected...")
     else:
         print("Start PostgreSql tables optimization...")
-        cursor = connection.cursor()
-        # TODO: зачем для таблицы книг выставляется fillfactor 50
-        cursor.execute("alter table opds_catalog_book SET ( fillfactor = 50)")
-        # TODO: заменить вызов VACUUM FULL на нормально настроенный автовакуум
-        cursor.execute("VACUUM FULL opds_catalog_book")
+        with connection.cursor() as cursor:
+            cursor.execute("alter table opds_catalog_book SET ( fillfactor = 100)")
+            cursor.execute("VACUUM FULL opds_catalog_book")
+            # Для оптимизации поиска по наименовниям книг и авторам будем использовать индекс gin
+            cursor.execute("select count(*) from pg_extension where extname='pg_trgm'")
+            row = cursor.fetchone()
+            if row[0] == 0:
+                cursor.execute("create extension pg_trgm")
+
+                cursor.execute(
+                    "create index concurrently opds_catalog_book_title_gin_idx on opds_catalog_book using gin (title gin_trgm_ops)"
+                )
         print("PostgreSql tables internal structure optimized...")
 
 
@@ -174,7 +181,7 @@ def arc_skip(arcpath, arcsize):
     catalog = findcat(arcpath)
 
     # Если такого каталога еще нет в БД, то значит считаем что ZIP изменен и пропуск невозможен
-    if catalog == None:
+    if catalog is None:
         return 0
 
     # Если каталог в БД найден и его размер совпадает с текущим, то считаем что файл архива не менялся
@@ -203,7 +210,7 @@ def inp_skip(arcpath, arcsize):
     catalog = findcat(arcpath)
 
     # Если такого INPX еще нет в БД, то значит считаем что INPX изменен и пропуск невозможен
-    if catalog == None:
+    if catalog is None:
         return 0
 
     # Если INPX в БД найден и его размер совпадает с текущим, то считаем что файл INPX не менялся
@@ -232,7 +239,7 @@ def inpx_skip(arcpath, arcsize):
     catalog = findcat(arcpath)
 
     # Если такого INPX еще нет в БД, то значит считаем что INPX изменен и пропуск невозможен
-    if catalog == None:
+    if catalog is None:
         return 0
 
     # Если INPX в БД найден и его размер совпадает с текущим, то считаем что файл INPX не менялся
