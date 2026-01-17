@@ -5,7 +5,7 @@
 
 [Инструкция на русском языке: README_RUS.md](README_RUS.md)
 
-Based on source code [SimpleOPDS Catalog](https://github.com/mitshel/sopds) by Dmitry V.Shelepov.
+Based on source code [SimpleOPDS Catalog](https://github.com/mitshel/sopds) by Dmitry V.Shelepnev.
 ![Example 1](images/sopds-ng-1.jpg)
 
 Notable changes:
