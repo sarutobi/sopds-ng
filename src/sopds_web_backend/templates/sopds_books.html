@@ -12,6 +12,7 @@
        }
 </script>
 
+{% spaceless %}
 <!-- Remove book from bookshelf -->
 <div id="DeleteBookModal" class="reveal tiny text-center" data-reveal>
   <h5 id="DeleteBookModalTitle">{% trans "Confirm the deletion of the book from your bookshelf." %}</h5>
@@ -47,8 +48,10 @@
  <a class="alert button small" data-open="ConfirmModal">{%  trans "Clear bookshelf" %}</a>
  {% endif %}
 <!-- Bookshelf -->
+{% endspaceless %}
 
 {%  for b in books %}
+{% spaceless %}
 <!-- Book card-->
     <div class="cell sopds-book-card">
         <div class="sopds-book-card-divider">
@@ -134,6 +137,7 @@
             </div><!-- cell -->
         </div><!-- Card section -->
     </div><!-- Book card -->
+    {% endspaceless %}
 <!--/div-->
 {% endfor %}
 

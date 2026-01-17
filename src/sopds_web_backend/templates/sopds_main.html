@@ -1,6 +1,6 @@
 {% load static %}
 {% load cache %}
-
+{% spaceless %}
 <!DOCTYPE html>
 
 <html lang="ru">
@@ -83,7 +83,7 @@
     SetSearch();
 	
   </script>
-  
+  {% endspaceless %} 
 
  {% block block-js %}{% endblock %}
 </body>
