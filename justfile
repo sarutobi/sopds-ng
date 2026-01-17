@@ -127,6 +127,13 @@ build-dev-frontend:
     @cp -r tmp/target/dist/assets/css src/sopds_web_backend/static/
     @cp -r tmp/target/dist/assets/js src/sopds_web_backend/static/
 
+# Build production frontend
+build-frontend:
+    @just run-frontend yarn build
+    @rm -rf src/sopds_web_backend/static/{css,js}
+    @cp -r tmp/target/dist/assets/css src/sopds_web_backend/static/
+    @cp -r tmp/target/dist/assets/js src/sopds_web_backend/static/
+
 # Run shell in frontend container
 frontend-shell:
     @docker run -it --rm -v ./assets/sopds-sass/package.json:/foundation/package.json \
