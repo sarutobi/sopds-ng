@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.template.context_processors import csrf
-from django.db.models import Count, Min
+from django.db.models import Count, Min, Prefetch
 from django.utils.translation import gettext as _
 from django.contrib.auth import authenticate, login, logout, REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import user_passes_test
@@ -181,6 +181,11 @@ def SearchBooksView(request):
         # print(books.query)
 
         # Фильтруем дубликаты и формируем выдачу затребованной страницы
+        books = books.prefetch_related(
+            Prefetch("authors", to_attr="c_authors"),
+            Prefetch("series", to_attr="c_series"),
+            Prefetch("genres", to_attr="c_genres"),
+        )
         books_count = books.count()
         op = OPDS_Paginator(
             books_count, 0, page_num, config.SOPDS_MAXITEMS, HALF_PAGES_LINKS
@@ -214,9 +219,9 @@ def SearchBooksView(request):
                 "title": row.title,
                 "lang": get_lang_name(row.lang),
                 "filesize": row.filesize,
-                "authors": row.authors.values(),
-                "genres": row.genres.values(),
-                "series": row.series.values(),
+                "authors": row.c_authors,
+                "genres": row.c_genres,
+                "series": row.c_series,
                 "ser_no": row.bseries_set.values("ser_no"),
                 #'readtime':row.bookshelf_set.filter(user=request.user).values('readtime') if config.SOPDS_AUTH else None
                 "readtime": row.bookshelf_set.filter(user=request.user).values(
@@ -226,8 +231,8 @@ def SearchBooksView(request):
                 else None,
             }
             if summary_DOUBLES_HIDE:
-                title = p["title"]
-                authors_set = {a["id"] for a in p["authors"]}
+                title: str = p["title"]
+                authors_set = {a.id for a in p["authors"]}
                 if (
                     title.upper() == prev_title.upper()
                     and authors_set == prev_authors_set
