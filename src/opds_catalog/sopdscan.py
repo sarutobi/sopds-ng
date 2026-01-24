@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import whitenoise
 
 import os
 import time
@@ -29,7 +28,7 @@ class opdsScanner:
             self.logger = logger
         else:
             self.logger = logging.getLogger(__name__)
-            self.logger.setLevel(logging.INFO)
+            # self.logger.setLevel(logging.INFO)
         self.init_stats()
 
     def init_stats(self):
@@ -223,9 +222,6 @@ class opdsScanner:
                 cat = opdsdb.addcattree(rel_file, opdsdb.CAT_ZIP, zsize)
                 for n in filelist:
                     try:
-                        self.logger.debug(
-                            f"Start process ZIP file = {file} book file = {n}"
-                        )
                         file_size = z.getinfo(n).file_size
                         bookfile = z.open(n)
                         self.processfile(
@@ -234,7 +230,7 @@ class opdsScanner:
                         bookfile.close()
                     except zipfile.BadZipFile as e:
                         self.logger.warning(
-                            f"Error processing ZIP file = {file} book file = n: {e}"
+                            f"Error processing  book file 'n' in ZIP file '{file}': {e}"
                         )
                         zip_process_error = 1
                 z.close()
@@ -247,24 +243,30 @@ class opdsScanner:
             self.bad_archives += zip_process_error
 
     def processfile(self, name, full_path, file, cat, archive=0, file_size=0):
+        self.logger.info(f"Start processing file {name}")
+        self.logger.debug(f"File directory: {full_path}")
+        self.logger.debug(f"File path: {file}")
+        self.logger.debug(f"Catalog type: {cat}")
+        self.logger.debug(f"Archive: {archive}")
+        self.logger.debug(f"File size: {file_size}")
         (n, e) = os.path.splitext(name)
         if e.lower() in config.SOPDS_BOOK_EXTENSIONS.split():
             rel_path = os.path.relpath(full_path, config.SOPDS_ROOT_LIB)
-            self.logger.debug("Attempt to add book " + rel_path + "/" + name)
+            self.logger.debug(f"Attempt to add book {rel_path}/{name}")
             try:
                 if opdsdb.findbook(name, rel_path, 1) is None:
+                    self.logger.info(f"Book {name} is new")
                     if archive == 0:
+                        self.logger.info(f"Add new catalog {rel_path}")
                         cat = opdsdb.addcattree(rel_path, archive)
 
                     try:
+                        self.logger.info(f"Extracting book metadata from {name}")
                         book_data = create_bookfile(file, name)
                     except Exception as err:
                         book_data = None
-                        self.logger.warning(
-                            rel_path
-                            + " - "
-                            + name
-                            + " Book parse error, skipping... (Error: %s)" % err
+                        self.logger.error(
+                            f"{rel_path} - {name} book parse error, skipping. Error was: {err}"
                         )
                         self.bad_books += 1
 
@@ -290,6 +292,7 @@ class opdsScanner:
                         )
                         docdate = book_data.docdate if book_data.docdate else ""
 
+                        self.logger.info(f"Store book '{name}' metainfo in database")
                         book = opdsdb.addbook(
                             name,
                             rel_path,
@@ -306,10 +309,13 @@ class opdsScanner:
 
                         if archive != 0:
                             self.books_in_archives += 1
-                        self.logger.debug(
-                            "Book " + rel_path + "/" + name + " Added ok."
+                        self.logger.info(
+                            f"Book {rel_path}/{name}  metadata successfully writed to database."
                         )
 
+                        self.logger.info(
+                            f"Store authors metadata for {name} in database"
+                        )
                         for a in book_data.authors:
                             author_name = a.get("name", _("Unknown author")).strip(
                                 strip_symbols
@@ -321,14 +327,21 @@ class opdsScanner:
                                 author_name = " ".join(
                                     [author_names[-1], " ".join(author_names[:-1])]
                                 )
+                            self.logger.debug(f"Author: {author_name}")
                             author = opdsdb.addauthor(author_name)
+                            self.logger.debug(f"Link {book} to {author}")
                             opdsdb.addbauthor(book, author)
+                        self.logger.info("Authors metadata stored succesfully")
 
+                        self.logger.info(
+                            f"Store genres metadata for {name} in database"
+                        )
                         for genre in book_data.tags:
                             opdsdb.addbgenre(
                                 book,
                                 opdsdb.addgenre(genre.lower().strip(strip_symbols)),
                             )
+                        self.logger.info("Genres metadata stored successfully")
 
                         # FIXME: series_info определяется только по наличию названия серии, номер в серии устанавливается в 0 если не указан
                         if book_data.series_info:
@@ -338,14 +351,9 @@ class opdsScanner:
                             opdsdb.addbseries(book, ser, ser_no)
                 else:
                     self.books_skipped += 1
-                    self.logger.debug(
-                        "Book " + rel_path + "/" + name + " Already in DB."
-                    )
+                    self.logger.info(f"Book {rel_path}/{name} already in database.")
             except UnicodeEncodeError as err:
-                self.logger.warning(
-                    rel_path
-                    + " - "
-                    + name
-                    + " Book UnicodeEncodeError error, skipping... (Error: %s)" % err
+                self.logger.error(
+                    f"{rel_path} - {name} book UnicodeEncodeError error, skipping. Error was: {err}"
                 )
                 self.bad_books += 1

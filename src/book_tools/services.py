@@ -1,4 +1,5 @@
 # Сервисы для работы с электронными книгами
+import logging
 from lxml.etree import XMLSyntaxError
 import os
 import zipfile
@@ -12,6 +13,8 @@ from .format.bookfile import BookFile
 from .format.mimetype import Mimetype
 
 from .format.parsers import FB2
+
+logger = logging.getLogger(__name__)
 
 
 def create_bookfile_service(data: BytesIO, original_filename: str) -> BookFile:
@@ -28,7 +31,10 @@ def create_bookfile_service(data: BytesIO, original_filename: str) -> BookFile:
         FB2StructureException
 
     """
+    logger.info(f"Attempt to extract metadata from {original_filename}")
+    logger.debug(f"Content size: {len(data.getvalue())}")
     if zipfile.is_zipfile(data):
+        logger.info(f"{original_filename} id ZIP file")
         with zipfile.ZipFile(data, "r") as z:
             if len(z.infolist()) > 1:
                 raise Exception("Incorrect fb2 zip archive!")
@@ -175,7 +181,8 @@ def detect_mime_service(file: BytesIO, original_filename: str) -> str:
     Returns:
         str Установленный Mimetype файла.
     """
-    # Перечень известных влидаторов. Должны быть описаны от конкретных к
+    logger.info(f"Detecting mimetype of {original_filename}")
+    # Перечень известных валидаторов. Должны быть описаны от конкретных к
     # обобощенным.
     detectors: list[MimetypeValidator] = [
         FB2MimeValidator(),
@@ -222,7 +229,10 @@ def detect_mime_service(file: BytesIO, original_filename: str) -> str:
     ]
 
     for v in detectors:
+        logger.info(f"Check that {original_filename} is {v.mimetype}")
         if v.is_valid(original_filename, file):
+            logger.info("Check successful")
             return v.filetype()
 
+    logger.info(f"{original_filename} is {Mimetype.OCTET_STREAM}")
     return Mimetype.OCTET_STREAM

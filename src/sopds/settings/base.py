@@ -29,6 +29,8 @@ VERSION = env("SOPDS_VERSION")
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[".localhost", "127.0.0.1"])
 
+# SERVER_LOG_LEVEL
+SOPDS_SERVER_LOG_LEVEL = env("SOPDS_SERVER_LOG_LEVEL", default="WARNING")
 
 # Application definition
 
@@ -439,11 +441,11 @@ LOGGING = {
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
-            "format": "{asctime} {levelname} [{module}] {process:d} {thread:d} {message}",
+            "format": "{asctime} [P:{process:d}:{thread:d}] {levelname} [{name}:{funcName}:{lineno}]  {message}",
             "style": "{",
         },
         "simple": {
-            "format": "{asctime} {levelname} [{module} {funcName}:{lineno}] {message}",
+            "format": "{levelname} [{name}:{funcName}:{lineno}] {message}",
             "style": "{",
         },
     },
@@ -454,22 +456,33 @@ LOGGING = {
     },
     "handlers": {
         "console": {
-            "level": "DEBUG",
             "class": "logging.StreamHandler",
             "formatter": "simple",
+        },
+        "file": {
+            "formatter": "verbose",
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "when": "midnight",
+            "interval": 1,
+            "backupCount": 7,
+            "filename": "log/sopds-ng.log",
         },
     },
     "loggers": {
         "django": {
-            "handlers": ["console"],
+            "handlers": ["console", "file"],
             "level": "INFO",
             "filters": ["require_debug_true"],
             "propagate": True,
         },
         "opds_catalog": {
-            "handlers": ["console"],
-            "level": "DEBUG",
-            "format": "verbose",
+            "handlers": ["console", "file"],
+            "level": SOPDS_SERVER_LOG_LEVEL,
+            "propagate": False,
+        },
+        "book_tools": {
+            "handlers": ["console", "file"],
+            "level": SOPDS_SERVER_LOG_LEVEL,
             "propagate": False,
         },
     },

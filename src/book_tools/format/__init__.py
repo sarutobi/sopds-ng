@@ -1,4 +1,6 @@
 # import magic
+from book_tools.format.bookfile import BookFile
+import logging
 from book_tools.services import create_bookfile_service, detect_mime_service
 import os
 import zipfile
@@ -11,12 +13,15 @@ from book_tools.format.mimetype import Mimetype
 from book_tools.format.util import list_zip_file_infos
 from book_tools.format.epub import EPub
 from book_tools.format.fb2 import FB2, FB2Zip
-from book_tools.format.fb2sax import FB2sax
+
+# from book_tools.format.fb2sax import FB2sax
 from book_tools.format.other import Dummy
 from book_tools.format.mobi import Mobipocket
 
 from book_tools.format.parsers import FB2sax as FB2sax2, FB2 as FB2_
-from constance import config
+# from constance import config
+
+logger = logging.getLogger(__name__)
 
 
 class mime_detector:
@@ -88,10 +93,13 @@ def detect_mime(file, original_filename):
     return mime
 
 
-def create_bookfile(file, original_filename):
+def create_bookfile(file, original_filename) -> BookFile:
+    logger.info(f"Extract metadata from {original_filename}")
     if isinstance(file, str):
+        logger.info(f"Read {original_filename} content from file system")
         file = open(file, "rb")
     file = BytesIO(file.read())
+    logger.info(f"Detect {original_filename} mimetype")
     mimetype = detect_mime_service(file, original_filename)
     if mimetype == Mimetype.EPUB:
         return EPub(file, original_filename)

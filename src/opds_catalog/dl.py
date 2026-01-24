@@ -39,22 +39,27 @@ def getFileName(book: Book) -> str:
 
 def get_fs_book_path(book: Book) -> str:
     """Формирует полный путь в файловой системе библиотеки для файла книги"""
+    logger.info(f"Create file path for book {book.id}")
     path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
     if book.cat_type == opdsdb.CAT_INP:
+        logger.info("Book has been placed in INP/INPX catalog")
         # Убираем из пути INPX и INP файл
         inp_path, zip_name = os.path.split(path)
         inpx_path, inp_name = os.path.split(inp_path)
         n_path, inpx_name = os.path.split(inpx_path)
-        return os.path.join(n_path, zip_name)
-    else:
-        return path
+        path = os.path.join(n_path, zip_name)
+
+    logger.debug(f"Real book file path is {path}")
+    return path
 
 
 def read_from_regular_file(file_path: str) -> io.BytesIO | None:
     """Читает содержимое обычного файла из файловой системы"""
 
+    logger.info(f"Reading content from {file_path} as regular file")
     if not os.path.isfile(file_path):
         # TODO: залоггировать ошибку
+        logger.error(f"File {file_path} is not a regular file!")
         return None
 
     content = io.BytesIO()
@@ -62,12 +67,13 @@ def read_from_regular_file(file_path: str) -> io.BytesIO | None:
         content.write(book.read())
 
     content.seek(0)
+    logger.info(f"Readed {len(content.getvalue())} bytes from {file_path}")
     return content
 
 
 def read_from_zipped_file(zip_path: str, filename: str) -> io.BytesIO | None:
     """Читает содержимое файла filename из zip файла в файловой системе"""
-    logger.debug(f"Start reading file {filename} from ZIP {zip_path}")
+    logger.info(f"Reading content of file {filename} from ZIP {zip_path}")
     if not os.path.isfile(zip_path):
         logger.error(f"File {zip_path} not found!")
         return None
@@ -90,7 +96,7 @@ def read_from_zipped_file(zip_path: str, filename: str) -> io.BytesIO | None:
 
 def getFileData(book: Book) -> io.BytesIO | None:
     """Поиск и считывание файла книги из ФС"""
-    logger.info(f"Start reading book file {book.filename} from file system")
+    logger.info(f"Reading book file {book.filename} from file system")
     full_path = get_fs_book_path(book)
     logger.info(f"Read file from {full_path}")
     if book.cat_type == opdsdb.CAT_NORMAL:
@@ -181,8 +187,12 @@ def Download(request, book_id, zip_flag):
     # TODO: это view, он должен быть в другом месте
     # TODO: реорганизовать в части формирования ответа
     """Загрузка файла книги"""
+    logger.info(f"Download {book_id}")
+    logger.debug(f"Zip flag: {zip_flag}")
+    logger.info(f"Reading book {book_id} metadata from database")
     book = Book.objects.get(id=book_id)
 
+    logger.info("Processing user bookshelf ")
     if config.SOPDS_AUTH:
         #        if not request.user.is_authenticated:
         #            bau = BasicAuthMiddleware()
@@ -193,6 +203,7 @@ def Download(request, book_id, zip_flag):
         if request.user.is_authenticated:
             bookshelf.objects.get_or_create(user=request.user, book=book)
 
+    logger.info("Prepare book filename and content type")
     transname = getFileName(book)
     transname = utils.to_ascii(transname)
 
@@ -203,6 +214,9 @@ def Download(request, book_id, zip_flag):
         dlfilename = transname
         content_type = mime_detector.fmt(book.format)
 
+    logger.debug(f"Filename: {dlfilename}")
+    logger.debug(f"Content type: {content_type}")
+
     response = HttpResponse()
     response["Content-Type"] = '%s; name="%s"' % (content_type, dlfilename)
     response["Content-Disposition"] = 'attachment; filename="%s"' % (dlfilename)
@@ -211,6 +225,7 @@ def Download(request, book_id, zip_flag):
     s = getFileData(book)
 
     if zip_flag == "1":
+        logger.info("Pack content to ZIP")
         dio = io.BytesIO()
         with zipfile.ZipFile(dio, "w", zipfile.ZIP_DEFLATED) as zo:
             zo.writestr(transname, s.getvalue())
