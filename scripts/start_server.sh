@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Create log directory
+mkdir -p log
+
 # Sync packages
 uv sync --no-dev
 
