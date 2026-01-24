@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 from book_tools.format.parsers import FB2
 
 import os
@@ -21,6 +22,9 @@ from constance import config
 from PIL import Image
 
 from opds_catalog.decorators import sopds_auth_validate
+
+
+logger = logging.getLogger(__name__)
 
 
 def getFileName(book: Book) -> str:
@@ -63,9 +67,9 @@ def read_from_regular_file(file_path: str) -> io.BytesIO | None:
 
 def read_from_zipped_file(zip_path: str, filename: str) -> io.BytesIO | None:
     """Читает содержимое файла filename из zip файла в файловой системе"""
-
+    logger.debug(f"Start reading file {filename} from ZIP {zip_path}")
     if not os.path.isfile(zip_path):
-        # TODO: залоггировать ошибку
+        logger.error(f"File {zip_path} not found!")
         return None
 
     content = io.BytesIO()
@@ -77,21 +81,25 @@ def read_from_zipped_file(zip_path: str, filename: str) -> io.BytesIO | None:
                     content.write(book.read())
 
         content.seek(0)
+        logger.debug(f"Readed {len(content.getvalue())} bytes from {zip_path}")
         return content
-    except KeyError:
-        # TODO: Залоггировать ошибку
+    except KeyError as e:
+        logger.error(f"Can not read file {filename} from ZIP archive {zip_path}: {e}")
         return None
 
 
 def getFileData(book: Book) -> io.BytesIO | None:
     """Поиск и считывание файла книги из ФС"""
+    logger.info(f"Start reading book file {book.filename} from file system")
     full_path = get_fs_book_path(book)
-
+    logger.info(f"Read file from {full_path}")
     if book.cat_type == opdsdb.CAT_NORMAL:
         file_path = os.path.join(full_path, book.filename)
+        logger.info(f"Reading file {book.filename} as regular file")
         return read_from_regular_file(file_path)
 
     elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
+        logger.info(f"Reading file {book.filename} from zipped catalog")
         return read_from_zipped_file(full_path, book.filename)
 
 

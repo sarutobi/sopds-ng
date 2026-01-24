@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import whitenoise
 
 import os
 import time
@@ -27,8 +28,8 @@ class opdsScanner:
         if logger:
             self.logger = logger
         else:
-            self.logger = logging.getLogger("")
-            self.logger.setLevel(logging.CRITICAL)
+            self.logger = logging.getLogger(__name__)
+            self.logger.setLevel(logging.INFO)
         self.init_stats()
 
     def init_stats(self):
@@ -98,7 +99,7 @@ class opdsScanner:
         self.rel_path = None
 
         opdsdb.avail_check_prepare()
-
+        self.logger.debug(f"ZipScan: {config.SOPDS_ZIPSCAN}")
         for full_path, dirs, files in os.walk(config.SOPDS_ROOT_LIB, followlinks=True):
             # Если разрешена обработка inpx, то при нахождении inpx обрабатываем его и прекращаем обработку текущего каталога
             if config.SOPDS_INPX_ENABLE:
@@ -117,8 +118,10 @@ class opdsScanner:
                 (n, e) = os.path.splitext(name)
                 if e.lower() == ".zip":
                     if config.SOPDS_ZIPSCAN:
+                        self.logger.info(f"Process zip file {file}")
                         self.processzip(name, full_path, file)
                 else:
+                    self.logger.info("Process regular file {file}")
                     file_size = os.path.getsize(file)
                     self.processfile(name, full_path, file, None, 0, file_size)
 
@@ -202,13 +205,17 @@ class opdsScanner:
             inpx.parse()
 
     def processzip(self, name, full_path, file):
+        self.logger.info(f"Start processing zipfile {name}")
+        self.logger.debug(f"File directory: {full_path}")
+        self.logger.debug(f"Full file path: {file}")
         rel_file = os.path.relpath(file, config.SOPDS_ROOT_LIB)
         zsize = os.path.getsize(file)
         if opdsdb.arc_skip(rel_file, zsize):
             self.arch_skipped += 1
-            self.logger.debug("Skip ZIP archive " + rel_file + ". Already scanned.")
+            self.logger.info(f"Skip ZIP archive {rel_file}. Already scanned.")
         else:
             # TODO:Обработка файлов в ФС должна быть описана в одном месте
+            self.logger.info(f"Process ZIP archive {rel_file}")
             zip_process_error = 0
             try:
                 z = zipfile.ZipFile(file, "r", allowZip64=True)
@@ -217,7 +224,7 @@ class opdsScanner:
                 for n in filelist:
                     try:
                         self.logger.debug(
-                            "Start process ZIP file = " + file + " book file = " + n
+                            f"Start process ZIP file = {file} book file = {n}"
                         )
                         file_size = z.getinfo(n).file_size
                         bookfile = z.open(n)
@@ -225,16 +232,16 @@ class opdsScanner:
                             n, file, bookfile, cat, opdsdb.CAT_ZIP, file_size
                         )
                         bookfile.close()
-                    except zipfile.BadZipFile:
+                    except zipfile.BadZipFile as e:
                         self.logger.warning(
-                            "Error processing ZIP file = " + file + " book file = " + n
+                            f"Error processing ZIP file = {file} book file = n: {e}"
                         )
                         zip_process_error = 1
                 z.close()
                 self.arch_scanned += 1
-            except zipfile.BadZipFile:
-                self.logger.warning(
-                    "Error while read ZIP archive. File " + file + " corrupt."
+            except zipfile.BadZipFile as e:
+                self.logger.error(
+                    f"Error while read ZIP archive. File {file} corrupt: {e}"
                 )
                 zip_process_error = 1
             self.bad_archives += zip_process_error

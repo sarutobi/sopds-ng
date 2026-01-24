@@ -432,3 +432,45 @@ CONSTANCE_CONFIG_FIELDSETS = {
         "SOPDS_TELEBOT_PID",
     ),
 }
+
+# Logger settings
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{asctime} {levelname} [{module}] {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{asctime} {levelname} [{module} {funcName}:{lineno}] {message}",
+            "style": "{",
+        },
+    },
+    "filters": {
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "filters": ["require_debug_true"],
+            "propagate": True,
+        },
+        "opds_catalog": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "format": "verbose",
+            "propagate": False,
+        },
+    },
+}
