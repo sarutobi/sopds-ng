@@ -1,3 +1,5 @@
+from opds_catalog.opdsdb import CAT_ZIP
+from opds_catalog.dl import getFileData
 import os
 
 import pytest
@@ -14,6 +16,7 @@ class TestBookScaner(object):
     test_module_path = os.path.dirname(os.path.abspath(__file__))
     test_ROOTLIB = os.path.join(test_module_path, "data")
     test_fb2 = "262001.fb2"
+    test_fb2zip = "262001.zip"
     test_epub = "mirer.epub"
     test_mobi = "robin_cook.mobi"
     test_zip = "books.zip"
@@ -60,6 +63,51 @@ class TestBookScaner(object):
         assert book.genres.count() == 1
         assert book.genres.get(genre="antique").section == opdsdb.unknown_genre
         assert book.genres.get(genre="antique").subsection == "antique"
+        assert getFileData(book) is not None
+
+    @pytest.mark.parametrize("fb2sax", [True, False])
+    def test_processfile_fb2zip(self, fb2sax):
+        """Тестирование процедуры processfile (извлекает метаданные из книги FB2 и помещает в БД)"""
+        config.SOPDS_FB2SAX = fb2sax
+        opdsdb.clear_all()
+        scanner = opdsScanner()
+        scanner.processzip(
+            self.test_fb2zip,
+            self.test_ROOTLIB,
+            os.path.join(self.test_ROOTLIB, self.test_fb2zip),
+            # None,
+            # 0,
+            # 495373,
+        )
+        book: Book = Book.objects.all()[0]
+        assert book is not None
+        assert scanner.books_added == 1
+        assert book.filename == self.test_fb2
+        assert book.path == self.test_fb2zip
+        assert book.format == "fb2"
+        assert book.cat_type == CAT_ZIP
+        # self.assertGreaterEqual(book.registerdate, )
+        assert book.docdate == "30.1.2011"
+        assert book.lang == "en"
+        assert book.title == "The Sanctuary Sparrow"
+        assert book.search_title == "The Sanctuary Sparrow".upper()
+        assert book.annotation == ""
+        assert book.avail == 2
+        assert book.catalog.path == self.test_fb2zip
+        assert book.catalog.cat_name == self.test_fb2zip
+        assert book.catalog.cat_type == CAT_ZIP
+        assert book.filesize == 495373
+
+        assert book.authors.count() == 1
+        assert (
+            book.authors.get(full_name="Peters Ellis").search_full_name
+            == "PETERS ELLIS"
+        )
+
+        assert book.genres.count() == 1
+        assert book.genres.get(genre="antique").section == opdsdb.unknown_genre
+        assert book.genres.get(genre="antique").subsection == "antique"
+        assert getFileData(book) is not None
 
     def test_processfile_epub(self):
         """Тестирование процедуры processfile (извлекает метаданные из книги EPUB и помещает в БД)"""

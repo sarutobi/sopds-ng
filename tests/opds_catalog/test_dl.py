@@ -92,6 +92,20 @@ class TestDownloads(object):
         assert response.status_code == 200
         assert response["Content-Length"] == "219508"
 
+    @pytest.mark.override_config(SOPDS_AUTH=False)
+    def test_download_unexisted_book(self, client, unexisted_book) -> None:
+        response = client.get(reverse("opds:download", args=(4, 0)))
+        assert response.status_code == 200
+        assert response["Content-Length"] == "219508"
+
+
+@pytest.fixture
+def unexisted_book():
+    b = Book(id=4, search_title="UNEXISTED", catalog_id=1)
+    b.save()
+    yield
+    b.delete()
+
 
 class TestGetFileName(TestCase, BookFactoryMixin):
     def setUp(self) -> None:
