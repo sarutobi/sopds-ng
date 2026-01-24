@@ -1,4 +1,4 @@
-from django.db import connection
+from random import randint
 from constance import config
 from opds_catalog import settings
 from opds_catalog.models import Book, bookshelf, Counter, lang_menu
@@ -48,16 +48,13 @@ def sopds_processor(request):
     # Поиск случайной книги
     books_count = stats["allbooks"]
     if books_count:
+        book_num = randint(1, books_count)
         try:
-            # Поскольку книг у нас очень много, используем методику получения случайной книги через сэмплинг таблицы
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    "select id from opds_catalog_book tablesample bernoulli(10) limit 1"
-                )
-                book_id = cursor.fetchone()[0]
+            book = Book.objects.values("id").all()[book_num - 1 : book_num][0]
             random_book = Book.objects.values("id", "title", "annotation").get(
-                id=book_id
+                id=book["id"]
             )
+
         except Book.DoesNotExist:
             random_book = None
     else:
