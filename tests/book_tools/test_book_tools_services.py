@@ -94,6 +94,7 @@ def test_mobi_mimevalidator(mobi_book_from_fs) -> None:
         ("zipped_fb2_book_from_fs", Mimetype.FB2_ZIP),
         ("epub_book_from_fs", Mimetype.EPUB),
         ("mobi_book_from_fs", Mimetype.MOBI),
+        ("wrong_encoded_fb2_zip", Mimetype.FB2_ZIP),
     ],
 )
 def test_detect_mime_service(book, expected, request) -> None:

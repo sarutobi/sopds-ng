@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
 import logging
 from book_tools.format.parsers import FB2
-
+import chardet
 import os
 import codecs
 
 import io
 import subprocess
 
-from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpRequest
+from django.http import (
+    HttpResponse,
+    HttpResponseRedirect,
+    Http404,
+    HttpRequest,
+    HttpResponseNotFound,
+)
 
 from opds_catalog.models import Book, bookshelf
 from opds_catalog import settings, utils, opdsdb
@@ -58,7 +64,6 @@ def read_from_regular_file(file_path: str) -> io.BytesIO | None:
 
     logger.info(f"Reading content from {file_path} as regular file")
     if not os.path.isfile(file_path):
-        # TODO: залоггировать ошибку
         logger.error(f"File {file_path} is not a regular file!")
         return None
 
@@ -69,6 +74,19 @@ def read_from_regular_file(file_path: str) -> io.BytesIO | None:
     content.seek(0)
     logger.info(f"Readed {len(content.getvalue())} bytes from {file_path}")
     return content
+
+
+def decode_string(string: str) -> str:
+    """Опеределение кодировки и перекодирование строки
+    :param string: Строка в неизвестной кодировке
+
+    :return: Перекодированная в корректную коидировку строка
+    """
+    logger.info("Detecting string encoding")
+    detector = chardet.detect(string.encode("cp437"))
+    encoding = detector.get("encoding") or "latin1"
+    logger.debug(f"Encoding: {encoding}")
+    return string.encode("cp437").decode(encoding)
 
 
 def read_from_zipped_file(zip_path: str, filename: str) -> io.BytesIO | None:
@@ -83,12 +101,22 @@ def read_from_zipped_file(zip_path: str, filename: str) -> io.BytesIO | None:
         with open(zip_path, "rb") as zip:
             with zipfile.ZipFile(zip, "r", allowZip64=True) as zc:
                 # TODO: Проверка существования нужного файла в архиве
-                with zc.open(filename, "r") as book:
-                    content.write(book.read())
-
-        content.seek(0)
-        logger.debug(f"Readed {len(content.getvalue())} bytes from {zip_path}")
-        return content
+                # issue 2 - если в архиве имя файла в некорректной кодировке,
+                # то такой файл не получается извлечь из архива.
+                for f in zc.infolist():
+                    # Используем библиотеку chardet для определения кодировок имен файлов в ZIP
+                    candidate = f.filename
+                    decoded_filename = decode_string(candidate)
+                    if decoded_filename == filename:
+                        with zc.open(candidate, "r") as book:
+                            content.write(book.read())
+                            content.seek(0)
+                            logger.debug(
+                                f"Readed {len(content.getvalue())} bytes from {zip_path}"
+                            )
+                            return content
+        logger.error(f"Cannot find file {filename} in ZIP archive {zip_path}")
+        return None
     except KeyError as e:
         logger.error(f"Can not read file {filename} from ZIP archive {zip_path}: {e}")
         return None
@@ -187,7 +215,8 @@ def Download(request, book_id, zip_flag):
     # TODO: это view, он должен быть в другом месте
     # TODO: реорганизовать в части формирования ответа
     """Загрузка файла книги"""
-    logger.info(f"Download {book_id}")
+    logger.info(f"Processing request book {book_id}for download")
+    logger.debug(f"Download {book_id}")
     logger.debug(f"Zip flag: {zip_flag}")
     logger.info(f"Reading book {book_id} metadata from database")
     book = Book.objects.get(id=book_id)
@@ -223,9 +252,15 @@ def Download(request, book_id, zip_flag):
     response["Content-Transfer-Encoding"] = "binary"
 
     s = getFileData(book)
+    if s is None:
+        # Книга не может быть прочитана из файловой системы, подробности зафиксированы в логе.
+        # TODO: Сделать нормальную обработку и вернуть нормальную страницу
+        return HttpResponseNotFound(
+            f"Book {book.id} with title '{book.title}' was not found in library files"
+        )
 
     if zip_flag == "1":
-        logger.info("Pack content to ZIP")
+        logger.info("Packing content to ZIP")
         dio = io.BytesIO()
         with zipfile.ZipFile(dio, "w", zipfile.ZIP_DEFLATED) as zo:
             zo.writestr(transname, s.getvalue())

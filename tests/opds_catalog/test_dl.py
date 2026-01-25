@@ -95,8 +95,7 @@ class TestDownloads(object):
     @pytest.mark.override_config(SOPDS_AUTH=False)
     def test_download_unexisted_book(self, client, unexisted_book) -> None:
         response = client.get(reverse("opds:download", args=(4, 0)))
-        assert response.status_code == 200
-        assert response["Content-Length"] == "219508"
+        assert response.status_code == 404
 
 
 @pytest.fixture
@@ -329,3 +328,13 @@ def test_get_book_cover(
         actual = client.get(url)
         assert actual.status_code == 200
         assert actual["Content-Length"] == "56360"
+
+
+@pytest.mark.django_db
+def test_wrong_encoded_fb2_zip(test_rootlib) -> None:
+    """Тест чтения файла из ZIP архива с кодировкой, отличной от latin1(cp437)"""
+    actual = read_from_zipped_file(
+        os.path.join(test_rootlib, "wrong_encoded.zip"),
+        "Носов - Незнайка-путешественник.fb2",
+    )
+    assert actual is not None

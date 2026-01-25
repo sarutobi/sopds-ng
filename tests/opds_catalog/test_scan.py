@@ -241,10 +241,10 @@ class TestBookScaner(object):
         opdsdb.clear_all()
         scanner = opdsScanner()
         scanner.scan_all()
-        assert scanner.books_added == 7
+        assert scanner.books_added == 8
         assert scanner.bad_books == 3
-        assert Book.objects.all().count() == 7
-        assert Author.objects.all().count() == 6
-        assert Genre.objects.all().count() == 5
+        assert Book.objects.all().count() == 8
+        assert Author.objects.all().count() == 7
+        assert Genre.objects.all().count() == 6
         assert Series.objects.all().count() == 1
-        assert Catalog.objects.all().count() == 4
+        assert Catalog.objects.all().count() == 5

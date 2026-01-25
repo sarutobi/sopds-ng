@@ -33,6 +33,12 @@ def mobi_book_from_fs(test_rootlib) -> BytesIO:
 
 
 @pytest.fixture
+def wrong_encoded_fb2_zip(test_rootlib) -> BytesIO:
+    """Предоставляет книгу с кодировкой названия в cp866"""
+    return read_file_as_iobytes(os.path.join(test_rootlib, "wrong_encoded.zip"))
+
+
+@pytest.fixture
 def iterate_books(
     fb2_book_from_fs, zipped_fb2_book_from_fs, epub_book_from_fs, mobi_book_from_fs
 ):
