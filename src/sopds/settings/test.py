@@ -11,3 +11,10 @@ DATABASES = {
         "NAME": BASE_DIR / "tmp/db.sqlite3",
     }
 }
+
+
+# Logger settings
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": True,
+}
