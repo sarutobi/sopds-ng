@@ -3,7 +3,7 @@ name = "sopds-ng"
 version = "0.48.0"
 description = "New generation of Simple OPDS catalog"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = "==3.13"
 dependencies = [
     "apscheduler==3.11",
     "chardet>=5.2.0",
@@ -50,13 +50,11 @@ markers = [
 [tool.coverage.run]
 
 relative_files = true
-# source = ["src/book_tools", "src/opds_catalog", "src/sopds_web-backend"]
 omit = ["manage.py", "*/migrations/*", "*/sopds/*", "src/inpx/*"]
 
 [tool.coverage.report]
 show_missing = true
 exclude_lines = ["pragma: no cover"]
-# omit = ["*/sopds/*", "*tests*", "*conftest.py", "*migrations*"]
 
 [tool.mypy]
 warn_unused_configs = true
