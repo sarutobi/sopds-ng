@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+version=$(<./version.txt)
+echo "Создание релиза $version"
+
 echo "Подготовка"
 rm -rf build/*
 mkdir -p build/release
@@ -18,8 +21,7 @@ rm -rf build/release/static/*
 find build -type f -name "*.pyc" -delete
 find build -type d -name "__pycache__" -delete
 
-version=$(<version.txt)
-echo "Создание релиза $version"
+echo "Подготовка пакета"
 cwd=$(pwd)
 cd build/release
 tar -czf ../release_${version}.tar.gz .
