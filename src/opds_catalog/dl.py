@@ -223,12 +223,6 @@ def Download(request, book_id, zip_flag):
 
     logger.info("Processing user bookshelf ")
     if config.SOPDS_AUTH:
-        #        if not request.user.is_authenticated:
-        #            bau = BasicAuthMiddleware()
-        #            request = bau.process_request(request)
-        #            if not hasattr(request, "user"):
-        #                return request
-
         if request.user.is_authenticated:
             bookshelf.objects.get_or_create(user=request.user, book=book)
 
@@ -266,10 +260,10 @@ def Download(request, book_id, zip_flag):
             zo.writestr(transname, s.getvalue())
 
         response["Content-Length"] = str(dio.getbuffer().nbytes)
-        response.write(dio)
+        response.write(dio.getvalue())
     else:
         response["Content-Length"] = str(s.getbuffer().nbytes)
-        response.write(s)
+        response.write(s.getvalue())
 
     return response
 
