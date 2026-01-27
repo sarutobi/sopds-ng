@@ -3,7 +3,7 @@ name = "sopds-ng"
 version = "0.48.0"
 description = "New generation of Simple OPDS catalog"
 readme = "README.md"
-requires-python = "==3.13"
+requires-python = "==3.13.*"
 dependencies = [
     "apscheduler==3.11",
     "chardet>=5.2.0",
