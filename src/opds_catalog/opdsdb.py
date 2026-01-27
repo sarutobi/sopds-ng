@@ -147,6 +147,7 @@ def getlangcode(s):
 
 
 def avail_check_prepare():
+    """Для всех книг, кроме удаленных, устанавливается признак наличия "1" """
     # Используется только в sopdscan
     # Book.objects.filter(~Q(avail=0)).update(avail=1)
     Book.objects.exclude(avail=0).update(avail=1)
@@ -254,7 +255,8 @@ def inpx_skip(arcpath, arcsize):
     return 0
 
 
-def findcat(cat_name):
+def findcat(cat_name: str) -> Catalog | None:
+    """Поиск каталога по его имени в базе данных"""
     (head, tail) = os.path.split(cat_name)
     try:
         catalog = Catalog.objects.get(
@@ -266,7 +268,7 @@ def findcat(cat_name):
     return catalog
 
 
-def addcattree(cat_name, archive=0, size=0):
+def addcattree(cat_name: str, archive: int = 0, size: int = 0) -> Catalog:
     catalog = findcat(cat_name)
     if catalog:
         return catalog

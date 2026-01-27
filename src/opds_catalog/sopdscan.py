@@ -31,7 +31,8 @@ class opdsScanner:
             # self.logger.setLevel(logging.INFO)
         self.init_stats()
 
-    def init_stats(self):
+    def init_stats(self) -> None:
+        """Сброс статистических параметров"""
         self.t1 = datetime.timedelta(seconds=time.time())
         self.t2 = self.t1
         self.t3 = self.t1
@@ -44,11 +45,13 @@ class opdsScanner:
         self.bad_books = 0
         self.books_in_archives = 0
 
-    def init_parser(self):
+    def init_parser(self) -> None:
         # FIXME: Указан фиксированный парсер
         self.fb2parser = fb2parse.fb2parser(False)
 
-    def log_options(self):
+    def log_options(self) -> None:
+        """Вывод в лог параметров контекста запуска сканера"""
+        # TODO: Вынести это в вызывающий код
         self.logger.info(" ***** Starting sopds-scan...")
         self.logger.debug("OPTIONS SET")
         if config.SOPDS_ROOT_LIB is not None:
@@ -62,7 +65,9 @@ class opdsScanner:
         if config.SOPDS_FB2SAX is not None:
             self.logger.info("FB2SAX = %s" % config.SOPDS_FB2SAX)
 
-    def log_stats(self):
+    def log_stats(self) -> None:
+        """Вывод в лог статистики работы сканера"""
+        # TODO: Вынести это в вызывающий код
         self.t2 = datetime.timedelta(seconds=time.time())
         self.logger.info("Books added      : " + str(self.books_added))
         self.logger.info("Books skipped    : " + str(self.books_skipped))
@@ -91,6 +96,7 @@ class opdsScanner:
         )
 
     def scan_all(self):
+        """Запуск сканирования библиотеки"""
         self.init_stats()
         self.log_options()
         self.inp_cat = None
@@ -133,7 +139,14 @@ class opdsScanner:
 
         self.log_stats()
 
-    def inpskip_callback(self, inpx, inp_file, inp_size):
+    def inpskip_callback(self, inpx, inp_file, inp_size) -> int:
+        """Проверка необходимости обработки найденного inxp файла
+        :inpx: найденный файл
+        :inp_file:
+        :inp_size: размер inp файла
+
+        :returns: 0 если файл требуется обработать, 1 если обработка не требуется
+        """
         self.rel_path = os.path.relpath(
             os.path.join(inpx, inp_file), config.SOPDS_ROOT_LIB
         )

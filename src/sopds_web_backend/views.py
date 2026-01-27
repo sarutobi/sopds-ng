@@ -7,22 +7,17 @@ from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.vary import vary_on_headers
 from django.urls import reverse, reverse_lazy
 from django.utils.html import strip_tags
-# from django.db.models import Q
-# from django.http import HttpResponseForbidden
 
-# from opds_catalog import models
 from opds_catalog.models import (
     Book,
     Author,
     Series,
     bookshelf,
-    #    Counter,
     Catalog,
     Genre,
     lang_menu,
 )
 
-# from opds_catalog import settings
 from constance import config
 from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
 from opds_catalog.utils import get_lang_name
@@ -107,8 +102,8 @@ def SearchBooksView(request):
         elif searchtype == "g":
             try:
                 genre_id = int(searchterms)
-                section = Genre.objects.get(id=genre_id).section
-                subsection = Genre.objects.get(id=genre_id).subsection
+                section: str = Genre.objects.get(id=genre_id).section
+                subsection: str = Genre.objects.get(id=genre_id).subsection
                 args["breadcrumbs"] = [
                     _("Books"),
                     _("Search by genre"),
