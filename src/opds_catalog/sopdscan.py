@@ -243,7 +243,7 @@ class opdsScanner:
                         bookfile.close()
                     except zipfile.BadZipFile as e:
                         self.logger.warning(
-                            f"Error processing  book file 'n' in ZIP file '{file}': {e}"
+                            f"Error processing  book file '{n}' in ZIP file '{file}': {e}"
                         )
                         zip_process_error = 1
                 z.close()

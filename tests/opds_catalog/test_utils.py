@@ -1,6 +1,9 @@
+import pytest
+import zipfile
+
 from django.test import TestCase
 
-from opds_catalog.utils import get_lang_name, translit
+from opds_catalog.utils import get_lang_name, translit, get_infolist_filename
 
 
 class TestOpdsUtils(TestCase):
@@ -31,3 +34,35 @@ class TestOpdsUtils(TestCase):
         expected_text = "Eto_dve_stroki"
         result_text = translit(text)
         assert result_text == expected_text
+
+
+@pytest.fixture
+def zipped_books_from_fs(wrong_encoded_fb2_zip, zipped_fb2_book_from_fs):
+    """Генератор данных для проверки поиска наименования книги в ZIP архиве"""
+    return [
+        (wrong_encoded_fb2_zip, "Носов - Незнайка-путешественник.fb2", "aaaaa"),
+        (zipped_fb2_book_from_fs, "262001.fb2", "262001.fb2"),
+        (zipped_fb2_book_from_fs, "262002.fb2", None),
+    ]
+
+
+@pytest.mark.parametrize(
+    "book_from_fs, filename, expected",
+    [
+        ("262001.zip", "262001.fb2", "262001.fb2"),
+        ("262001.zip", "262002.fb2", None),
+        (
+            "wrong_encoded.zip",
+            "Носов - Незнайка-путешественник.fb2",
+            "ì«ß«ó - ìÑº¡á⌐¬á-»πΓÑΦÑßΓóÑ¡¡¿¬.fb2",
+        ),
+    ],
+    indirect=["book_from_fs"],
+)
+def test_get_infolist_filename(book_from_fs, filename, expected) -> None:
+    """Тест поиска имени файла в zip архиве."""
+
+    with zipfile.ZipFile(book_from_fs) as zip:
+        infolist = zip.infolist()
+    actual = get_infolist_filename(infolist, filename)
+    assert actual == expected

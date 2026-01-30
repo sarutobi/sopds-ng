@@ -51,3 +51,9 @@ def iterate_books(
     ]
     for book in list:
         yield book
+
+
+@pytest.fixture
+def book_from_fs(test_rootlib, request) -> BytesIO:
+    """Обобщенная фикстура для предоставления запрошенной книги из ФС"""
+    return read_file_as_iobytes(os.path.join(test_rootlib, request.param))

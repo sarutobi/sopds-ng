@@ -84,15 +84,21 @@ class Command(BaseCommand):
             self.stdout.write("Scan process already active. Skip current job.")
             return
 
+        self.logger.info("Starting scanner process")
+        self.logger.debug("Setting lock flag")
         self.scan_is_active = True
 
+        self.logger.debug("Actualizing connection")
         if connection.connection and not connection.is_usable():
             del connections._connections.default
 
+        self.logger.debug("Creating scanner object")
         scanner = opdsScanner(self.logger)
         with transaction.atomic():
             scanner.scan_all()
+        self.logger.debug("Updating library statistics")
         Counter.objects.update_known_counters()
+        self.logger.debug("Releasing lock")
         self.scan_is_active = False
 
     def update_shedule(self):

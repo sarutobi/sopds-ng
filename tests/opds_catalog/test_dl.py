@@ -12,7 +12,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from opds_catalog import opdsdb
-from opds_catalog.dl import (
+from opds_catalog.utils import (
     get_fs_book_path,
     getFileData,
     getFileDataConv,
