@@ -20,6 +20,9 @@ import codecs
 
 logger = logging.getLogger(__name__)
 
+# Logger for scanner
+scan_logger = logging.getLogger("scanner")
+
 
 def translit(s: str) -> str:
     """Russian translit: converts 'привет'->'privet'"""
@@ -120,10 +123,10 @@ def decode_string(string: str) -> str:
 
     :return: Перекодированная в корректную коидировку строка
     """
-    logger.info("Detecting string encoding")
+    scan_logger.info("Detecting string encoding")
     detector = chardet.detect(string.encode("cp437"))
     encoding = detector.get("encoding") or "latin1"
-    logger.debug(f"Encoding: {encoding}")
+    scan_logger.debug(f"Encoding: {encoding}")
     return string.encode("cp437").decode(encoding)
 
 
@@ -155,7 +158,9 @@ def read_from_zipped_file(zip_path: str, filename: str) -> BytesIO | None:
         logger.error(f"Cannot find file {filename} in ZIP archive {zip_path}")
         return None
     except KeyError as e:
-        logger.error(f"Can not read file {filename} from ZIP archive {zip_path}: {e}")
+        logger.error(
+            f"Can not read file {filename} from ZIP archive {zip_path}: {e}"
+        )
         return None
 
 
@@ -217,7 +222,11 @@ def getFileDataConv(book, convert_type):
     fw.close()
     fo.close()
 
-    popen_args = '"%s" "%s" "%s"' % (converter_path, tmp_fb2_path, tmp_conv_path)
+    popen_args = '"%s" "%s" "%s"' % (
+        converter_path,
+        tmp_fb2_path,
+        tmp_conv_path,
+    )
     proc = subprocess.Popen(popen_args, shell=True, stdout=subprocess.PIPE)
     # У следующий строки 2 функции 1-получение информации по конвертации и 2- ожидание конца конвертации
     # В силу 2й функции ее удаление приведет к ошибке выдачи сконвертированного файла
@@ -247,7 +256,9 @@ def getFileDataMobi(book):
     return getFileDataConv(book, "mobi")
 
 
-def get_infolist_filename(infolist: list[ZipInfo], filename: str) -> str | None:
+def get_infolist_filename(
+    infolist: list[ZipInfo], filename: str
+) -> str | None:
     """Поиск имени файла в ZIP архиве.
 
         Кодировка имен файлов в ZIP архиве может быть отличной от UTF-8, из-за

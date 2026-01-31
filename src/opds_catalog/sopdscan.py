@@ -27,7 +27,7 @@ class opdsScanner:
         if logger:
             self.logger = logger
         else:
-            self.logger = logging.getLogger(__name__)
+            self.logger = logging.getLogger("scanner")
             # self.logger.setLevel(logging.INFO)
         self.init_stats()
 
@@ -154,17 +154,23 @@ class opdsScanner:
         if config.SOPDS_INPX_SKIP_UNCHANGED and opdsdb.inp_skip(
             self.rel_path, inp_size
         ):
-            self.logger.info("Skip INP metafile " + inp_file + ". Not changed.")
+            self.logger.info(f"INP metafile {inp_file} not changed, skipping.")
             result = 1
         else:
-            self.logger.info("Start process INP metafile = " + inp_file)
             self.inp_cat = opdsdb.addcattree(self.rel_path, opdsdb.CAT_INPX, inp_size)
+            self.logger.info(
+                f"INP metafile {inp_file} stored as catalog {self.inp_cat}"
+            )
             result = 0
 
         return result
 
     def inpx_callback(self, inpx, inp, meta_data):
-        name = "%s.%s" % (meta_data[inpx_parser.sFile], meta_data[inpx_parser.sExt])
+        self.logger.info(f"Append book {meta_data[inpx_parser.sTitle]} to database")
+        name = "%s.%s" % (
+            meta_data[inpx_parser.sFile],
+            meta_data[inpx_parser.sExt],
+        )
 
         lang = meta_data[inpx_parser.sLang].strip(strip_symbols)
         title = meta_data[inpx_parser.sTitle].strip(strip_symbols)
@@ -172,8 +178,9 @@ class opdsScanner:
         docdate = meta_data[inpx_parser.sDate].strip(strip_symbols)
 
         rel_path_current = os.path.join(self.rel_path, meta_data[inpx_parser.sFolder])
-
-        if opdsdb.findbook(name, rel_path_current, 1) is not None:
+        self.logger.debug(f"Library book path is {rel_path_current}")
+        if opdsdb.findbook(name, rel_path_current, 1) is None:
+            self.logger.info(f"Book {name} is new, store to database")
             cat = opdsdb.addcattree(rel_path_current, opdsdb.CAT_INP)
             book = opdsdb.addbook(
                 name,
@@ -203,12 +210,15 @@ class opdsScanner:
                 opdsdb.addbseries(book, ser, 0)
 
     def processinpx(self, name, full_path, file):
+        self.logger.info(f"Start processing INPX file {name}")
+        self.logger.debug(f"Full path =  {full_path}")
+
         rel_file = os.path.relpath(file, config.SOPDS_ROOT_LIB)
         inpx_size = os.path.getsize(file)
         if config.SOPDS_INPX_SKIP_UNCHANGED and opdsdb.inpx_skip(rel_file, inpx_size):
-            self.logger.info("Skip INPX file = " + file + ". Not changed.")
+            self.logger.info(f"INPX file {file} is not changed. Skipping")
         else:
-            self.logger.info("Start process INPX file = " + file)
+            self.logger.info(f"Create catalog for INPX file {file}")
             opdsdb.addcattree(rel_file, opdsdb.CAT_INPX, inpx_size)
             inpx = inpx_parser.Inpx(file, self.inpx_callback, self.inpskip_callback)
             # FIXME: Неизвестные атрибуты inpx_parser
@@ -338,7 +348,10 @@ class opdsScanner:
                             if author_name and author_name.find(",") < 0:
                                 author_names = author_name.split()
                                 author_name = " ".join(
-                                    [author_names[-1], " ".join(author_names[:-1])]
+                                    [
+                                        author_names[-1],
+                                        " ".join(author_names[:-1]),
+                                    ]
                                 )
                             self.logger.debug(f"Author: {author_name}")
                             author = opdsdb.addauthor(author_name)

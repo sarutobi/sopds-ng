@@ -8,6 +8,7 @@ Created on 14 нояб. 2016 г.
 from opds_catalog.utils import get_infolist_filename
 import os
 import zipfile
+from constance import config
 
 # from opds_catalog import settings
 # from constance import config
@@ -30,12 +31,15 @@ sFolder = "FOLDER"
 sLibRate = "LIBRATE"
 sKeyWords = "KEYWORDS"
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("scanner")
 
 
 class Inpx:
     def __init__(
-        self, inpx_file, append_callback, inpskip_callback=lambda inpx, inp, size: 0
+        self,
+        inpx_file,
+        append_callback,
+        inpskip_callback=lambda inpx, inp, size: 0,
     ):
         self.inpx_file = inpx_file
         self.inpx_catalog = os.path.dirname(inpx_file)
@@ -49,8 +53,8 @@ class Inpx:
         self.inpx_itemseparator = ":"
         self.append_callback = append_callback
         self.inpskip_callback = inpskip_callback
-        self.TEST_ZIP = False  # config.SOPDS_INPX_TEST_ZIP
-        self.TEST_FILES = False  # config.SOPDS_INPX_TEST_FILES
+        self.TEST_ZIP = config.SOPDS_INPX_TEST_ZIP
+        self.TEST_FILES = config.SOPDS_INPX_TEST_FILES
         self.error = 0
 
     def parse(self):
@@ -103,7 +107,7 @@ class Inpx:
                 logger.info(f"{inp_file} has been processed, skipping")
                 continue
 
-            logger.info("Processing {inp_file}")
+            logger.info(f"Processing {inp_file}")
             finp = finpx.open(inp_file)
             for line in finp:
                 logger.debug(f"Processing next line from {inp_file}")
@@ -113,11 +117,10 @@ class Inpx:
                 # Добавляем sFolder если он не определен
                 if not self.inpx_folders:
                     logger.debug(f"Append folder {inp_file}.zip")
-                    meta_data[sFolder] = "%s%s" % (inp_name, ".zip")
+                    meta_data[sFolder] = f"{inp_name}.zip"
 
                 for idx, key in enumerate(self.inpx_format):
                     try:
-                        logger.debug(f"Processing {key} field")
                         if key in [sAuthor, sGenre, sSeries]:
                             meta_data[key] = (
                                 meta_list[idx]
@@ -128,19 +131,21 @@ class Inpx:
                                 meta_data[key].remove("")
                         else:
                             meta_data[key] = meta_list[idx].decode(self.inpx_encoding)
+                        logger.debug(f"{key} = {meta_data[key]}")
                     except IndexError as e:
-                        logger.error(f"Error during processing line: {e}")
+                        logger.error(f"Error during processing {key} field: {e}")
                         meta_data[key] = ""
 
                 # Если книга помечена как удаленная в INP, то пропускаем вызов callback
                 if meta_data[sDel].strip() not in ["", "0"]:
                     logger.debug(
-                        f"Book {meta_data[sTitle]} marked as deleted, skip book"
+                        f"Book {meta_data[sTitle]} marked as deleted, skipping."
                     )
                     continue
 
                 # Если решили проверять на наличие ZIP файла или книги в ZIP, а самого ZIP файла нет - то пропускаем вызов callback
                 zip_file = os.path.join(self.inpx_catalog, meta_data[sFolder])
+                logger.debug(f"Book file is {zip_file}")
                 if (self.TEST_ZIP or self.TEST_FILES) and not os.path.isfile(zip_file):
                     logger.warning(
                         f"Book {meta_data[sTitle]} file {zip_file} not found, skip book"
@@ -151,7 +156,8 @@ class Inpx:
                 if self.TEST_FILES:
                     book_filename = f"{meta_data[sFile]}.{meta_data[sExt]}"
                     zip_filename = get_infolist_filename(
-                        zipfile.ZipFile(zip_file, "r").infolist(), book_filename
+                        zipfile.ZipFile(zip_file, "r").infolist(),
+                        book_filename,
                     )
                     if zip_filename is None:
                         logger.warning(

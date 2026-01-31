@@ -248,3 +248,14 @@ class TestBookScaner(object):
         assert Genre.objects.all().count() == 6
         assert Series.objects.all().count() == 1
         assert Catalog.objects.all().count() == 5
+
+
+@pytest.mark.django_db
+def test_inpx_scanner(fake_sopds_root_lib) -> None:
+    config.SOPDS_INPX_ENABLE = True
+    config.SOPDS_INPX_TEST_FILES = False
+    scanner = opdsScanner()
+    scanner.scan_all()
+    assert scanner.books_added == 3
+    assert scanner.bad_books == 0
+    assert Book.objects.count() == scanner.books_added

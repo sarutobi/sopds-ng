@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 
 import os
 import re
@@ -289,18 +290,26 @@ def addcattree(cat_name: str, archive: int = 0, size: int = 0) -> Catalog:
     return new_cat
 
 
-def findbook(name, path, setavail=0):
+scan_logger = logging.getLogger("scanner")
+
+
+def findbook(name: str, path: str, setavail=0) -> Book | None:
     # Здесь специально не делается проверка avail, т.к. если удаление было логическим,
     # а книга была восстановлена в своем старом месте
     # то произойдет восстановление записи об этой книги а не добавится новая
+    scan_logger.info(f"Checking book {name} metadata in database")
+    scan_logger.debug(f"Book path = {path}")
+    scan_logger.debug(f"Set available = {setavail}")
     try:
         book = Book.objects.get(
             filename=name[:SIZE_BOOK_FILENAME], path=path[:SIZE_BOOK_PATH]
         )
     except Book.DoesNotExist:
+        scan_logger.info("Book not found in database")
         book = None
 
     if book and setavail:
+        scan_logger.info("Updating book availability in database")
         book.avail = 2
         book.save()
 
