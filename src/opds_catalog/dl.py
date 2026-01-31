@@ -111,24 +111,31 @@ def Cover(
        HttpResponse: изображение обложки, если обложка была найдена в книге
        HttpResponseRedirect: ссылка на стандартную обложку, если обложка не бла найдена в книге
     """
+    logger.info(f"Reading book cover for book_id {book_id}")
     book = Book.objects.get(id=book_id)
+    logger.info("Book meta loaded")
+    logger.debug(f"Book title = {book.title}")
     response = HttpResponse()
     # full_path = get_fs_book_path(book)
 
     try:
+        logger.info(f"Extract cover for book in {book.format} format")
         if book.format == "fb2":
             content = getFileData(book)
             assert content is not None
             parser = FB2(content)
             image = parser.extract_cover()
         else:
+            logger.info("Extract cover from non-fb2 book")
             book_data = create_bookfile(getFileData(book), book.filename)
             image = book_data.extract_cover_memory()
     except Exception as e:
+        logger.error(f"Error while extract cover from {book.title}: {e}")
         book_data = None
         image = None
 
     if image:
+        logger.info("Cover extracted, creating response")
         response["Content-Type"] = "image/jpeg"
         if thumbnail:
             thumb = Image.open(io.BytesIO(image)).convert("RGB")
@@ -141,6 +148,7 @@ def Cover(
         response.write(image)
 
     if not image:
+        logger.info(f"Cover for book with id {book.id} is not found")
         # Вместо обработки изображения отдаем ссылку на изображение "Нет обложки"
         return HttpResponseRedirect(config.SOPDS_NOCOVER_PATH)
 
