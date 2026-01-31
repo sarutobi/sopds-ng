@@ -1,34 +1,32 @@
 # Helper functions for testing purpose
 #
 
-import io
+from io import BytesIO
 import zipfile
 
-from codecs import open
+# from codecs import open
 
 from opds_catalog import opdsdb
 from opds_catalog.models import Book, Catalog
 
 
-def read_file_as_iobytes(file: str) -> io.BytesIO:
+def read_file_as_iobytes(file: str) -> BytesIO:
     """Чтение содержимого файла из файловой системы в BytesIO"""
-    content = io.BytesIO()
 
     with open(file, "rb") as f:
-        content.write(f.read())
+        content = BytesIO(f.read())
 
     content.seek(0)
     return content
 
 
-def read_book_from_zip_file(zip_file: str, bookname: str) -> io.BytesIO:
+def read_book_from_zip_file(zip_file: str, bookname: str) -> BytesIO:
     """Чтение книги из zip архива"""
-    content = io.BytesIO()
 
     with open(zip_file, "rb") as f:
         with zipfile.ZipFile(f, "r", allowZip64=True) as zf:
             with zf.open(bookname, "r") as book:
-                content.write(book.read())
+                content = BytesIO(book.read())
 
     content.seek(0)
     return content
@@ -72,14 +70,14 @@ def create_book(
     lang_code: int = 2,
     avail: int = 2,
 ) -> Book:
-    catalog = create_catalog(catalog, path)
+    cat = create_catalog(catalog, path)
 
     book = Book(
         filename=filename,
         path=path,
         filesize=filesize,
         format=format,
-        catalog=catalog,
+        catalog=cat,
         cat_type=cat_type,
         docdate=doc_date,
         lang=lang,

@@ -7,11 +7,9 @@ from pathlib import Path
 
 import pytest
 from constance import config
-from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
-from opds_catalog import opdsdb
 from opds_catalog.utils import (
     get_fs_book_path,
     getFileData,
@@ -24,35 +22,9 @@ from opds_catalog.utils import (
 from opds_catalog.models import Book
 from tests.opds_catalog.helpers import (
     BookFactoryMixin,
-    create_book,
     read_book_from_zip_file,
     read_file_as_iobytes,
 )
-
-
-@pytest.fixture
-def django_user(django_user_model):
-    user = django_user_model.objects.create_user(username="test", password="secret")
-    yield user
-
-
-@pytest.fixture
-def auth_client(client, django_user):
-    client.force_login(django_user)
-    yield client
-
-
-@pytest.fixture
-def load_db_data(django_db_setup, django_db_blocker):
-    with django_db_blocker.unblock():
-        call_command("loaddata", "testdb.json")
-
-
-@pytest.fixture
-def create_regular_book():
-    book = create_book(filename="262001.fb2", cat_type=opdsdb.CAT_NORMAL, path=".")
-    book.save()
-    yield book
 
 
 @pytest.mark.usefixtures("fake_sopds_root_lib", "django_user", "load_db_data")
@@ -98,14 +70,6 @@ class TestDownloads(object):
         assert response.status_code == 404
 
 
-@pytest.fixture
-def unexisted_book():
-    b = Book(id=4, search_title="UNEXISTED", catalog_id=1)
-    b.save()
-    yield
-    b.delete()
-
-
 class TestGetFileName(TestCase, BookFactoryMixin):
     def setUp(self) -> None:
         self.book = self.setup_book(title="Книга", format="fb2", filename="123abc.zip")
@@ -145,6 +109,7 @@ class TestReadFromRegularFile(TestCase, BookFactoryMixin):
         actual = read_from_regular_file(
             os.path.join(get_fs_book_path(book), book.filename)
         )
+        assert actual is not None
         assert actual.getvalue() == expected.getvalue()
 
     def test_read_from_unexistent_file(self) -> None:
@@ -322,7 +287,9 @@ class TestGetFileDataConv(object):
 def test_get_book_cover(
     fake_sopds_root_lib, create_regular_book, client, override_config, use_sax
 ) -> None:
-    book = create_regular_book
+    book: Book = create_regular_book
+    assert book is not None
+    print(book)
     url = reverse("opds:cover", args=(book.id,))
     with override_config(SOPDS_FB2SAX=use_sax):
         actual = client.get(url)
