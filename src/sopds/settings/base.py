@@ -467,6 +467,14 @@ LOGGING = {
             "backupCount": 7,
             "filename": "log/sopds-ng.log",
         },
+        "scanner": {
+            "formatter": "verbose",
+            "class": "logging.handlers.FileHandler",
+            "when": "midnight",
+            "interval": 1,
+            "backupCount": 7,
+            "filename": "log/sopds-scaner.log",
+        },
     },
     "loggers": {
         "django": {
@@ -482,6 +490,11 @@ LOGGING = {
         },
         "book_tools": {
             "handlers": ["console", "file"],
+            "level": SOPDS_SERVER_LOG_LEVEL,
+            "propagate": False,
+        },
+        "scanner": {
+            "handlers": ["scanner"],
             "level": SOPDS_SERVER_LOG_LEVEL,
             "propagate": False,
         },
