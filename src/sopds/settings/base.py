@@ -469,10 +469,7 @@ LOGGING = {
         },
         "scanner": {
             "formatter": "verbose",
-            "class": "logging.handlers.FileHandler",
-            "when": "midnight",
-            "interval": 1,
-            "backupCount": 7,
+            "class": "logging.FileHandler",
             "filename": "log/sopds-scaner.log",
         },
     },
