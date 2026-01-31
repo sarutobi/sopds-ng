@@ -31,6 +31,7 @@ from opds_catalog.decorators import sopds_auth_validate
 
 
 logger = logging.getLogger(__name__)
+SOPDS_DEFAULT_COVER = "/static/images/sopds-ng-nocover.png"
 
 
 @sopds_auth_validate
@@ -150,7 +151,7 @@ def Cover(
     if not image:
         logger.info(f"Cover for book with id {book.id} is not found")
         # Вместо обработки изображения отдаем ссылку на изображение "Нет обложки"
-        return HttpResponseRedirect(config.SOPDS_NOCOVER_PATH)
+        return HttpResponseRedirect(SOPDS_DEFAULT_COVER)
 
     return response
 
