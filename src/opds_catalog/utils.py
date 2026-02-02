@@ -140,27 +140,24 @@ def read_from_zipped_file(zip_path: str, filename: str) -> BytesIO | None:
     try:
         with open(zip_path, "rb") as zip:
             with zipfile.ZipFile(zip, "r", allowZip64=True) as zc:
-                # TODO: Проверка существования нужного файла в архиве
                 # issue 2 - если в архиве имя файла в некорректной кодировке,
                 # то такой файл не получается извлечь из архива.
-                for f in zc.infolist():
-                    # Используем библиотеку chardet для определения кодировок имен файлов в ZIP
-                    candidate = f.filename
-                    decoded_filename = decode_string(candidate)
-                    if decoded_filename == filename:
-                        with zc.open(candidate, "r") as book:
-                            content = BytesIO(book.read())
-                            content.seek(0)
-                            logger.debug(
-                                f"Readed {len(content.getvalue())} bytes from {zip_path}"
-                            )
-                            return content
-        logger.error(f"Cannot find file {filename} in ZIP archive {zip_path}")
-        return None
+                candidate = get_infolist_filename(zc.infolist(), filename)
+                if candidate is None:
+                    logger.error(
+                        f"Cannot find file {filename} in ZIP archive {zip_path}"
+                    )
+                    return None
+
+                with zc.open(candidate, "r") as book:
+                    content = BytesIO(book.read())
+                    content.seek(0)
+                    logger.debug(
+                        f"Readed {len(content.getvalue())} bytes from {zip_path}"
+                    )
+                    return content
     except KeyError as e:
-        logger.error(
-            f"Can not read file {filename} from ZIP archive {zip_path}: {e}"
-        )
+        logger.error(f"Can not read file {filename} from ZIP archive {zip_path}: {e}")
         return None
 
 
@@ -256,9 +253,7 @@ def getFileDataMobi(book):
     return getFileDataConv(book, "mobi")
 
 
-def get_infolist_filename(
-    infolist: list[ZipInfo], filename: str
-) -> str | None:
+def get_infolist_filename(infolist: list[ZipInfo], filename: str) -> str | None:
     """Поиск имени файла в ZIP архиве.
 
         Кодировка имен файлов в ZIP архиве может быть отличной от UTF-8, из-за
