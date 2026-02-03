@@ -83,11 +83,7 @@ clean-dev:
 
 # Build release
 build-release: (clean-release)
-    mkdir -p build/release
-    cp -r src/ build/release/sopds-ng
-    rm -rf build/release/sopds-ng/assets
-    cp -r requirements build/release
-    find build/release -type f -name "local.*" -delete
+    scripts/release.sh
 
 # Build debug version
 build-dev: (clean-dev)
