@@ -1,32 +1,30 @@
-from django.utils import timezone
-from django.utils.translation import gettext as _
-from django.utils.feedgenerator import Atom1Feed, Enclosure, rfc3339_date
+from django.http import HttpRequest
+from constance import config
 from django.contrib.syndication.views import Feed
-from django.urls import reverse
-from django.shortcuts import render
 from django.db.models import Count, Min
+from django.shortcuts import render
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.feedgenerator import Atom1Feed, Enclosure, rfc3339_date
 from django.utils.html import strip_tags
-
-from opds_catalog.models import (
-    Book,
-    Catalog,
-    Author,
-    Genre,
-    Series,
-    bookshelf,
-    Counter,
-    lang_menu,
-)
-from opds_catalog import models
-from opds_catalog import settings
-
-# from opds_catalog.middleware import BasicAuthMiddleware
-from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
+from django.utils.translation import gettext as _
 
 from book_tools.format import mime_detector
 from book_tools.format.mimetype import Mimetype
+from opds_catalog import models, settings
+from opds_catalog.models import (
+    Author,
+    Book,
+    Catalog,
+    Counter,
+    Genre,
+    Series,
+    bookshelf,
+    lang_menu,
+)
 
-from constance import config
+# from opds_catalog.middleware import BasicAuthMiddleware
+from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
 
 from .decorators import sopds_auth_validate
 
@@ -35,7 +33,7 @@ class AuthFeed(Feed):
     request = None
 
     @sopds_auth_validate
-    def __call__(self, request, *args, **kwargs):
+    def __call__(self, request: HttpRequest, *args, **kwargs):
         self.request = request
 
         return super().__call__(request, *args, **kwargs)
@@ -390,9 +388,9 @@ class CatalogsFeed(AuthFeed):
             p = {
                 "is_catalog": 1,
                 "title": row.cat_name,
-                "id": row.id,
+                "id": row.id,  # ty: ignore [unresolved-attribute]
                 "cat_type": row.cat_type,
-                "parent_id": row.parent_id,
+                "parent_id": row.parent_id,  # ty: ignore [unresolved-attribute]
             }
             items.append(p)
 
@@ -403,7 +401,7 @@ class CatalogsFeed(AuthFeed):
                 "filename": row.filename,
                 "path": row.path,
                 "registerdate": row.registerdate,
-                "id": row.id,
+                "id": row.id,  # ty: ignore [unresolved-attribute]
                 "annotation": strip_tags(row.annotation),
                 "docdate": row.docdate,
                 "format": row.format,
@@ -412,7 +410,7 @@ class CatalogsFeed(AuthFeed):
                 "authors": row.authors.values(),
                 "genres": row.genres.values(),
                 "series": row.series.values(),
-                "ser_no": row.bseries_set.values("ser_no"),
+                "ser_no": row.bseries_set.values("ser_no"),  # ty: ignore [unresolved-attribute]
             }
             items.append(p)
 
@@ -789,7 +787,7 @@ class SearchBooksFeed(AuthFeed):
                 "filename": row.filename,
                 "path": row.path,
                 "registerdate": row.registerdate,
-                "id": row.id,
+                "id": row.id,  # ty: ignore [unresolved-attribute]
                 "annotation": strip_tags(row.annotation),
                 "docdate": row.docdate,
                 "format": row.format,
@@ -798,7 +796,7 @@ class SearchBooksFeed(AuthFeed):
                 "authors": row.authors.values(),
                 "genres": row.genres.values(),
                 "series": row.series.values(),
-                "ser_no": row.bseries_set.values("ser_no"),
+                "ser_no": row.bseries_set.values("ser_no"),  # ty: ignore [unresolved-attribute]
             }
             if summary_DOUBLES_HIDE:
                 title = p["title"]
@@ -1228,10 +1226,10 @@ class SearchSeriesFeed(AuthFeed):
 
         for row in series[op.d1_first_pos : op.d1_last_pos + 1]:
             p = {
-                "id": row.id,
+                "id": row.id,  # ty: ignore [unresolved-attribute]
                 "ser": row.ser,
                 "lang_code": row.lang_code,
-                "book_count": row.count_book,
+                "book_count": row.count_book,  # ty: ignore [unresolved-attribute]
             }
             items.append(p)
 
