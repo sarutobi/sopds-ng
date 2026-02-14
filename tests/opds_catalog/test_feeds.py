@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import pytest
 
 from django.urls import reverse
 from django.test import TestCase, Client
@@ -171,3 +172,15 @@ class feedsTestCase(TestCase):
         response = c.get(reverse("opds:genres", kwargs={"section": 232}))
         self.assertEqual(response.status_code, 200)
         self.assertIn("prose_contemporary", response.content.decode())
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("sopds_auth, expected", [(False, 200), (True, 401)])
+def test_auth_feed(override_config, client, django_user, sopds_auth, expected) -> None:
+    with override_config(SOPDS_AUTH=sopds_auth):
+        response = client.get("/opds/")
+        assert response.status_code == expected
+
+        client.force_login(django_user)
+        response = client.get("/opds/")
+        assert response.status_code == 200

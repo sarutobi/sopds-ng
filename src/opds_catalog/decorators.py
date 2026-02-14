@@ -10,7 +10,7 @@ def sopds_auth_validate(view_function):
     """Декоратор для проверки и аутентификации пользователей."""
 
     @wraps(view_function)
-    def wrap(request, *args, **kwargs):
+    def wrap(*args, **kwargs):
         def _unauthed():
             response = HttpResponse(
                 """<html><title>Auth required</title><body>
@@ -21,9 +21,18 @@ def sopds_auth_validate(view_function):
             response.status_code = 401
             return response
 
+        if (
+            args
+            and hasattr(args[0], "__class__")
+            and hasattr(args[0], view_function.__name__)
+        ):
+            request = args[1]
+        else:
+            request = args[0]
+
         header = "HTTP_AUTHORIZATION"
         if not config.SOPDS_AUTH or request.user.is_authenticated:
-            return view_function(request, *args, **kwargs)
+            return view_function(*args, **kwargs)
 
         try:
             authentication = request.META[header]
@@ -43,7 +52,7 @@ def sopds_auth_validate(view_function):
         if user and user.is_active:
             request.user = user
             auth.login(request, user)
-            return view_function(request, *args, **kwargs)
+            return view_function(*args, **kwargs)
 
         return _unauthed()
 

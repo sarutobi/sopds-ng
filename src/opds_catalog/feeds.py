@@ -37,15 +37,6 @@ class AuthFeed(Feed):
     @sopds_auth_validate
     def __call__(self, request, *args, **kwargs):
         self.request = request
-        #        if config.SOPDS_AUTH:
-        #            if request.user.is_authenticated:
-        #                return super().__call__(request, *args, **kwargs)
-
-        #        bau = BasicAuthMiddleware()
-        #        result = bau.process_request(self.request)
-
-        #        if (result is not None) and (not hasattr(result, "user")):
-        #            return result
 
         return super().__call__(request, *args, **kwargs)
 
@@ -62,7 +53,7 @@ class opdsFeed(Atom1Feed):
 
     def root_attributes(self):
         attrs = {}
-        # attrs = super(opdsFeed, self).root_attributes()
+        # attrs = super().root_attributes()
         attrs["xmlns"] = "http://www.w3.org/2005/Atom"
         attrs["xmlns:dcterms"] = "http://purl.org/dc/terms"
         # attrs['xmlns:os'] = "http://a9.com/-/spec/opensearch/1.1/"
@@ -508,7 +499,7 @@ class CatalogsFeed(AuthFeed):
                     "http://opds-spec.org/acquisition/open-access",
                 ),
             ]
-            if not item["format"] in settings.NOZIP_FORMATS:
+            if item["format"] not in settings.NOZIP_FORMATS:
                 mimezip = Mimetype.FB2_ZIP if mime == Mimetype.FB2 else "%s+zip" % mime
                 enclosure += [
                     opdsEnclosure(
@@ -909,7 +900,7 @@ class SearchBooksFeed(AuthFeed):
                 "http://opds-spec.org/acquisition/open-access",
             ),
         ]
-        if not item["format"] in settings.NOZIP_FORMATS:
+        if item["format"] not in settings.NOZIP_FORMATS:
             mimezip = Mimetype.FB2_ZIP if mime == Mimetype.FB2 else "%s+zip" % mime
             enclosure += [
                 opdsEnclosure(
