@@ -1,3 +1,9 @@
+from opds_catalog.storage import (
+    get_catalog_by_id,
+    get_root_catalog,
+    get_child_catalog_query,
+    get_books_in_catalog_query,
+)
 from django.http import HttpRequest
 from constance import config
 from django.contrib.syndication.views import Feed
@@ -15,12 +21,12 @@ from opds_catalog import models, settings
 from opds_catalog.models import (
     Author,
     Book,
-    Catalog,
+    # Catalog,
     Counter,
     Genre,
     Series,
     bookshelf,
-    lang_menu,
+    # lang_menu,
 )
 
 # from opds_catalog.middleware import BasicAuthMiddleware
@@ -49,7 +55,7 @@ class opdsFeed(Atom1Feed):
     # content_type = 'text/xml; charset=utf-8'
     content_type = "application/atom+xml; charset=utf-8"
 
-    def root_attributes(self):
+    def root_attributes(self) -> dict[str, str]:
         attrs = {}
         # attrs = super().root_attributes()
         attrs["xmlns"] = "http://www.w3.org/2005/Atom"
@@ -363,19 +369,20 @@ class CatalogsFeed(AuthFeed):
             page = int(page)
         page_num = page if page > 0 else 1
 
-        try:
-            if cat_id is not None:
-                cat = Catalog.objects.get(id=cat_id)
-            else:
-                cat = Catalog.objects.get(parent__id=cat_id)
-        except Catalog.DoesNotExist:
-            cat = None
+        cat = get_catalog_by_id(cat_id) if cat_id is not None else get_root_catalog()
+        # try:
+        #     if cat_id is not None:
+        #         cat = Catalog.objects.get(id=cat_id)
+        #     else:
+        #         cat = Catalog.objects.get(parent__id=cat_id)
+        # except Catalog.DoesNotExist:
+        #     cat = None
 
-        catalogs_list = Catalog.objects.filter(parent=cat).order_by("cat_name")
+        catalogs_list = get_child_catalog_query(cat).order_by("cat_name")
         catalogs_count = catalogs_list.count()
         # prefetch_related on sqlite on items >999 therow error "too many SQL variables"
         # books_list = Book.objects.filter(catalog=cat).prefetch_related('authors','genres','series').order_by("title")
-        books_list = Book.objects.filter(catalog=cat).order_by("search_title")
+        books_list = get_books_in_catalog_query(cat).order_by("search_title")
         books_count = books_list.count()
 
         # Получаем результирующий список
@@ -1465,7 +1472,7 @@ class AuthorsFeed(AuthFeed):
 
     def get_object(self, request, lang_code=0, chars=None):
         self.lang_code = int(lang_code)
-        if chars == None:
+        if chars is None:
             chars = ""
         return (len(chars) + 1, chars.upper())
 
@@ -1543,7 +1550,7 @@ class SeriesFeed(AuthFeed):
 
     def get_object(self, request, lang_code=0, chars=None):
         self.lang_code = int(lang_code)
-        if chars == None:
+        if chars is None:
             chars = ""
         return (len(chars) + 1, chars.upper())
 
