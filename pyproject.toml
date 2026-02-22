@@ -62,3 +62,9 @@ warn_return_any = true
 exclude_gitignore = false
 mypy_path = "src/"
 follow_imports = "skip"
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = ["F", "E", "D", "DJ"]
