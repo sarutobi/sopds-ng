@@ -332,98 +332,79 @@ class MainFeed(AuthFeed):
         return mainitems
 
     def item_link(self, item):
+        """Ссылка на элемент фида."""
         return reverse(item["link"])
 
     def item_title(self, item):
+        """Заголовок элемента фида."""
         return item["title"]
 
     def item_description(self, item):
+        """Описание элемента фида."""
         return item["descr"] % item["counters"]
 
     def item_guid(self, item):
+        """Уникальный идентификатор элемента фида."""
         return "m:%s" % item["id"]
 
     def item_updateddate(self):
+        """Время обновления фида."""
         return timezone.now()
 
     def item_enclosures(self, item):
+        """Вложения в элемент фида."""
         return (
             opdsEnclosure(
-                reverse(item["link"]),
-                "application/atom+xml;profile=opds-catalog;kind=navigation",
+                self.item_link(item),
+                OPDSLinkType.Navigation,
                 "subsection",
             ),
         )
 
     def item_extra_kwargs(self, item):
+        """Дополнительные атрибуты элемента фида."""
         disable_item_links = list(item["counters"].values())[0] == 0
         return {"disable_item_links": disable_item_links}
 
 
 class CatalogsFeed(AuthFeed):
+    """Навигационный фид каталогов."""
+
     feed_type = opdsFeed
     subtitle = settings.SUBTITLE
 
-    def get_object(self, request, cat_id=None, page=1):
+    def get_object(self, request, cat_id: int | None = None, page: int = 1):
+        """Выборка каталогов для отображения в фиде.
+
+        :param request: Поступивший от клиента запрос на построение фида
+        :type request: HttpRequest
+
+        :param cat_id: Идентификатор каталога. Если параметр не задан, то будет
+        возвращен корневой каталог.
+        :type cat_id: int | None
+
+        :param page: Номер страницы для пейджинга. По умолчанию - 1
+        :type page: int
+
+        :returns: Содержимое каталога (подкаталоги и книги), метаданные текущего
+        каталога, метаданные пейджера.
+        :rtype: list[list[Catalog], list[Book]], Catalog, OPDS_Paginator
+        """
         if not isinstance(page, int):
             page = int(page)
         page_num = page if page > 0 else 1
 
-        cat = get_catalog_by_id(cat_id) if cat_id is not None else get_root_catalog()
-        # try:
-        #     if cat_id is not None:
-        #         cat = Catalog.objects.get(id=cat_id)
-        #     else:
-        #         cat = Catalog.objects.get(parent__id=cat_id)
-        # except Catalog.DoesNotExist:
-        #     cat = None
-
-        catalogs_list = get_child_catalog_query(cat).order_by("cat_name")
-        catalogs_count = catalogs_list.count()
-        # prefetch_related on sqlite on items >999 therow error "too many SQL variables"
-        # books_list = Book.objects.filter(catalog=cat).prefetch_related('authors','genres','series').order_by("title")
-        books_list = get_books_in_catalog_query(cat).order_by("search_title")
-        books_count = books_list.count()
-
-        # Получаем результирующий список
-        op = OPDS_Paginator(
-            catalogs_count, books_count, page_num, config.SOPDS_MAXITEMS
+        root_cat = (
+            get_catalog_by_id(cat_id) if cat_id is not None else get_root_catalog()
         )
-        items = []
+        items, pager_data = paginated_catalog_content(
+            root_cat, page_num, config.SOPDS_MAXITEMS
+        )
 
-        for row in catalogs_list[op.d1_first_pos : op.d1_last_pos + 1]:
-            p = {
-                "is_catalog": 1,
-                "title": row.cat_name,
-                "id": row.id,  # ty: ignore [unresolved-attribute]
-                "cat_type": row.cat_type,
-                "parent_id": row.parent_id,  # ty: ignore [unresolved-attribute]
-            }
-            items.append(p)
-
-        for row in books_list[op.d2_first_pos : op.d2_last_pos + 1]:
-            p = {
-                "is_catalog": 0,
-                "lang_code": row.lang_code,
-                "filename": row.filename,
-                "path": row.path,
-                "registerdate": row.registerdate,
-                "id": row.id,  # ty: ignore [unresolved-attribute]
-                "annotation": strip_tags(row.annotation),
-                "docdate": row.docdate,
-                "format": row.format,
-                "title": row.title,
-                "filesize": row.filesize // 1000,
-                "authors": row.authors.values(),
-                "genres": row.genres.values(),
-                "series": row.series.values(),
-                "ser_no": row.bseries_set.values("ser_no"),  # ty: ignore [unresolved-attribute]
-            }
-            items.append(p)
-
-        return items, cat, op.get_data_dict()
+        return items, root_cat, pager_data
 
     def title(self, obj):
+        """Заголовок фида."""
         items, cat, paginator = obj
         if cat.parent:
             return "%s | %s | %s" % (settings.TITLE, _("By catalogs"), cat.path)

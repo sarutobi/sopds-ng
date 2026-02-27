@@ -1,11 +1,11 @@
 # Сервисные функции opds_catalog
+import zipfile
 from io import BytesIO
+
+from constance import config
+
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2, FB2sax
-from constance import config
-import os
-import zipfile
-from contextlib import suppress
 
 
 def extract_fb2_cover(
@@ -24,8 +24,7 @@ def get_fb2_parser_factory(file: BytesIO, original_filename: str, mimetype: Mime
 
 
 def unzip_fb2_service(file: BytesIO) -> BytesIO:
-    """
-    Распаковывает содержимое файла из zip архива.
+    """Распаковывает содержимое файла из zip архива.
 
     Args:
         file(BytesIO): содержимое файла
