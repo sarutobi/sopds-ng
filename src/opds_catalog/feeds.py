@@ -35,115 +35,148 @@ from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
 from .decorators import sopds_auth_validate
 
 
+@dataclass
+class OPDSLinkType:
+    """Типы OPDS ссылок."""
+
+    Navigation = "application/atom+xml;profile=opds-catalog;kind=navigation"
+    Acquisition = "application/atom+xml;profile=opds-catalog;kind=acquisition"
+
+
 class AuthFeed(Feed):
-    request = None
+    """OPDS фид с авторизацией."""
+
+    # request: HttpRequest = None
 
     @sopds_auth_validate
     def __call__(self, request: HttpRequest, *args, **kwargs):
+        """Переопределение метода для возможности работы с авторизацией.
+
+        Сохраняет поступивший запрос в отдельном поле класса
+
+        :param request: поступивший запрос
+        :type: request: HttpRequest
+        """
         self.request = request
 
         return super().__call__(request, *args, **kwargs)
 
 
 class opdsEnclosure(Enclosure):
-    def __init__(self, url, mime_type, rel):
+    def __init__(self, url: str, mime_type: str, rel: str):
         self.rel = rel
         super(opdsEnclosure, self).__init__(url, 0, mime_type)
 
 
+class NavigationFeed(Atom1Feed):
+    """Класс представляет иерархию фидов.
+
+    Согласно спецификации OPDS Catalog 1.1 этот класс предоставляет
+    просматриваемую иерархию других OPDS каталогов и ресурсов.
+    Этот объект на может содержать ссылки на элементы OPDS каталога,
+    он содержит только ссылки на другие NavigationFeeds или AcquisitionFeeds.
+    """
+
+    def item_attributes(self, item):
+        """Согласно RFC2119 устанавливается атрибут type(SHOULD)."""
+        attrs = super().item_attributes(item)
+        attrs["type"] = OPDSLinkType.Navigation
+
+
+class AcquisitionFeed(Atom1Feed):
+    """Класс представляет множество сущностей OPDS каталога.
+
+    Согласно специффикации OPDS Catalog 1.1 этот класс предоставляет
+    доступ к элеметнам OPDS каталога.
+    """
+
+    # RFC2119 SHOULD
+    type = OPDSLinkType.Acquisition
+
+
 class opdsFeed(Atom1Feed):
-    # content_type = 'text/xml; charset=utf-8'
+    """Базовый класс для фида opds."""
+
     content_type = "application/atom+xml; charset=utf-8"
 
     def root_attributes(self) -> dict[str, str]:
-        attrs = {}
-        # attrs = super().root_attributes()
-        attrs["xmlns"] = "http://www.w3.org/2005/Atom"
-        attrs["xmlns:dcterms"] = "http://purl.org/dc/terms"
-        # attrs['xmlns:os'] = "http://a9.com/-/spec/opensearch/1.1/"
-        # attrs['xmlns:opds'] = "http://opds-spec.org/2010/catalog"
-        return attrs
+        """Пространства имен фида."""
+        return {
+            "xmlns": "http://www.w3.org/2005/Atom",
+            "xmlns:dcterms": "http://purl.org/dc/terms",
+        }
 
-    def add_root_elements(self, handler):
+    def _add_link(
+        self,
+        handler,
+        href,
+        rel: str | None = None,
+        type: str | None = None,
+        title: str | None = None,
+    ) -> None:
+        attrs = {"href": href}
+        if rel is not None:
+            attrs["rel"] = rel
+        if type is not None:
+            attrs["type"] = type
+        if title is not None:
+            attrs["title"] = title
+
+        handler.addQuickElement("link", None, attrs)
+
+    def add_root_elements(self, handler) -> None:
+        """Формирует корневой элемент фида."""
         handler._short_empty_elements = True
         # super(opdsFeed, self).add_root_elements(handler)
-        handler.characters("\n")
+        # Base feed items
         handler.addQuickElement("id", self.feed["id"])
         handler.addQuickElement("icon", settings.ICON)
-        handler.characters("\n")
-        if self.feed.get("link") is not None:
-            handler.addQuickElement(
-                "link",
-                None,
-                {
-                    "href": self.feed["link"],
-                    "rel": "self",
-                    "type": "application/atom+xml;profile=opds-catalog;kind=navigation",
-                },
-            )
-            handler.characters("\n")
-        if self.feed.get("start_url") is not None:
-            handler.addQuickElement(
-                "link",
-                None,
-                {
-                    "href": self.feed["start_url"],
-                    "rel": "start",
-                    "type": "application/atom+xml;profile=opds-catalog;kind=navigation",
-                },
-            )
-            handler.characters("\n")
         handler.addQuickElement("title", self.feed["title"])
         handler.characters("\n")
         if self.feed.get("subtitle") is not None:
             handler.addQuickElement("subtitle", self.feed["subtitle"])
-            handler.characters("\n")
         handler.addQuickElement("updated", rfc3339_date(self.latest_post_date()))
         handler.characters("\n")
+        # Links
+        if self.feed.get("link") is not None:
+            self._add_link(
+                handler,
+                self.feed.get("link"),
+                "self",
+                OPDSLinkType.Navigation,
+            )
+        if self.feed.get("start_url") is not None:
+            self._add_link(
+                handler, self.feed["start_url"], "start", OPDSLinkType.Navigation
+            )
+            handler.characters("\n")
         if self.feed.get("prev_url") is not None:
-            handler.addQuickElement(
-                "link",
-                None,
-                {
-                    "href": self.feed["prev_url"],
-                    "rel": "prev",
-                    "title": "Previous Page",
-                    "type": "application/atom+xml;profile=opds-catalog",
-                },
+            self._add_link(
+                handler,
+                self.feed["prev_url"],
+                "prev",
+                "application/atom+xml;profile=opds-catalog",
+                "Previous Page",
             )
             handler.characters("\n")
         if self.feed.get("next_url") is not None:
-            handler.addQuickElement(
-                "link",
-                None,
-                {
-                    "href": self.feed["next_url"],
-                    "rel": "next",
-                    "title": "Next Page",
-                    "type": "application/atom+xml;profile=opds-catalog",
-                },
+            self._add_link(
+                handler,
+                self.feed["next_url"],
+                "next",
+                "application/atom+xml;profile=opds-catalog",
+                "Next Page",
             )
             handler.characters("\n")
         if self.feed.get("search_url") is not None:
-            handler.addQuickElement(
-                "link",
-                None,
-                {
-                    "href": self.feed["search_url"],
-                    "rel": "search",
-                    "type": "application/atom+xml;profile=opds-catalog;kind=navigation",
-                },
+            self._add_link(
+                handler, self.feed["search_url"], "search", OPDSLinkType.Navigation
             )
+
             handler.characters("\n")
         if self.feed.get("searchTerm_url") is not None:
-            handler.addQuickElement(
-                "link",
-                None,
-                {
-                    "href": self.feed["searchTerm_url"],
-                    "rel": "search",
-                    "type": "application/atom+xml",
-                },
+            self._add_link(
+                handler, self.feed["searchTerm_url"], "search", "application/atom+xml"
             )
             handler.characters("\n")
 
