@@ -1,8 +1,16 @@
+"""Описание OPDS фидов."""
+
+from opds_catalog.services.catalog_services import paginated_catalog_content
+
+from dataclasses import dataclass
+
 from opds_catalog.storage import (
     get_catalog_by_id,
     get_root_catalog,
     get_child_catalog_query,
     get_books_in_catalog_query,
+    get_counter,
+    get_bookshelf_books_count,
 )
 from django.http import HttpRequest
 from constance import config
@@ -21,12 +29,8 @@ from opds_catalog import models, settings
 from opds_catalog.models import (
     Author,
     Book,
-    # Catalog,
-    Counter,
     Genre,
     Series,
-    bookshelf,
-    # lang_menu,
 )
 
 # from opds_catalog.middleware import BasicAuthMiddleware
@@ -268,23 +272,26 @@ class opdsFeed(Atom1Feed):
 
 
 class MainFeed(AuthFeed):
+    """Корневой фид."""
+
     feed_type = opdsFeed
-    title = settings.TITLE
-    subtitle = settings.SUBTITLE
+    title: str = settings.TITLE
+    subtitle: str = settings.SUBTITLE
 
     def link(self):
+        """Ссылка на корневой фид."""
         return reverse("opds_catalog:main")
 
     def feed_extra_kwargs(self, obj):
+        """Дополнительные атрибуты фида."""
         return {
-            "searchTerm_url": "%s%s"
-            % (reverse("opds_catalog:opensearch"), "{searchTerms}/"),
-            # "searchTerm_url":reverse("opds_catalog:searchtypes",kwargs={"searchterms":"{searchTerms}"}),
+            "searchTerm_url": f"{reverse('opds_catalog:opensearch')}{{searchTerms}}/",
             "start_url": reverse("opds_catalog:main"),
             "description_mime_type": "text",
         }
 
     def items(self):
+        """Элементы фида."""
         mainitems = [
             {
                 "id": 1,
@@ -292,8 +299,8 @@ class MainFeed(AuthFeed):
                 "link": "opds_catalog:catalogs",
                 "descr": _("Catalogs: %(catalogs)s, books: %(books)s."),
                 "counters": {
-                    "catalogs": Counter.objects.get_counter(models.counter_allcatalogs),
-                    "books": Counter.objects.get_counter(models.counter_allbooks),
+                    "catalogs": get_counter(models.counter_allcatalogs),
+                    "books": get_counter(models.counter_allbooks),
                 },
             },
             {
@@ -305,9 +312,7 @@ class MainFeed(AuthFeed):
                     else "opds_catalog:nolang_authors"
                 ),
                 "descr": _("Authors: %(authors)s."),
-                "counters": {
-                    "authors": Counter.objects.get_counter(models.counter_allauthors)
-                },
+                "counters": {"authors": get_counter(models.counter_allauthors)},
             },
             {
                 "id": 3,
@@ -318,18 +323,14 @@ class MainFeed(AuthFeed):
                     else "opds_catalog:nolang_books"
                 ),
                 "descr": _("Books: %(books)s."),
-                "counters": {
-                    "books": Counter.objects.get_counter(models.counter_allbooks)
-                },
+                "counters": {"books": get_counter(models.counter_allbooks)},
             },
             {
                 "id": 4,
                 "title": _("By genres"),
                 "link": "opds_catalog:genres",
                 "descr": _("Genres: %(genres)s."),
-                "counters": {
-                    "genres": Counter.objects.get_counter(models.counter_allgenres)
-                },
+                "counters": {"genres": get_counter(models.counter_allgenres)},
             },
             {
                 "id": 5,
@@ -340,24 +341,22 @@ class MainFeed(AuthFeed):
                     else "opds_catalog:nolang_series"
                 ),
                 "descr": _("Series: %(series)s."),
-                "counters": {
-                    "series": Counter.objects.get_counter(models.counter_allseries)
-                },
+                "counters": {"series": get_counter(models.counter_allseries)},
             },
         ]
+        # TODO: Сюда мы можем попасть либо если выключена авторизация либо если
+        # авторизация включена и пользователь авторизован.
         if config.SOPDS_AUTH and self.request.user.is_authenticated:
             mainitems += [
                 {
                     "id": 6,
                     "title": _("%(username)s Book shelf")
-                    % ({"username": self.request.user.username}),
+                    % ({"username": self.request.user.username}),  # ty: ignore[unresolved-attribute]
                     "link": "opds_catalog:bookshelf",
                     "descr": _("%(username)s books readed: %(bookshelf)s."),
                     "counters": {
-                        "bookshelf": bookshelf.objects.filter(
-                            user=self.request.user
-                        ).count(),
-                        "username": self.request.user.username,
+                        "bookshelf": get_bookshelf_books_count(user=self.request.user),  # ty: ignore [invalid-argument-type]
+                        "username": self.request.user.username,  # ty: ignore [unresolved-attribute]
                     },
                 },
             ]
@@ -479,17 +478,21 @@ class CatalogsFeed(AuthFeed):
         }
 
     def items(self, obj):
+        """Элементы фида."""
         items, cat, paginator = obj
         return items
 
     def item_title(self, item):
+        """Заголовок элемента фида."""
         return item["title"]
 
     def item_guid(self, item):
+        """Уникальный идентификатор элемента фида."""
         gp = "c:" if item["is_catalog"] else "b:"
         return "%s%s" % (gp, item["id"])
 
     def item_link(self, item):
+        """Ссылка на получение объекта элемента фида."""
         if item["is_catalog"]:
             return reverse("opds_catalog:cat_tree", kwargs={"cat_id": item["id"]})
         else:
@@ -498,11 +501,12 @@ class CatalogsFeed(AuthFeed):
             )
 
     def item_enclosures(self, item):
+        """Вложение в элемент фида."""
         if item["is_catalog"]:
             return (
                 opdsEnclosure(
                     reverse("opds_catalog:cat_tree", kwargs={"cat_id": item["id"]}),
-                    "application/atom+xml;profile=opds-catalog;kind=navigation",
+                    OPDSLinkType.Navigation,
                     "subsection",
                 ),
             )
@@ -568,6 +572,7 @@ class CatalogsFeed(AuthFeed):
             return enclosure
 
     def item_description(self, item):
+        """Описание элемента."""
         if item["is_catalog"]:
             return item["title"]
         else:
@@ -598,13 +603,13 @@ class CatalogsFeed(AuthFeed):
 
 
 def OpenSearch(request):
-    """
-    Выводим шаблон поиска
-    """
+    """Выводим шаблон поиска."""
     return render(request, "opensearch.html")
 
 
 class SearchTypesFeed(AuthFeed):
+    """Поисковый фид."""
+
     feed_type = opdsFeed
     subtitle = settings.SUBTITLE
 
@@ -678,17 +683,20 @@ class SearchTypesFeed(AuthFeed):
         return (
             opdsEnclosure(
                 self.item_link(item),
-                "application/atom+xml;profile=opds-catalog;kind=navigation",
+                OPDSLinkType.Navigation,
                 "subsection",
             ),
         )
 
 
 class SearchBooksFeed(AuthFeed):
+    """Фид поиска книг."""
+
     feed_type = opdsFeed
     subtitle = settings.SUBTITLE
 
     def title(self, obj):
+        """Заголовок фида."""
         return "%s | %s (%s)" % (
             settings.TITLE,
             _("Books found"),
@@ -696,8 +704,14 @@ class SearchBooksFeed(AuthFeed):
         )
 
     def get_object(
-        self, request, searchtype="m", searchterms=None, searchterms0=None, page=1
+        self,
+        request,
+        searchtype="m",
+        searchterms: str | None = None,
+        searchterms0=None,
+        page=1,
     ):
+        """Список объектов для фида."""
         if not isinstance(page, int):
             page = int(page)
         page_num = page if page > 0 else 1
@@ -1006,6 +1020,8 @@ class SearchBooksFeed(AuthFeed):
 
 
 class SelectSeriesFeed(AuthFeed):
+    """Фид для серий."""
+
     feed_type = opdsFeed
     subtitle = settings.SUBTITLE
 
@@ -1098,6 +1114,8 @@ class SelectSeriesFeed(AuthFeed):
 
 
 class SearchAuthorsFeed(AuthFeed):
+    """Фид поиска по авторам."""
+
     feed_type = opdsFeed
     subtitle = settings.SUBTITLE
 
@@ -1129,7 +1147,7 @@ class SearchAuthorsFeed(AuthFeed):
 
         for row in authors[op.d1_first_pos : op.d1_last_pos + 1]:
             p = {
-                "id": row.id,
+                "id": row.id,  # ty: ignore [unresolved-attribute]
                 "full_name": row.full_name,
                 "lang_code": row.lang_code,
                 "book_count": Book.objects.filter(authors=row).count(),

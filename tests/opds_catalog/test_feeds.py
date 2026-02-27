@@ -184,3 +184,19 @@ def test_auth_feed(override_config, client, django_user, sopds_auth, expected) -
         client.force_login(django_user)
         response = client.get("/opds/")
         assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_feed_structure(client, override_config, load_db_data) -> None:
+    with override_config(SOPDS_AUTH=False):
+        response = client.get("/opds/")
+    print(response.content.decode())
+
+
+# @pytest.mark.override_config(SOPDS_AUTH=False)
+# class TestGenresFeed:
+#     def test_link(self, db, genres_feed, request_factory) -> None:
+#         request = request_factory.get("/genres/")
+#         response = genres_feed(request)
+#         print(response.content)
+#         assert response.link() == "/"

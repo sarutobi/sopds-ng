@@ -5,11 +5,18 @@ from django.core.management import call_command
 from tests.opds_catalog.helpers import create_book
 from opds_catalog import opdsdb
 from opds_catalog.models import Book, Catalog
+from django.test import RequestFactory
+
+
+@pytest.fixture
+def request_factory() -> RequestFactory:
+    """RequestFactory."""
+    return RequestFactory()
 
 
 @pytest.fixture
 def django_user(django_user_model):
-    """Обычный пользователь django"""
+    """Обычный пользователь django."""
     user = django_user_model.objects.create_user(username="test", password="secret")
     yield user
 
