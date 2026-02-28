@@ -106,22 +106,23 @@ class EbookMetaParser(ABC):
 
     @abstractmethod
     def docdate(self) -> str:
-        """
-        Извлечение даты формирования книги
+        """Извлечение даты формирования книги.
 
         Returns:
             str: Строковое представление даты формироввания книги
+
         """
         ...
 
 
 class FB2(EbookMetaParser):
-    """Базовый класс для извлечения метаданных из книг в формате FB2 с помощью lxml"""
+    """Базовый класс для извлечения метаданных из книг в формате FB2 с помощью lxml."""
 
     # def __init__(self, file: BytesIO, original_filename: str, mimetype: str):
     def __init__(self, file: BytesIO):
-        """
-        Инициализация объекта. Автоматически устанавливает параметры
+        """Инициализация объекта.
+
+        Автоматически устанавливает параметры
             __namespaces
             _mimetype
 
@@ -135,6 +136,7 @@ class FB2(EbookMetaParser):
 
             mimetype (str):
                 Тип данных MIME для книги. Может быть либо Mimetype.FB2 либо Mimetype.FB2_ZIP
+
         """
         # Инициализация полей объекта
         super().__init__(file)
@@ -144,7 +146,7 @@ class FB2(EbookMetaParser):
         self.parse()
 
     def parse(self):
-        """Парсинг полученного файла"""
+        """Парсинг полученного файла."""
         try:
             self._file.seek(0, 0)
             self._etree = etree.parse(self._file)
