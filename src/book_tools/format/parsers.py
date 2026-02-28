@@ -140,7 +140,7 @@ class FB2(EbookMetaParser):
         """
         # Инициализация полей объекта
         super().__init__(file)
-        self._etree: etree._ElementTree = None
+        self._etree: etree._ElementTree
         self._namespaces: dict[str, str] = {}
         self._log = logging.getLogger(str(self.__class__))
         self.parse()
@@ -395,17 +395,15 @@ class FB2sax(EbookMetaParser):
 class EpubParser(EbookMetaParser):
     def __init__(self, file: BytesIO):
         self.file = file
-        self.opf_path: str = None  # Путь к основному OPF-файлу
-        self.root: _Element = None  # Корневой элемент дерева OPF
+        self.opf_path: str  # Путь к основному OPF-файлу
+        self.root: _Element  # Корневой элемент дерева OPF
         self.nsmap: dict[str, str] = {
             "dc": "http://purl.org/dc/elements/1.1/",
             "opf": "http://www.idpf.org/2007/opf",
         }
 
     def validate(self) -> bool:
-        """
-        Проверяет корректность файла EPUB.
-        """
+        """Проверяет корректность файла EPUB."""
         try:
             with zipfile.ZipFile(self.file, mode="r") as zf:
                 if "META-INF/container.xml" not in zf.namelist():
@@ -415,9 +413,7 @@ class EpubParser(EbookMetaParser):
             return False
 
     def _load_opf(self) -> None:
-        """
-        Читает контейнерный файл и загружает основной OPF-файл.
-        """
+        """Читает контейнерный файл и загружает основной OPF-файл."""
         with zipfile.ZipFile(self.file, mode="r") as zf:
             container_xml = zf.read("META-INF/container.xml")
             root = etree.fromstring(container_xml)
@@ -431,17 +427,13 @@ class EpubParser(EbookMetaParser):
 
     @property
     def title(self) -> str:
-        """
-        Извлекает название книги.
-        """
+        """Извлекает название книги."""
         title = self._xpath("/opf:package/opf:metadata/dc:title")[0]
         return title.text if title is not None else ""
 
     @property
     def authors(self) -> list[str]:
-        """
-        Извлекает список авторов книги.
-        """
+        """Извлекает список авторов книги."""
         creators = self._xpath(
             '/opf:package/opf:metadata/dc:creator[@role="aut"] | /opf:package/opf:metadata/dc:creator[not(@role)]'
         )
@@ -449,26 +441,22 @@ class EpubParser(EbookMetaParser):
 
     @property
     def tags(self) -> list[str]:
-        """
-        Извлекает список жанров (тем).
-        """
+        """Извлекает список жанров (тем)."""
         tags = self._xpath("/opf:package/opf:metadata/dc:subject")
         return [tag.text for tag in tags]
 
     @property
     def language_code(self) -> str:
-        """
-        Извлекает язык книги.
-        """
+        """Извлекает язык книги."""
         lang = self._xpath("/opf:package/opf:metadata/dc:language")[0]
         return lang.text
 
     @property
     def series_info(self) -> tuple[str, int] | None:
-        """
-        Извлекает информацию о серии книги из метаданных EPUB.
+        """Извлекает информацию о серии книги из метаданных EPUB.
 
-        :return: Словарь с названием серии и номером книги в серии, либо None, если информация отсутствует.
+        :return: Словарь с названием серии и номером книги в серии, либо None,
+        если информация отсутствует.
         """
         series_node = self._xpath(
             '/opf:package/opf:metadata/opf:meta[@name="calibre:series"]'
@@ -482,7 +470,8 @@ class EpubParser(EbookMetaParser):
                 index_node = self._xpath(
                     '/opf:package/opf:metadata/opf:meta[@name="calibre:series_index"]'
                 )
-                # Если есть название серии и нет индекса в серии, считаем что серия указана ошибочно
+                # Если есть название серии и нет индекса в серии, считаем что серия
+                # указана ошибочно
                 if not index_node:
                     return None
                 index: int = int(index_node[0].get("content"))
@@ -492,8 +481,7 @@ class EpubParser(EbookMetaParser):
 
     @property
     def docdate(self) -> str | None:
-        """
-        Возвращает дату документа из метаданных EPUB.
+        """Возвращает дату документа из метаданных EPUB.
 
         Если указана дата модификации, возвращается она, иначе первая попавшая дата.
         """
@@ -506,28 +494,27 @@ class EpubParser(EbookMetaParser):
 
     @property
     def description(self) -> str:
-        """
-        Извлекает описание книги (аннотацию).
-        """
+        """Извлекает описание книги (аннотацию)."""
         desc = self._xpath("/opf:package/opf:metadata/dc:description")[0]
         return desc.text.strip() if desc is not None else ""
 
     def extract_cover(self) -> bytes | None:
-        """
-        Извлекает обложку книги из файла EPUB.
+        """Извлекает обложку книги из файла EPUB.
 
-        Возвращает байтовый объект с изображением обложки или None, если обложка не найдена.
+        Возвращает байтовый объект с изображением обложки или None, если обложка
+        не найдена.
 
-        Эта функция пытается найти ссылку на обложку в метаинформации файла EPUB. Если обложка указана,
-        она извлекается из соответствующего ресурса, указанного в манифесте.
+        Эта функция пытается найти ссылку на обложку в метаинформации файла EPUB.
+        Если обложка указана, она извлекается из соответствующего ресурса, указанного
+        в манифесте.
 
         Параметры:
             Нет (метод использует состояние текущего объекта)
 
         Возвращаемое значение:
             bytes | None: Байты изображения обложки или None, если обложка отсутствует.
-        """
 
+        """
         # Запросы для получения обложки
         cover_queries: list[str] = [
             '/opf:package/opf:manifest/opf:item[@properties="cover-image"]',
@@ -558,9 +545,7 @@ class EpubParser(EbookMetaParser):
         return None
 
     def parse(self) -> None:
-        """
-        Запускает процесс парсинга и возвращает собранные данные.
-        """
+        """Запускает процесс парсинга и возвращает собранные данные."""
         if not self.validate():
             raise ValueError("Некорректный файл EPUB.")
 
@@ -569,6 +554,6 @@ class EpubParser(EbookMetaParser):
             raise ValueError("Не удалось загрузить OPF-файл.")
 
     def _xpath(self, query: str):
-        """Поиск узла дерева по запросу"""
+        """Поиск узла дерева по запросу."""
         res = self.root.xpath(query, namespaces=self.nsmap)
         return res
