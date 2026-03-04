@@ -67,4 +67,4 @@ follow_imports = "skip"
 docstring-code-format = true
 
 [tool.ruff.lint]
-select = ["F", "E", "D", "DJ"]
+select = ["F", "E", "D", "DJ", "FURB", "PLR"]
