@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_bookfile_service(data: BytesIO, original_filename: str) -> BookFile:
-    """
-    Извлечение метаданных электронной книги
+    """Извлечение метаданных электронной книги.
 
     Args:
         data(BytesIO): Содержимое файла электронной книги
@@ -65,7 +64,7 @@ def create_bookfile_service(data: BytesIO, original_filename: str) -> BookFile:
 
 
 class MimetypeValidator(ABC):
-    """Определяет соответствие файла определенному mimetype"""
+    """Определяет соответствие файла определенному mimetype."""
 
     def __init__(self, mimetype: str):
         self.mimetype = mimetype
@@ -78,7 +77,7 @@ class MimetypeValidator(ABC):
 
 
 class FB2MimeValidator(MimetypeValidator):
-    """Проверка на сответствие типу FB2"""
+    """Проверка на сответствие типу FB2."""
 
     def __init__(self):
         super().__init__(Mimetype.FB2)
@@ -92,7 +91,7 @@ class FB2MimeValidator(MimetypeValidator):
 
 
 class FB2ZipMimeValidator(MimetypeValidator):
-    """Проверка на соотвествие типу FB2+Zip"""
+    """Проверка на соотвествие типу FB2+Zip."""
 
     def __init__(self):
         super().__init__(Mimetype.FB2_ZIP)
@@ -119,7 +118,7 @@ class FB2ZipMimeValidator(MimetypeValidator):
 
 
 class EPUBMimeValidator(MimetypeValidator):
-    """Проверка на соотвествие типу EPUB"""
+    """Проверка на соотвествие типу EPUB."""
 
     def __init__(self):
         super().__init__(Mimetype.EPUB)
@@ -135,7 +134,7 @@ class EPUBMimeValidator(MimetypeValidator):
 
 
 class MobiMimeValidator(MimetypeValidator):
-    """Проверка на соотвествие типу Mobi"""
+    """Проверка на соотвествие типу Mobi."""
 
     def __init__(self):
         super().__init__(Mimetype.MOBI)
@@ -146,7 +145,7 @@ class MobiMimeValidator(MimetypeValidator):
 
 
 class SuffixMimeValidator(MimetypeValidator):
-    """Упрощенный валидатор, выставляет соответствие типу по суффиксу файла"""
+    """Упрощенный валидатор, выставляет соответствие типу по суффиксу файла."""
 
     def __init__(self, suffixes: list[str], mimetype: str):
         super().__init__(mimetype)
@@ -168,10 +167,10 @@ class GenericMimeValidator(MimetypeValidator):
 
 
 def detect_mime_service(file: BytesIO, original_filename: str) -> str:
-    """
-    Определение mimetype файла. Определение идет по содержимому и/или суффиксу
-    файла. Если нельзя определить конкретный тип, то возвращается обобщенный
-    тип application/octet-stream
+    """Определение mimetype файла. Определение идет по содержимому и/или суффиксу файла.
+
+    Если нельзя определить конкретный тип, то возвращается обобщенный тип
+    application/octet-stream
 
     Args:
         file(BytesIO): Содержимое файла
@@ -180,6 +179,7 @@ def detect_mime_service(file: BytesIO, original_filename: str) -> str:
 
     Returns:
         str Установленный Mimetype файла.
+
     """
     logger.info(f"Detecting mimetype of {original_filename}")
     # Перечень известных валидаторов. Должны быть описаны от конкретных к
