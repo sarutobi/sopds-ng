@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import pytest
 
+from io import BytesIO
+from lxml import etree
 from django.urls import reverse
 from django.test import TestCase, Client
 from django.utils.translation import gettext as _
@@ -186,17 +188,35 @@ def test_auth_feed(override_config, client, django_user, sopds_auth, expected) -
         assert response.status_code == 200
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        "/opds/",
+        "/opds/catalogs/",
+        "/opds/books/",
+        "/opds/authors/",
+        "/opds/series/",
+        "/opds/genres/",
+        "/opds/search/books/",
+        "/opds/search/authors/",
+        "/opds/search/series/",
+    ],
+)
 @pytest.mark.django_db
-def test_feed_structure(client, override_config, load_db_data) -> None:
+def test_feed_structure(url, client, override_config, load_db_data, opds_1_1) -> None:
     with override_config(SOPDS_AUTH=False):
-        response = client.get("/opds/")
-    print(response.content.decode())
+        response = client.get(url)
+
+    assert response is not None
+    content = BytesIO(response.content)
+    assert validate_opds_feed(content, opds_1_1)
 
 
-# @pytest.mark.override_config(SOPDS_AUTH=False)
-# class TestGenresFeed:
-#     def test_link(self, db, genres_feed, request_factory) -> None:
-#         request = request_factory.get("/genres/")
-#         response = genres_feed(request)
-#         print(response.content)
-#         assert response.link() == "/"
+def validate_opds_feed(content, schema) -> bool:
+    actual = etree.parse(content)
+    validator = etree.RelaxNG(schema)
+    result = validator.validate(actual)
+    if not result:
+        print(validator.error_log)
+        print(content.getvalue().decode())
+    return result
