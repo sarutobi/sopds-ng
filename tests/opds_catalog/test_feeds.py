@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from opds_catalog import settings
 import pytest
 
 from io import BytesIO
@@ -37,6 +38,7 @@ class feedsTestCase(TestCase):
         self.assertIn(
             _("Genres: %(genres)s.") % {"genres": 4}, response.content.decode()
         )
+        self.assertIn(settings.SUBTITLE, response.content.decode())
 
     def test_CatalogsFeed(self):
         c = Client()

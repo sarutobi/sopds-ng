@@ -1,7 +1,5 @@
 """Сервисы для работы с каталогами."""
 
-# from ty_extensions import Unknown
-
 from django.db.models import QuerySet
 from django.utils.html import strip_tags
 
@@ -85,6 +83,7 @@ def paginated_catalog_content(
             "id": row.id,  # ty: ignore [unresolved-attribute]
             "cat_type": row.cat_type,
             "parent_id": row.parent_id,  # ty: ignore [unresolved-attribute]
+            "prefix": "c",
         }
         items.append(p)
 
@@ -105,6 +104,7 @@ def paginated_catalog_content(
             "genres": row.genres.values(),
             "series": row.series.values(),
             "ser_no": row.bseries_set.values("ser_no"),  # ty: ignore [unresolved-attribute]
+            "prefix": "b",
         }
         items.append(p)
 
