@@ -93,6 +93,7 @@ class opdsFeed(Atom1Feed):
                 "self",
                 OPDSLinkType.Navigation,
             )
+        handler.characters("\n")
 
     def _set_pager_links(self, handler):
         if self.feed.get("prev_url") is not None:
@@ -119,12 +120,15 @@ class opdsFeed(Atom1Feed):
         handler._short_empty_elements = True
         # Base feed items
         handler.addQuickElement("id", self.feed["id"])
+        handler.characters("\n")
         handler.addQuickElement("icon", settings.ICON)
+        handler.characters("\n")
+        handler.characters("\n")
         handler.addQuickElement("title", self.feed["title"])
         handler.characters("\n")
         if self.feed.get("subtitle") is not None:
-            print(self.feed["subtitle"])
             handler.addQuickElement("subtitle", self.feed["subtitle"])
+        handler.characters("\n")
         handler.addQuickElement("updated", rfc3339_date(self.latest_post_date()))
         handler.characters("\n")
         # Links
@@ -135,6 +139,7 @@ class opdsFeed(Atom1Feed):
             )
             handler.characters("\n")
         self._set_pager_links(handler)
+        handler.characters("\n")
         if self.feed.get("search_url") is not None:
             self._add_link(
                 handler, self.feed["search_url"], "search", OPDSLinkType.Navigation
@@ -149,6 +154,7 @@ class opdsFeed(Atom1Feed):
                 "application/opensearchdescription+xml",
             )
             handler.characters("\n")
+        handler.characters("\n")
 
     def _item_authors(self, handler, item):
         if item.get("authors") is not None:
@@ -241,6 +247,7 @@ class SOPDSBaseFeed(Feed):
 
     feed_type = opdsFeed
     subtitle = settings.SUBTITLE
+    item_updateddate = timezone.now()
 
     @sopds_auth_validate
     def __call__(self, request: HttpRequest, *args, **kwargs):
@@ -252,7 +259,6 @@ class SOPDSBaseFeed(Feed):
         :type: request: HttpRequest
         """
         self.request = request
-
         return super().__call__(request, *args, **kwargs)
 
     def feed_extra_kwargs(self, obj):
@@ -510,10 +516,6 @@ class MainFeed(SOPDSBaseFeed):
         """Уникальный идентификатор элемента фида."""
         return "m:%s" % item["id"]
 
-    def item_updateddate(self):
-        """Время обновления фида."""
-        return timezone.now()
-
     def item_extra_kwargs(self, item):
         """Дополнительные атрибуты элемента фида."""
         disable_item_links = list(item["counters"].values())[0] == 0
@@ -681,9 +683,6 @@ class SearchTypesFeed(SOPDSBaseFeed):
     def item_guid(self, item):
         return "st:%s" % item["id"]
 
-    def item_updateddate(self):
-        return timezone.now()
-
 
 class SearchBooksFeed(SOPDSBaseFeed):
     """Фид поиска книг."""
@@ -794,7 +793,7 @@ class SelectSeriesFeed(SOPDSBaseFeed):
     def title(self, obj):
         return "%s | %s" % (settings.TITLE, _("Series by authors select"))
 
-    def get_object(self, request, searchtype, searchterms):  # ty: ignore[invalid-method-override]
+    def get_object(self, request, searchtype, searchterms):
         return self._to_int(searchterms)
 
     def link(self, obj):
@@ -855,10 +854,6 @@ class SelectSeriesFeed(SOPDSBaseFeed):
     def item_guid(self, item):
         """Уникальный идентификатор элемента."""
         return "as:%s" % item["id"]
-
-    def item_updateddate(self):
-        """Время обновления элемента."""
-        return timezone.now()
 
 
 class SearchAuthorsFeed(SOPDSBaseFeed):
@@ -1031,8 +1026,6 @@ class SearchSeriesFeed(SOPDSBaseFeed):
 
 class LangFeed(SOPDSBaseFeed):
     """Навигационный фид для поиска книг по языку."""
-
-    item_updateddate = timezone.now()
 
     def link(self, obj):
         """Ссылка на фид."""
@@ -1254,8 +1247,6 @@ class GenresFeed(SOPDSBaseFeed):
 
     Предоставляет навигацию по жанрам c указанием количества книг для выбранного жанра.
     """
-
-    item_updateddate = timezone.now()
 
     def link(self, obj):
         """Ссылка на фид."""

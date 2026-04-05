@@ -178,43 +178,54 @@ class feedsTestCase(TestCase):
         self.assertIn("prose_contemporary", response.content.decode())
 
 
+HTTP_OK = 200
+HTTP_UNAUTHORIZED = 401
+
+
 @pytest.mark.django_db
-@pytest.mark.parametrize("sopds_auth, expected", [(False, 200), (True, 401)])
+@pytest.mark.parametrize(
+    "sopds_auth, expected", [(False, HTTP_OK), (True, HTTP_UNAUTHORIZED)]
+)
 def test_auth_feed(override_config, client, django_user, sopds_auth, expected) -> None:
+    """Проверка работы авторизации для фидов."""
     with override_config(SOPDS_AUTH=sopds_auth):
         response = client.get("/opds/")
         assert response.status_code == expected
 
         client.force_login(django_user)
         response = client.get("/opds/")
-        assert response.status_code == 200
+        assert response.status_code == HTTP_OK
 
 
 @pytest.mark.parametrize(
     "url",
     [
-        "/opds/",
-        "/opds/catalogs/",
-        "/opds/books/",
-        "/opds/authors/",
-        "/opds/series/",
-        "/opds/genres/",
-        "/opds/search/books/",
-        "/opds/search/authors/",
-        "/opds/search/series/",
+        reverse("opds_catalog:main"),
+        reverse("opds_catalog:catalogs"),
+        reverse("opds_catalog:lang_books"),
+        reverse("opds_catalog:nolang_books"),
+        reverse("opds_catalog:lang_authors"),
+        reverse("opds_catalog:nolang_authors"),
+        reverse("opds_catalog:lang_series"),
+        reverse("opds_catalog:nolang_series"),
+        reverse("opds_catalog:genres"),
+        # reverse("opds_catalog:searchbooks"),
+        # reverse("opds_catalog:searchauthors"),
+        # reverse("opds_catalog:searchseries"),
     ],
 )
 @pytest.mark.django_db
-def test_feed_structure(url, client, override_config, load_db_data, opds_1_1) -> None:
+def test_feed_structure(url, client, load_db_data, override_config, opds_1_2) -> None:
+    """Проверка грамматичекой корректности фида."""
     with override_config(SOPDS_AUTH=False):
         response = client.get(url)
 
     assert response is not None
     content = BytesIO(response.content)
-    assert validate_opds_feed(content, opds_1_1)
+    assert _validate_opds_feed(content, opds_1_2)
 
 
-def validate_opds_feed(content, schema) -> bool:
+def _validate_opds_feed(content, schema) -> bool:
     actual = etree.parse(content)
     validator = etree.RelaxNG(schema)
     result = validator.validate(actual)

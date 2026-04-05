@@ -25,5 +25,13 @@ def genres_feed() -> GenresFeed:
 
 @pytest.fixture
 def opds_1_1(test_rootlib):
+    """Грамматика для OPDS версии 1.1."""
     relaxng_doc = etree.parse(os.path.join(test_rootlib, "opds1.1.rng"))
+    return relaxng_doc
+
+
+@pytest.fixture
+def opds_1_2(test_rootlib):
+    """Грамматика для OPDS версии 1.2."""
+    relaxng_doc = etree.parse(os.path.join(test_rootlib, "opds1.2.rng"))
     return relaxng_doc

@@ -5,27 +5,38 @@ from django.utils.html import strip_tags
 
 from opds_catalog.models import Book, Catalog
 from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
+import logging
+
+DUMMY_CATALOG = Catalog(id=0, cat_name="Empty", cat_type=0)
+
+log = logging.getLogger(__name__)
 
 
 def get_root() -> Catalog:
     """Возвращает корневой каталог."""
-    return Catalog.objects.get(parent__id=None)
+    try:
+        cat = Catalog.objects.get(parent__id=None)
+        return cat
+    except Exception as e:
+        log.warning(e)
+    return DUMMY_CATALOG
 
 
-def get_by_id(id: int) -> Catalog | None:
+def get_by_id(id: int) -> Catalog:
     """Возвращает каталог по идентификатору.
 
     :param id: Идентификатор каталога
     :type id: int
 
-    :returns: Найденный каталог или None если каталога с таким идентификатором
+    :returns: Найденный каталог или каталог-заглушку если каталога с таким идентификатором
     не существует
-    :rtype: Catalog | None
+    :rtype: Catalog
     """
     try:
         return Catalog.objects.get(id=id)
     except Catalog.DoesNotExist:
-        return None
+        log.error(f"Catalog with id={id} does not exists")
+        return DUMMY_CATALOG
 
 
 def get_catalogs_query(root: Catalog | None) -> QuerySet[Catalog, Catalog]:
