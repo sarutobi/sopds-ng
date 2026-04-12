@@ -7,7 +7,7 @@ from lxml import etree
 from django.urls import reverse
 from django.test import TestCase, Client
 from django.utils.translation import gettext as _
-
+import helpers
 from opds_catalog import opdsdb
 
 # from opds_catalog import settings
@@ -216,20 +216,29 @@ def test_auth_feed(override_config, client, django_user, sopds_auth, expected) -
 )
 @pytest.mark.django_db
 def test_feed_structure(url, client, load_db_data, override_config, opds_1_2) -> None:
-    """Проверка грамматичекой корректности фида."""
+    """Проверка грамматичеcкой корректности фида и его валидация."""
     with override_config(SOPDS_AUTH=False):
         response = client.get(url)
 
     assert response is not None
-    content = BytesIO(response.content)
-    assert _validate_opds_feed(content, opds_1_2)
+    feed = etree.parse(BytesIO(response.content))
+    assert _validate_opds_feed(feed, opds_1_2)
+    assert helpers.opds_requirement_links(feed)
+    assert helpers.opds_acquisition_links(feed)
+    assert helpers.opds_search_rel(feed)
+    # assert helpers.opds_acquisition_or_navigation_feed(feed)
+    assert helpers.opds_summary_is_plain_text(feed)
+    assert helpers.opds_image_rel(feed)
+    assert helpers.opds_image_bitmap(feed)
+    assert helpers.opds_dc_namespace(feed)
+    assert helpers.opds_content_duplication(feed)
+    assert helpers.opds_root_link(feed)
+    assert helpers.opds_link_profile_kind(feed)
 
 
-def _validate_opds_feed(content, schema) -> bool:
-    actual = etree.parse(content)
+def _validate_opds_feed(feed, schema) -> bool:
     validator = etree.RelaxNG(schema)
-    result = validator.validate(actual)
+    result = validator.validate(feed)
     if not result:
         print(validator.error_log)
-        print(content.getvalue().decode())
     return result

@@ -471,18 +471,23 @@ class MainFeed(SOPDSBaseFeed):
                 "descr": _("Genres: %(genres)s."),
                 "counters": {"genres": counter_services.get_genres_count()},
             },
-            {
-                "id": 5,
-                "title": _("By series"),
-                "link": (
-                    "opds_catalog:lang_series"
-                    if config.SOPDS_ALPHABET_MENU
-                    else "opds_catalog:nolang_series"
-                ),
-                "descr": _("Series: %(series)s."),
-                "counters": {"series": counter_services.get_series_count()},
-            },
         ]
+        series_count = counter_services.get_series_count()
+
+        if series_count > 0:
+            mainitems.append(
+                {
+                    "id": 5,
+                    "title": _("By series"),
+                    "link": (
+                        "opds_catalog:lang_series"
+                        if config.SOPDS_ALPHABET_MENU
+                        else "opds_catalog:nolang_series"
+                    ),
+                    "descr": _("Series: %(series)s."),
+                    "counters": {"series": counter_services.get_series_count()},
+                },
+            )
         # TODO: Сюда мы можем попасть либо если выключена авторизация либо если
         # авторизация включена и пользователь авторизован.
         if config.SOPDS_AUTH and self.request.user.is_authenticated:
@@ -616,7 +621,7 @@ class CatalogsFeed(SOPDSBaseFeed):
     def item_description(self, item):
         """Описание элемента."""
         if item["is_catalog"]:
-            return item["title"]
+            return f"Catalog: {item['title']}"
         else:
             return book_services.book_description(item)
 
