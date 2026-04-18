@@ -419,6 +419,9 @@ class SOPDSBaseFeed(Feed):
 
         return enclosure
 
+    def item_enclosures(self, item):
+        return self.navigation_item_enclosures(item)
+
 
 class MainFeed(SOPDSBaseFeed):
     """Корневой фид."""
