@@ -5,33 +5,33 @@ description = "New generation of Simple OPDS catalog"
 readme = "README.md"
 requires-python = "==3.13.*"
 dependencies = [
-    "apscheduler==3.11",
-    "chardet>=5.2.0",
-    "django==5.1",
-    "django-constance[database]==4.3.2",
-    "django-environ==0.12",
-    "gunicorn>=23.0.0",
-    "lxml>=6.0.2",
-    "pillow>=2.9.0",
-    "psycopg[binary]==3.2.6",
-    "pymemcache==4",
-    "python-telegram-bot==22",
-    "whitenoise==6.11",
+  "apscheduler==3.11",
+  "chardet>=5.2.0",
+  "django==5.2",
+  "django-constance[database]==4.3.2",
+  "django-environ==0.12",
+  "gunicorn>=23.0.0",
+  "lxml>=6.0.2",
+  "pillow>=2.9.0",
+  "psycopg[binary]==3.2.6",
+  "pymemcache==4",
+  "python-telegram-bot==22",
+  "whitenoise==6.11",
 ]
 
 [dependency-groups]
 dev = [
-    "django-debug-toolbar==5.2.0",
-    "django-stubs==5.1",
-    "faker>=38.2.0",
-    "lxml-stubs>=0.5.1",
-    "mypy>=1.18.2",
-    "pytest>=8.4.1",
-    "pytest-benchmark>=5.2.2",
-    "pytest-cov==7.0",
-    "pytest-django>=4.11.1",
-    "pytest-factoryboy>=2.8.1",
-    "refurb>=2.2.0",
+  "django-debug-toolbar==5.2.0",
+  "django-stubs==5.1",
+  "faker>=38.2.0",
+  "lxml-stubs>=0.5.1",
+  "mypy>=1.18.2",
+  "pytest>=8.4.1",
+  "pytest-benchmark>=5.2.2",
+  "pytest-cov==7.0",
+  "pytest-django>=4.11.1",
+  "pytest-factoryboy>=2.8.1",
+  "refurb>=2.2.0",
 ]
 
 [tool.pytest]
@@ -42,9 +42,9 @@ testpaths = ["tests"]
 pythonpath = [".", "src"]
 python_files = ["test_*.py", "*_test.py"]
 markers = [
-    "slow: this test is slow",
-    "optional: marks test as optional",
-    "benchmark: this test is benchmark",
+  "slow: this test is slow",
+  "optional: marks test as optional",
+  "benchmark: this test is benchmark",
 ]
 
 [tool.coverage.run]
