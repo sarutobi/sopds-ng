@@ -1,13 +1,42 @@
-"""
+"""Модуль для работы c пейджером и постраничной навигацией.
+
+Позволяет строить постраничнуюy навигацию по результатам поиска, справочникам и другим
+коллекциям.
+
 Created on 21 нояб. 2016 г.
 
 @author: mitsh
+@author Valery A. Ilychev
 """
+
+from typing import TypedDict
+
+
+class PaginatorData(TypedDict):
+    """Данные для пагинации."""
+
+    num_pages: int
+    has_previous: bool
+    has_next: bool
+    previous_page_number: int
+    next_page_number: int
+    number: int
+    page_range: list[int]
 
 
 class Paginator:
-    def __init__(self, d1_count, d2_count, page_num=1, maxitems=60, half_pages_link=3):
+    """Класс пейджера для работы с постраничной навигацией."""
+
+    def __init__(
+        self,
+        d1_count: int,
+        d2_count: int,
+        page_num: int = 1,
+        maxitems: int = 60,
+        half_pages_link: int = 3,
+    ):
         """Создание пейджера и расчет результата.
+
         Параметры:
             d1_count - число элементов для пагинации
             d2_count - число книг в катлоге либо 0 для других элементов
@@ -23,38 +52,39 @@ class Paginator:
         self.page_num = page_num
         self.calc_data()
 
+    def _calc_first_pos(self, MAXITEMS: int, limit: int) -> int:
+        """Расчет первой позиции для подгрузки элементов."""
+        d1_first_pos: int = MAXITEMS * (self.page_num - 1)
+        d1_first_pos: int = (
+            d1_first_pos if d1_first_pos < limit else (limit - 1 if limit else 0)
+        )
+        return d1_first_pos
+
+    def _calc_last_pos(self, MAXITEMS: int, limit: int) -> int:
+        """Расчет последней позиции для подгрузки элементов."""
+        d1_last_pos: int = MAXITEMS * self.page_num - 1
+        d1_last_pos: int = (
+            d1_last_pos if d1_last_pos < limit else (limit - 1 if limit else 0)
+        )
+        return d1_last_pos
+
     def calc_data(self):
+        """Расчет данных пейджера."""
+        # Первый сегмент (например каталоги)
         d1_MAXITEMS = self.MAXITEMS
-        self.d1_first_pos = d1_MAXITEMS * (self.page_num - 1)
-        self.d1_first_pos = (
-            self.d1_first_pos
-            if self.d1_first_pos < self.d1_count
-            else (self.d1_count - 1 if self.d1_count else 0)
-        )
-        self.d1_last_pos = d1_MAXITEMS * self.page_num - 1
-        self.d1_last_pos = (
-            self.d1_last_pos
-            if self.d1_last_pos < self.d1_count
-            else (self.d1_count - 1 if self.d1_count else 0)
-        )
+        self.d1_first_pos = self._calc_first_pos(d1_MAXITEMS, self.d1_count)
+        self.d1_last_pos = self._calc_last_pos(d1_MAXITEMS, self.d1_count)
 
+        # Второй сегмент (книги)
         d2_MAXITEMS = self.MAXITEMS - self.d1_last_pos + self.d1_first_pos
-        self.d2_first_pos = d2_MAXITEMS * (self.page_num - 1)
-        self.d2_first_pos = (
-            self.d2_first_pos
-            if self.d2_first_pos < self.d2_count
-            else (self.d2_count - 1 if self.d2_count else 0)
-        )
-        self.d2_last_pos = d2_MAXITEMS * self.page_num - 1
-        self.d2_last_pos = (
-            self.d2_last_pos
-            if self.d2_last_pos < self.d2_count
-            else (self.d2_count - 1 if self.d2_count else 0)
-        )
+        self.d2_first_pos = self._calc_first_pos(d2_MAXITEMS, self.d2_count)
+        self.d2_last_pos = self._calc_last_pos(d2_MAXITEMS, self.d2_count)
 
-        self.num_pages = self.count // self.MAXITEMS + 1
-        self.firstpage = self.page_num - self.HALF_PAGES_LINK
-        self.lastpage = self.page_num + self.HALF_PAGES_LINK
+        # Общие данные пейджера
+        self.num_pages: int = self.count // self.MAXITEMS + 1
+        self.firstpage: int = self.page_num - self.HALF_PAGES_LINK
+        self.lastpage: int = self.page_num + self.HALF_PAGES_LINK
+        # Корректировка диапазонов при приближении к границам
         if self.firstpage < 1:
             self.lastpage = self.lastpage - self.firstpage + 1
             self.firstpage = 1
@@ -62,26 +92,28 @@ class Paginator:
         if self.lastpage > self.num_pages:
             self.firstpage = self.firstpage - (self.lastpage - self.num_pages)
             self.lastpage = self.num_pages
-            if self.firstpage < 1:
-                self.firstpage = 1
+            self.firstpage = max(self.firstpage, 1)
 
-        self.has_previous = self.page_num > 1
-        self.has_next = self.page_num < self.num_pages
-        self.previous_page_number = (self.page_num - 1) if self.page_num > 1 else 1
-        self.next_page_number = (
+        self.has_previous: bool = self.page_num > 1
+        self.has_next: bool = self.page_num < self.num_pages
+        self.previous_page_number: int = (self.page_num - 1) if self.page_num > 1 else 1
+        self.next_page_number: int = (
             (self.page_num + 1) if self.page_num < self.num_pages else self.num_pages
         )
-        self.number = self.page_num
-        self.page_range = [i for i in range(self.firstpage, self.lastpage + 1)]
 
-    def get_data_dict(self) -> dict[str, int | bool]:
+        self.page_range: list[int] = [
+            i for i in range(self.firstpage, self.lastpage + 1)
+        ]
+
+    def get_data_dict(self) -> PaginatorData:
         """Возвращает метаданные пейджера."""
-        p = {}
-        p["num_pages"] = self.num_pages
-        p["has_previous"] = self.has_previous
-        p["has_next"] = self.has_next
-        p["previous_page_number"] = self.previous_page_number
-        p["next_page_number"] = self.next_page_number
-        p["number"] = self.number
-        p["page_range"] = self.page_range
+        p: PaginatorData = {
+            "num_pages": self.num_pages,
+            "has_previous": self.has_previous,
+            "has_next": self.has_next,
+            "previous_page_number": self.previous_page_number,
+            "next_page_number": self.next_page_number,
+            "number": self.page_num,
+            "page_range": self.page_range,
+        }
         return p

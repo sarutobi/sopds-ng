@@ -1,3 +1,5 @@
+"""Декораторы для SOPDS."""
+
 from functools import wraps
 
 import base64
