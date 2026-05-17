@@ -17,7 +17,7 @@ def get_genres() -> QuerySet[Genre, dict[str, Any]]:
 
 def get_genre_details(id: int) -> QuerySet[Genre, dict[str, Any]]:
     """Возвращает список поджанров жанра и количество книг в нем."""
-    section = Genre.objects.get(id=id).section
+    section = get_genre_section(id)
     return (
         Genre.objects.filter(section=section)
         .annotate(num_book=Count("book"))
@@ -25,3 +25,8 @@ def get_genre_details(id: int) -> QuerySet[Genre, dict[str, Any]]:
         .values()
         .order_by("subsection")
     )
+
+
+def get_genre_section(id: int) -> str:
+    """Возвращает наименование жанра."""
+    return Genre.objects.get(id=id).section
