@@ -1,6 +1,12 @@
+from opds_catalog.services import (
+    authors_services,
+    book_services,
+    series_services,
+    genre_services,
+)
 from django.shortcuts import render, redirect
 from django.template.context_processors import csrf
-from django.db.models import Count, Min, Prefetch
+from django.db.models import Count, Prefetch
 from django.utils.translation import gettext as _
 from django.contrib.auth import authenticate, login, logout, REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import user_passes_test
@@ -20,14 +26,19 @@ from opds_catalog.models import (
 
 from constance import config
 from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
-from opds_catalog.utils import get_lang_name
+from opds_catalog.utils import get_lang_name, to_int
 
 from sopds_web_backend.settings import HALF_PAGES_LINKS
+
+BREADCRUMBS = {
+    "m": [_("Books"), _("Search by title")],
+    "b": [_("Books"), _("Search by title")],
+}
 
 
 def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None):
     actual_decorator = user_passes_test(
-        lambda u: (u.is_authenticated if config.SOPDS_AUTH else True),
+        lambda u: u.is_authenticated if config.SOPDS_AUTH else True,
         login_url=reverse_lazy(url),
         redirect_field_name=redirect_field_name,
     )
@@ -36,74 +47,64 @@ def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None
     return actual_decorator
 
 
+def get_breadcrumbs(searchtype: str, append: str | None = None) -> list[str]:
+    """Возвращает "хлебные крошки" для варианта поиска."""
+    result = BREADCRUMBS[searchtype]
+    if append is not None:
+        result.append(append)
+    return result
+
+
+def _extract_input_parameters(request) -> dict[str, str]:
+    args = {}
+    args["searchtype"] = request.GET.get("searchtype", "m")
+    args["searchterms"] = request.GET.get("searchterms", "")
+    args["searchterms0"] = request.GET.get("searchterms0")
+    args["page_num"] = request.GET.get("page")
+    args["user"] = request.user.usernname
+    return args
+
+
+def search_book_by_title_match(args):
+    args["breadcrumbs"] = [_("Books"), _("Search by title"), args["searchterms"]]
+    args["searchobject"] = "title"
+
+
 # Create your views here.
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
 @sopds_login(url="web:login")
 def SearchBooksView(request):
-    # Read searchtype, searchterms, searchterms0, page from form
+    """Диспетчер для обработки параемтров запроса книг."""
+    SOPDS_AUTH = config.SOPDS_AUTH
     args = {}
     args.update(csrf(request))
-    SOPDS_AUTH = config.SOPDS_AUTH
-
     if request.GET:
-        searchtype = request.GET.get("searchtype", "m")
-        searchterms = request.GET.get("searchterms", "")
-        # searchterms0 = int(request.POST.get('searchterms0', ''))
-        page_num = int(request.GET.get("page", "1"))
-        page_num = page_num if page_num > 0 else 1
+        args.update(_extract_input_parameters(request))
 
-        if searchtype == "m":
-            # books = Book.objects.extra(where=["upper(title) like %s"], params=["%%%s%%"%searchterms.upper()]).order_by('title','-docdate')
-            books = Book.objects.filter(
-                search_title__contains=searchterms.upper()
-            ).order_by("search_title", "-docdate")
+        books = book_services.search_book(
+            args["searchtype"], args["searchterms"], args["searchterms0"], args["user"]
+        )
+        if args["searchtype"] in "mb":
             args["breadcrumbs"] = [_("Books"), _("Search by title"), searchterms]
             args["searchobject"] = "title"
 
-        if searchtype == "b":
-            # books = Book.objects.extra(where=["upper(title) like %s"], params=["%s%%"%searchterms.upper()]).order_by('title','-docdate')
-            books = Book.objects.filter(
-                search_title__startswith=searchterms.upper()
-            ).order_by("search_title", "-docdate")
-            args["breadcrumbs"] = [_("Books"), _("Search by title"), searchterms]
-            args["searchobject"] = "title"
-
-        elif searchtype == "a":
-            try:
-                author_id = int(searchterms)
-                author = Author.objects.get(id=author_id)
-                # aname = "%s %s"%(author.last_name,author.first_name)
-                aname = author.full_name
-            except:
-                author_id = 0
-                aname = ""
-            books = Book.objects.filter(authors=author_id).order_by(
-                "search_title", "-docdate"
-            )
+        elif args["searchtype"] == "a":
+            aname = authors_services.get_author_name(id=args["searchterms"])
             args["breadcrumbs"] = [_("Books"), _("Search by author"), aname]
             args["searchobject"] = "author"
 
         # Поиск книг по серии
-        elif searchtype == "s":
-            try:
-                ser_id = int(searchterms)
-                ser = Series.objects.get(id=ser_id).ser
-            except:
-                ser_id = 0
-                ser = ""
+        elif args["searchtype"] == "s":
+            ser = series_services.get_series_name(args["searchterms"])
             # books = Book.objects.filter(series=ser_id).order_by('search_title','-docdate')
-            books = Book.objects.filter(series=ser_id).order_by(
-                "bseries__ser_no", "search_title", "-docdate"
-            )
             args["breadcrumbs"] = [_("Books"), _("Search by series"), ser]
             args["searchobject"] = "series"
 
         # Поиск книг по жанру
-        elif searchtype == "g":
+        elif args["searchtype"] == "g":
             try:
-                genre_id = int(searchterms)
-                section: str = Genre.objects.get(id=genre_id).section
-                subsection: str = Genre.objects.get(id=genre_id).subsection
+                section: str = Genre.objects.get(id=args["searchterms"]).section
+                subsection: str = Genre.objects.get(id=args["searchterms"]).subsection
                 args["breadcrumbs"] = [
                     _("Books"),
                     _("Search by genre"),
@@ -111,16 +112,12 @@ def SearchBooksView(request):
                     subsection,
                 ]
             except:
-                genre_id = 0
                 args["breadcrumbs"] = [_("Books"), _("Search by genre")]
 
-            books = Book.objects.filter(genres=genre_id).order_by(
-                "search_title", "-docdate"
-            )
             args["searchobject"] = "genre"
 
         # Поиск книг на книжной полке
-        elif searchtype == "u":
+        elif args["searchtype"] == "u":
             # if config.SOPDS_AUTH:
             if SOPDS_AUTH:
                 books = Book.objects.filter(bookshelf__user=request.user).order_by(
@@ -129,7 +126,7 @@ def SearchBooksView(request):
                 args["breadcrumbs"] = [
                     _("Books"),
                     _("Bookshelf"),
-                    request.user.username,
+                    args["user"],
                 ]
                 # books = bookshelf.objects.filter(user=request.user).select_related('book')
             else:
@@ -139,9 +136,9 @@ def SearchBooksView(request):
             args["isbookshelf"] = 1
 
         # Поиск дубликатов для книги
-        elif searchtype == "d":
+        elif args["searchtype"] == "d":
             # try:
-            book_id = int(searchterms)
+            book_id = int(args["searchterms"])
             mbook = Book.objects.get(id=book_id)
             books = (
                 Book.objects.filter(title=mbook.title, authors__in=mbook.authors.all())
@@ -153,7 +150,7 @@ def SearchBooksView(request):
             args["searchobject"] = "title"
 
         # Поиск книги по ID. Хотел найти еще и дубликаты к книге, но почему-то не работает запрос правильно. Ума не приложу почему.
-        elif searchtype == "i":
+        elif args["searchtype"] == "i":
             try:
                 book_id = int(searchterms)
                 # mbook = Book.objects.get(id=book_id)
@@ -192,7 +189,7 @@ def SearchBooksView(request):
 
         # Начаинам анализ с последнего элемента на предидущей странице, чторбы он "вытянул" с этой страницы
         # свои дубликаты если они есть
-        summary_DOUBLES_HIDE = config.SOPDS_DOUBLES_HIDE and (searchtype != "d")
+        summary_DOUBLES_HIDE = config.SOPDS_DOUBLES_HIDE and (args["searchtype"] != "d")
         start = (
             op.d1_first_pos
             if ((op.d1_first_pos == 0) or (not summary_DOUBLES_HIDE))
@@ -342,19 +339,19 @@ def SearchAuthorsView(request):
         page_num = int(request.GET.get("page", "1"))
         page_num = page_num if page_num > 0 else 1
 
-        if searchtype == "m":
-            authors = Author.objects.filter(
-                search_full_name__contains=searchterms.upper()
-            ).order_by("search_full_name")
-        elif searchtype == "b":
-            authors = Author.objects.filter(
-                search_full_name__startswith=searchterms.upper()
-            ).order_by("search_full_name")
-        elif searchtype == "e":
-            authors = Author.objects.filter(
-                search_full_name=searchterms.upper()
-            ).order_by("search_full_name")
-
+        # if searchtype == "m":
+        #     authors = Author.objects.filter(
+        #         search_full_name__contains=searchterms.upper()
+        #     ).order_by("search_full_name")
+        # elif searchtype == "b":
+        #     authors = Author.objects.filter(
+        #         search_full_name__startswith=searchterms.upper()
+        #     ).order_by("search_full_name")
+        # elif searchtype == "e":
+        #     authors = Author.objects.filter(
+        #         search_full_name=searchterms.upper()
+        #     ).order_by("search_full_name")
+        authors = authors_services.search_authors(searchtype, searchterms)
         # Создаем результирующее множество
         authors_count = authors.count()
         op = OPDS_Paginator(
@@ -478,31 +475,14 @@ def BooksView(request):
     args = {}
 
     if request.GET:
-        lang_code = int(request.GET.get("lang", "0"))
-        chars = request.GET.get("chars", "")
+        lang_code = to_int(request.GET.get("lang"))
     else:
         lang_code = 0
         chars = ""
 
     length = len(chars) + 1
-    if lang_code:
-        sql = """select %(length)s as l, substring(search_title,1,%(length)s) as id, count(*) as cnt 
-               from opds_catalog_book 
-               where lang_code=%(lang_code)s and search_title like '%(chars)s%%%%'
-               group by substring(search_title,1,%(length)s) 
-               order by id""" % {
-            "length": length,
-            "lang_code": lang_code,
-            "chars": chars,
-        }
-    else:
-        sql = """select %(length)s as l, substring(search_title,1,%(length)s) as id, count(*) as cnt 
-               from opds_catalog_book 
-               where search_title like '%(chars)s%%%%'
-               group by substring(search_title,1,%(length)s) 
-               order by id""" % {"length": length, "chars": chars}
 
-    items = Book.objects.raw(sql)
+    items = book_services.find_books_by_template(chars, length, lang_code)
 
     args["items"] = items
     args["current"] = "book"
@@ -520,31 +500,15 @@ def AuthorsView(request):
     args = {}
 
     if request.GET:
-        lang_code = int(request.GET.get("lang", "0"))
+        lang_code = to_int(request.GET.get("lang"))
         chars = request.GET.get("chars", "")
     else:
         lang_code = 0
         chars = ""
 
     length = len(chars) + 1
-    if lang_code:
-        sql = """select %(length)s as l, substring(search_full_name,1,%(length)s) as id, count(*) as cnt 
-               from opds_catalog_author 
-               where lang_code=%(lang_code)s and search_full_name like '%(chars)s%%%%'
-               group by substring(search_full_name,1,%(length)s) 
-               order by id""" % {
-            "length": length,
-            "lang_code": lang_code,
-            "chars": chars,
-        }
-    else:
-        sql = """select %(length)s as l, substring(search_full_name,1,%(length)s) as id, count(*) as cnt 
-               from opds_catalog_author 
-               where search_full_name like '%(chars)s%%%%'
-               group by substring(search_full_name,1,%(length)s) 
-               order by id""" % {"length": length, "chars": chars}
 
-    items = Author.objects.raw(sql)
+    items = authors_services.find_authors_by_template(chars, length, lang_code)
 
     args["items"] = items
     args["current"] = "author"
@@ -569,24 +533,8 @@ def SeriesView(request):
         chars = ""
 
     length = len(chars) + 1
-    if lang_code:
-        sql = """select %(length)s as l, substring(search_ser,1,%(length)s) as id, count(*) as cnt 
-               from opds_catalog_series 
-               where lang_code=%(lang_code)s and search_ser like '%(chars)s%%%%'
-               group by substring(search_ser,1,%(length)s)
-               order by id""" % {
-            "length": length,
-            "lang_code": lang_code,
-            "chars": chars,
-        }
-    else:
-        sql = """select %(length)s as l, substring(search_ser,1,%(length)s) as id, count(*) as cnt 
-               from opds_catalog_series 
-               where search_ser like '%(chars)s%%%%'
-               group by substring(search_ser,1,%(length)s) 
-               order by id""" % {"length": length, "chars": chars}
 
-    items = Series.objects.raw(sql)
+    items = series_services.get_series(chars, length, lang_code)
 
     args["items"] = items
     args["current"] = "series"
@@ -604,27 +552,16 @@ def GenresView(request):
     args = {}
 
     if request.GET:
-        section_id = int(request.GET.get("section", "0"))
+        section_id = to_int(request.GET.get("section"))
     else:
         section_id = 0
 
     if section_id == 0:
-        items = (
-            Genre.objects.values("section")
-            .annotate(section_id=Min("id"), num_book=Count("book"))
-            .filter(num_book__gt=0)
-            .order_by("section")
-        )
+        items = genre_services.get_genres()
         args["breadcrumbs"] = [_("Genres"), _("Select")]
     else:
-        section = Genre.objects.get(id=section_id).section
-        items = (
-            Genre.objects.filter(section=section)
-            .annotate(num_book=Count("book"))
-            .filter(num_book__gt=0)
-            .values()
-            .order_by("subsection")
-        )
+        section = genre_services.get_genre_section(section_id)
+        items = genre_services.get_genre_details(section_id)
         args["breadcrumbs"] = [_("Genres"), _("Select"), section]
 
     args["items"] = items
