@@ -3,8 +3,20 @@
 from typing import Any
 
 from opds_catalog.models import Author
-from django.db.models import F, Func, Value, IntegerField, CharField, Count, QuerySet
-from opds_catalog.services.book_services import OPDSSearchType
+from opds_catalog.utils import to_int
+from django.db.models import (
+    Model,
+    F,
+    Func,
+    Value,
+    IntegerField,
+    CharField,
+    Count,
+    QuerySet,
+)
+
+from django.utils.translation import gettext_lazy as _
+from opds_catalog.services import SearchType
 
 
 def find_authors_by_template(
@@ -47,16 +59,25 @@ def find_authors_by_template(
 
 def search_authors(searchtype: str, searchterms: str) -> QuerySet[Author, Author]:
     """Поиск авторов."""
-    if searchtype == OPDSSearchType.BySubstring:
+    if searchtype == SearchType.BySubstring:
         authors = Author.objects.filter(
             search_full_name__contains=searchterms.upper()
         ).order_by("search_full_name")
-    elif searchtype == OPDSSearchType.ByStartWith:
+    elif searchtype == SearchType.ByStartWith:
         authors = Author.objects.filter(
             search_full_name__startswith=searchterms.upper()
         ).order_by("search_full_name")
-    elif searchtype == OPDSSearchType.ByExact:
+    elif searchtype == SearchType.ByExactMatch:
         authors = Author.objects.filter(search_full_name=searchterms.upper()).order_by(
             "search_full_name"
         )
     return authors
+
+
+def get_author_name(id: str) -> str:
+    a_id = to_int(id)
+    try:
+        a_name = Author.objects.get(a_id).full_name
+    except Model.DoesNotExist:
+        a_name = _("Author not found")
+    return a_name

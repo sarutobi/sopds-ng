@@ -1,129 +1,134 @@
 """Сервисные функции для работы с книгами."""
 
+from django.db.models.functions import Substr
+
+from django.contrib.auth.models import User
+
+from typing import TypeVar, Callable
+
+from django.core.exceptions import ImproperlyConfigured
+
 from django.db.models.query import RawQuerySet
 
-from dataclasses import dataclass
-from typing import Any
-
+from opds_catalog.utils import to_int
 from constance import config
-from django.db.models import Q, QuerySet
+from django.db.models import QuerySet, Value, CharField, Count
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
-
+from opds_catalog.services import SearchType
 from opds_catalog.models import Book, Author
 from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
 
 
-@dataclass
-class OPDSSearchType:
-    """Возможные варианты поиска книг в каталоге."""
+T = TypeVar("T")
 
-    BySubstring = "m"
-    ByStartWith = "b"
-    ByExact = "e"
-    ByAuthor = "a"
-    BySeries = "s"
-    ByAuthorAndSeries = "as"
-    ByGenre = "g"
-    ByUser = "u"
-    Doubles = "d"
+SearchFunction = Callable[[bool, str, str | None, User | None], QuerySet[Book]]
+
+DEFAULT_ORDER_BY = ["search_title", "-docdate"]
 
 
-def _to_int(val: Any, default: int = 0) -> int:
-    try:
-        result = int(val)
-        return result
-    except Exception:
-        return default
+# Стратегии поиска
+def find_by_bookshelf(
+    auth_enabled: bool, _: str, __: str | None = None, user: User | None = None
+) -> QuerySet[Book]:
+    """Книги на книжной полки пользователя."""
+    if not auth_enabled:
+        raise ImproperlyConfigured(
+            f"Attempt to read {user} bookshelf from catalog without authorization"
+        )
+    return Book.objects.filter(bookshelf__user=user).order_by("-bookshelf_readtime")
 
 
-def find_by_title_contains(filter: str) -> Q:
-    """Поиск книг по названию, содержащему подстроку."""
-    return Q(search_title__contains=filter.upper())
+def find_by_author_and_series(
+    _: bool, author_id: str, series_id: str | None = None, __=None
+) -> QuerySet[Book]:
+    """Поиск книг по автору и серии."""
+    DEFAULT_ORDER_BY.insert(0, "bseries__ser_no")
+    return Book.objects.filter(
+        author_id=to_int(author_id), series_id=to_int(series_id)
+    ).order_by(*DEFAULT_ORDER_BY)
 
 
-def find_by_title_startswith(filter: str) -> Q:
-    """Поиск книг по названию, начинающемуся на подстроку."""
-    return Q(search_title__startswith=filter.upper())
-
-
-def find_by_title(filter: str) -> Q:
-    """Поиск книги по названию."""
-    return Q(search_title=filter.upper())
-
-
-def find_by_author(filter: str) -> Q:
-    """Поиск книги по автору."""
-    return Q(authors=_to_int(filter))
-
-
-def find_by_series(filter: str) -> Q:
-    """Поиск книг по серии."""
-    return Q(series=_to_int(filter))
-
-
-def find_by_genre(filter: str) -> Q:
-    """Поиск книг по жанру."""
-    return Q(genres=_to_int(filter))
-
-
-def find_by_bookshelf(filter) -> Q:
-    """Поиск книг на полке пользователя."""
-    return Q(bookshelf__user=filter)
-
-
-def find_book_doubles(book_id: int) -> QuerySet[Book, Book]:
+def find_book_doubles(
+    _: bool, book_id: str, __: str | None = None, ___=None
+) -> QuerySet[Book]:
     """Поиск дубликатов книги."""
     mbook = Book.objects.get(id=book_id)
-    return Book.objects.filter(
-        title__iexact=mbook.title, authors__in=mbook.authors.all()
-    ).exclude(id=book_id)
+    return (
+        Book.objects.filter(title__iexact=mbook.title, authors__in=mbook.authors.all())
+        .exclude(id=book_id)
+        .order_by(*DEFAULT_ORDER_BY)
+    )
 
 
-def _order_by(type: str) -> list[str]:
-    order_by: list[str] = ["search_title", "-docdate"]
+def find_books_by_substring(
+    _: bool, term: str, __: str | None = None, ___=None
+) -> QuerySet[Book]:
+    """Поиск книг по подстроке."""
+    return Book.objects.filter(search_title__contains=term.upper()).order_by(
+        *DEFAULT_ORDER_BY
+    )
 
-    if type == OPDSSearchType.ByUser:
-        order_by = [
-            "-bookshelf__readtime",
-        ]
-    elif type in (OPDSSearchType.BySeries, OPDSSearchType.ByAuthorAndSeries):
-        order_by.insert(0, "bseries__ser_no")
-    return order_by
+
+def find_books_by_start_letters(
+    _: bool, term: str, __: str | None = None, ___=None
+) -> QuerySet[Book]:
+    """Поиск книг, начинающихся с заданной последовательности символов."""
+    return Book.objects.filter(search_title__startswith=term.upper()).order_by(
+        *DEFAULT_ORDER_BY
+    )
+
+
+def find_books_by_exact_match(
+    _: bool, term: str, __: str | None = None, ___=None
+) -> QuerySet[Book]:
+    """Поиск книг по названию."""
+    return Book.objects.filter(search_title=term.upper()).order_by(*DEFAULT_ORDER_BY)
+
+
+def find_books_by_author(
+    _: bool, author_id: str, __: str | None = None, ___=None
+) -> QuerySet[Book]:
+    """Поиск книг по автору."""
+    return Book.objects.filter(authors=to_int(author_id)).order_by(*DEFAULT_ORDER_BY)
+
+
+def find_books_by_series(
+    _: bool, series_id: str, __: str | None = None, ___=None
+) -> QuerySet[Book]:
+    """Поиск книг по серии."""
+    DEFAULT_ORDER_BY.insert(0, "bseries__ser_no")
+    return Book.objects.filter(series=to_int(series_id)).order_by(*DEFAULT_ORDER_BY)
+
+
+def find_books_by_genre(
+    _: bool, genre_id: str, __: str | None = None, ___=None
+) -> QuerySet[Book]:
+    """Поиск книг по жанру."""
+    return Book.objects.filter(genres=to_int(genre_id)).order_by(*DEFAULT_ORDER_BY)
+
+
+SEARCH_BOOK_REGISTRY: dict[str, SearchFunction] = {
+    SearchType.ByUser: find_by_bookshelf,
+    SearchType.ByAuthorAndSeries: find_by_author_and_series,
+    SearchType.Doubles: find_book_doubles,
+    SearchType.BySubstring: find_books_by_substring,
+    SearchType.ByStartWith: find_books_by_start_letters,
+    SearchType.ByExactMatch: find_books_by_exact_match,
+    SearchType.ByAuthor: find_books_by_author,
+    SearchType.BySeries: find_books_by_series,
+    SearchType.ByGenre: find_books_by_genre,
+}
 
 
 def search_book(
-    type: str, term: str, second_term: str, user=None
+    type: str, term: str, second_term: str | None = None, user=None
 ) -> QuerySet[Book, Book]:
     """Формирование запроса на выборку книг."""
-    queries = {
-        OPDSSearchType.BySubstring: find_by_title_contains,
-        OPDSSearchType.ByStartWith: find_by_title_startswith,
-        OPDSSearchType.ByExact: find_by_title,
-        OPDSSearchType.ByAuthor: find_by_author,
-        OPDSSearchType.BySeries: find_by_series,
-        OPDSSearchType.ByGenre: find_by_genre,
-    }
-    order_by: list[str] = _order_by(type)
-
-    if type == OPDSSearchType.Doubles:
-        return find_book_doubles(_to_int(term))
-
-    if type == OPDSSearchType.ByUser:
-        if config.SOPDS_AUTH:
-            filter = find_by_bookshelf(user)
-        else:
-            filter = Q(id=0)
-
-    elif type == OPDSSearchType.ByAuthorAndSeries:
-        filter = Q(
-            find_by_author(term),
-            find_by_series(second_term),
-        )
-    else:
-        filter: Q = queries.get(type)(term)  # ty: ignore
-
-    return Book.objects.filter(filter).order_by(*order_by)
+    search_function = SEARCH_BOOK_REGISTRY.get(type)
+    if search_function is None:
+        raise ValueError(f"Search type '{type}' is not supported")
+    return search_function(config.SOPDS_AUTH, term, second_term, user)
 
 
 def paginated_book_content(
@@ -241,7 +246,19 @@ def find_books_by_template(
     chars: str, length: int, lang_code: int | None = None
 ) -> RawQuerySet:
     """Поиск книг по шаблону."""
+    books = (
+        Book.objects.filter(search_title__startswith=chars)
+        .annotate(
+            l=Value(length, output_field=CharField()),
+            cid=Substr("search_title", 1, length),
+        )
+        .values("l", "cid")
+        .annotate(cnt=Count("cid"))
+        .order_by("cid")
+    )
     if lang_code:
+        books.filter(lang_code=lang_code)
+
         sql = """select %(length)s as l, substring(search_title,1,%(length)s) as id, count(*) as cnt 
                 from opds_catalog_book 
                 where lang_code=%(lang_code)s and search_title like '%(chars)s%%%%'
@@ -251,6 +268,7 @@ def find_books_by_template(
             "lang_code": lang_code,
             "chars": chars,
         }
+
     else:
         sql = """select %(length)s as l, substring(search_title,1,%(length)s) as id, count(*) as cnt 
                 from opds_catalog_book 

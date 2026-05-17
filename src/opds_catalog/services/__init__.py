@@ -1,4 +1,6 @@
-# Сервисные функции opds_catalog
+"""Сервисные функции opds_catalog."""
+
+from enum import Enum
 import zipfile
 from io import BytesIO
 
@@ -8,13 +10,30 @@ from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2, FB2sax
 
 
+class SearchType:
+    """Поисковые состояния."""
+
+    # Common types
+    BySubstring = "m"
+    ByStartWith = "b"
+    ByExactMatch = "e"
+
+    # By concrete group
+    ByAuthor = "a"
+    BySeries = "s"
+    ByAuthorAndSeries = "as"
+    ByGenre = "g"
+    ByUser = "u"
+    Doubles = "d"
+
+
 def extract_fb2_cover(
     file: BytesIO, original_filename: str, mimetype: str
 ) -> bytes | None:
     if config.SOPDS_FB2SAX:
         parser = FB2sax(file, original_filename)
     else:
-        parser = FB2(file, original_filename, mimetype)
+        parser = FB2(file)
     # parser.parse()
     return parser.extract_cover()
 
