@@ -1,7 +1,11 @@
 """Сервисы для работы с сериями."""
 
+from typing import Any
+from opds_catalog.utils import to_int
+from django.utils.translation import gettext as _
+
 from django.db.models.query import RawQuerySet
-from django.db.models import Count
+from django.db.models import Count, Model
 from opds_catalog.models import Series
 
 
@@ -53,3 +57,13 @@ def search_series(searchtype: str, searchterms: str, author_id: int | None = Non
         series = Series.objects.filter(book__authors=author_id)
 
     return series.annotate(count_book=Count("book")).distinct().order_by("search_ser")
+
+
+def get_series_name(id: Any) -> str:
+    """Возвращает наименование серии."""
+    ser_id = to_int(id)
+    try:
+        ser_name = Series.objects.get(ser_id).ser
+    except Model.DoesNotExist:
+        ser_name = _("Series not found")
+    return ser_name
