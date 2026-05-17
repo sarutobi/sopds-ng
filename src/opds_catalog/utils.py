@@ -3,13 +3,13 @@
 # Вспомогательные функции
 #
 # import unicodedata
+from typing import Any
 
 from django.conf import settings
 import logging
 import os
 from opds_catalog import opdsdb
 from opds_catalog.models import Book
-from opds_catalog import utils
 from constance import config
 from io import BytesIO
 import chardet
@@ -24,8 +24,16 @@ logger = logging.getLogger(__name__)
 scan_logger = logging.getLogger("scanner")
 
 
+def to_int(val: Any, default: int = 0) -> int:
+    try:
+        result = int(val)
+    except Exception:
+        result = default
+    return result
+
+
 def translit(s: str) -> str:
-    """Russian translit: converts 'привет'->'privet'"""
+    """Russian translit: converts 'привет'->'privet'."""
     assert s is not str, "Error: argument MUST be string"
 
     table1 = str.maketrans(
@@ -67,7 +75,7 @@ def to_ascii(s):
 
 
 def get_lang_name(lang: str) -> str:
-    """Преобразование языкового кода в наименование языка"""
+    """Преобразование языкового кода в наименование языка."""
     k = lang.upper()
     if k in settings.LANGUAGE_NAMES.keys():
         return settings.LANGUAGE_NAMES[k]
@@ -76,17 +84,17 @@ def get_lang_name(lang: str) -> str:
 
 
 def getFileName(book: Book) -> str:
-    """Формирует название файла для сохранения книги в латинице"""
+    """Формирует название файла для сохранения книги в латинице."""
     if config.SOPDS_TITLE_AS_FILENAME:
-        transname = utils.translit(book.title + "." + book.format)
+        transname = translit(book.title + "." + book.format)
     else:
-        transname = utils.translit(book.filename)
+        transname = translit(book.filename)
 
-    return utils.to_ascii(transname)
+    return to_ascii(transname)
 
 
 def get_fs_book_path(book: Book) -> str:
-    """Формирует полный путь в файловой системе библиотеки для файла книги"""
+    """Формирует полный путь в файловой системе библиотеки для файла книги."""
     logger.info(f"Create file path for book {book.id}")
     path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
     if book.cat_type == opdsdb.CAT_INP:
@@ -102,8 +110,7 @@ def get_fs_book_path(book: Book) -> str:
 
 
 def read_from_regular_file(file_path: str) -> BytesIO | None:
-    """Читает содержимое обычного файла из файловой системы"""
-
+    """Читает содержимое обычного файла из файловой системы."""
     logger.info(f"Reading content from {file_path} as regular file")
     if not os.path.isfile(file_path):
         logger.error(f"File {file_path} is not a regular file!")
@@ -118,7 +125,8 @@ def read_from_regular_file(file_path: str) -> BytesIO | None:
 
 
 def decode_string(string: str) -> str:
-    """Определение кодировки и перекодирование строки
+    """Определение кодировки и перекодирование строки.
+
     :param string: Строка в неизвестной кодировке
 
     :return: Перекодированная в корректную коидировку строка
@@ -268,7 +276,6 @@ def get_infolist_filename(infolist: list[ZipInfo], filename: str) -> str | None:
     :returns: Найденное в infolist имя файла в ZIP архиве. Если имя файла не найдено, то возвращается None.
     :rtype: str|None
     """
-
     fnames = [x.filename for x in infolist]
     # Fast check
     if filename in fnames:

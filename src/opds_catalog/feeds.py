@@ -15,7 +15,7 @@ from opds_catalog.services import (
     series_services,
     authors_services,
 )
-
+from opds_catalog.utils import to_int
 from dataclasses import dataclass
 from typing import Any
 
@@ -34,7 +34,7 @@ from opds_catalog import settings
 
 from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
 
-from opds_catalog.services.book_services import OPDSSearchType
+from opds_catalog.services import SearchType
 from .decorators import sopds_auth_validate
 
 
@@ -268,13 +268,6 @@ class SOPDSBaseFeed(Feed):
             "start_url": reverse("opds_catalog:main"),
             "description_mime_type": "text",
         }
-
-    def _to_int(self, val: Any, default: int = 0) -> int:
-        try:
-            result = int(val)
-            return result
-        except Exception:
-            return default
 
     def catalog_pages_parameters(
         self, paginator: dict, id
@@ -550,7 +543,7 @@ class CatalogsFeed(SOPDSBaseFeed):
         каталога, метаданные пейджера.
         :rtype: list[list[Catalog], list[Book]], Catalog, OPDS_Paginator
         """
-        page_num = self._to_int(page, default=1)
+        page_num = to_int(page, default=1)
 
         root_cat = (
             catalog_services.get_by_id(cat_id)
@@ -703,7 +696,7 @@ class SearchBooksFeed(SOPDSBaseFeed):
             _("doubles hide") if config.SOPDS_DOUBLES_HIDE else _("doubles show"),
         )
 
-    def get_object(  # ty: ignore [invalid-method-override]
+    def get_object(
         self,
         request,
         searchtype="m",
@@ -713,12 +706,12 @@ class SearchBooksFeed(SOPDSBaseFeed):
     ):
         """Список объектов для фида."""
         # Проверка и типизация переменных
-        page_num = self._to_int(page, 1)
+        page_num = to_int(page, 1)
 
         if searchterms is not None:
             st = str(searchterms)
 
-        if searchtype == OPDSSearchType.ByAuthorAndSeries and searchterms0 is not None:
+        if searchtype == SearchType.ByAuthorAndSeries and searchterms0 is not None:
             st1 = str(searchterms0)
         else:
             st1 = None
@@ -726,7 +719,7 @@ class SearchBooksFeed(SOPDSBaseFeed):
         books = book_services.search_book(searchtype, st, st1, request.user)
 
         items, op = book_services.paginated_book_content(
-            books, page_num, searchtype != OPDSSearchType.Doubles
+            books, page_num, searchtype != SearchType.Doubles
         )
 
         return {
@@ -802,7 +795,7 @@ class SelectSeriesFeed(SOPDSBaseFeed):
         return "%s | %s" % (settings.TITLE, _("Series by authors select"))
 
     def get_object(self, request, searchtype, searchterms):
-        return self._to_int(searchterms)
+        return to_int(searchterms)
 
     def link(self, obj):
         """Ссылка на фид."""
@@ -957,8 +950,8 @@ class SearchSeriesFeed(SOPDSBaseFeed):
             page = int(page)
         page_num = page if page > 0 else 1
 
-        if searchtype == OPDSSearchType.ByAuthor:
-            self.author_id = self._to_int(searchterms)
+        if searchtype == SearchType.ByAuthor:
+            self.author_id = to_int(searchterms)
 
         series = series_services.search_series(searchtype, searchterms, self.author_id)
 
@@ -1111,9 +1104,9 @@ class BooksFeed(SOPDSBaseFeed):
             return reverse(
                 "opds_catalog:searchbooks",
                 kwargs={
-                    "searchtype": OPDSSearchType.ByStartWith
+                    "searchtype": SearchType.ByStartWith
                     if not title_full
-                    else OPDSSearchType.ByExact,
+                    else SearchType.ByExact,
                     "searchterms": item.id,
                 },
             )
@@ -1242,9 +1235,9 @@ class SeriesFeed(SOPDSBaseFeed):
             return reverse(
                 "opds_catalog:searchseries",
                 kwargs={
-                    "searchtype": OPDSSearchType.ByStartWith
+                    "searchtype": SearchType.ByStartWith
                     if not series_full
-                    else OPDSSearchType.ByExact,
+                    else SearchType.ByExactMatch,
                     "searchterms": item.id,
                 },
             )
@@ -1317,7 +1310,7 @@ class GenresFeed(SOPDSBaseFeed):
             return reverse(
                 "opds_catalog:searchbooks",
                 kwargs={
-                    "searchtype": OPDSSearchType.ByGenre,
+                    "searchtype": SearchType.ByGenre,
                     "searchterms": item["id"],
                 },
             )
