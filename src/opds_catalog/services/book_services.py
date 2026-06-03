@@ -109,15 +109,15 @@ def find_books_by_genre(
 
 
 SEARCH_BOOK_REGISTRY: dict[str, SearchFunction] = {
-    SearchType.ByUser: find_by_bookshelf,
-    SearchType.ByAuthorAndSeries: find_by_author_and_series,
-    SearchType.Doubles: find_book_doubles,
-    SearchType.BySubstring: find_books_by_substring,
-    SearchType.ByStartWith: find_books_by_start_letters,
-    SearchType.ByExactMatch: find_books_by_exact_match,
-    SearchType.ByAuthor: find_books_by_author,
-    SearchType.BySeries: find_books_by_series,
-    SearchType.ByGenre: find_books_by_genre,
+    SearchType.BY_USER: find_by_bookshelf,
+    SearchType.BY_AUTHOR_AND_SERIES: find_by_author_and_series,
+    SearchType.DOUBLES: find_book_doubles,
+    SearchType.BY_SUBSTRING: find_books_by_substring,
+    SearchType.BY_START_WITH: find_books_by_start_letters,
+    SearchType.BY_EXACT_MATCH: find_books_by_exact_match,
+    SearchType.BY_AUTHOR: find_books_by_author,
+    SearchType.BY_SERIES: find_books_by_series,
+    SearchType.BY_GENRE: find_books_by_genre,
 }
 
 

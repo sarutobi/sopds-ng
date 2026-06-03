@@ -17,7 +17,6 @@ from opds_catalog.services import (
 )
 from opds_catalog.utils import to_int
 from dataclasses import dataclass
-from typing import Any
 
 from constance import config
 from django.contrib.syndication.views import Feed
@@ -711,7 +710,7 @@ class SearchBooksFeed(SOPDSBaseFeed):
         if searchterms is not None:
             st = str(searchterms)
 
-        if searchtype == SearchType.ByAuthorAndSeries and searchterms0 is not None:
+        if searchtype == SearchType.BY_AUTHOR_AND_SERIES and searchterms0 is not None:
             st1 = str(searchterms0)
         else:
             st1 = None
@@ -719,7 +718,7 @@ class SearchBooksFeed(SOPDSBaseFeed):
         books = book_services.search_book(searchtype, st, st1, request.user)
 
         items, op = book_services.paginated_book_content(
-            books, page_num, searchtype != SearchType.Doubles
+            books, page_num, searchtype != SearchType.DOUBLES
         )
 
         return {
@@ -865,12 +864,28 @@ class SearchAuthorsFeed(SOPDSBaseFeed):
         return "%s | %s" % (settings.TITLE, _("Authors found"))
 
     def get_object(self, request, searchterms, searchtype, page=1):  # ty:ignore[invalid-method-override]
-        """Содержимое фида."""
+        """Содержимое фида.
+
+        :param request: HTTP запрос.
+        :type request: HttpRequest
+
+        :param searchterms: Строка для поиска авторов.
+        :type searchterms: str
+
+        :param searchtype: Тип поиска в виде строки (преобразуется в SearchType).
+        :type searchtype: str
+
+        :param page: Номер страницы.
+        :type page: int
+
+        :returns: Данные для фида: список авторов, параметры поиска и пагинатор.
+        :rtype: dict[str, Any]
+        """
         if not isinstance(page, int):
             page = int(page)
         page_num = page if page > 0 else 1
 
-        authors = authors_services.search_authors(searchtype, searchterms)
+        authors = authors_services.search_authors_with_counts(searchtype, searchterms)
 
         # Создаем результирующее множество
         authors_count = authors.count()
@@ -879,10 +894,10 @@ class SearchAuthorsFeed(SOPDSBaseFeed):
 
         for row in authors[op.d1_first_pos : op.d1_last_pos + 1]:
             p = {
-                "id": row.id,  # ty: ignore [unresolved-attribute]
+                "id": row.id,
                 "full_name": row.full_name,
                 "lang_code": row.lang_code,
-                "book_count": book_services.author_books_count(row),
+                "book_count": row.book_count,
             }
             items.append(p)
 
@@ -921,8 +936,8 @@ class SearchAuthorsFeed(SOPDSBaseFeed):
         return item["full_name"]
 
     def item_description(self, item):
-        """Количество нйденных книг."""
-        return _("Books count: %s") % (book_services.author_books_count(item["id"]))
+        """Количество найденных книг."""
+        return _("Books count: %s") % item["book_count"]
 
     def item_guid(self, item):
         """Уникальный идентификатор книги."""
@@ -950,7 +965,7 @@ class SearchSeriesFeed(SOPDSBaseFeed):
             page = int(page)
         page_num = page if page > 0 else 1
 
-        if searchtype == SearchType.ByAuthor:
+        if searchtype == SearchType.BY_AUTHOR:
             self.author_id = to_int(searchterms)
 
         series = series_services.search_series(searchtype, searchterms, self.author_id)
@@ -1104,9 +1119,9 @@ class BooksFeed(SOPDSBaseFeed):
             return reverse(
                 "opds_catalog:searchbooks",
                 kwargs={
-                    "searchtype": SearchType.ByStartWith
+                    "searchtype": SearchType.BY_START_WITH
                     if not title_full
-                    else SearchType.ByExact,
+                    else SearchType.BY_EXACT_MATCH,
                     "searchterms": item.id,
                 },
             )
@@ -1148,18 +1163,18 @@ class AuthorsFeed(SOPDSBaseFeed):
         """Ссылка для получения списка авторов.
 
         Если число символов для поиска авторов меньше заданного в настройках,
-        то возвращется перечень ссылок для авторов, начинающихся с заданной
+        то возвращается перечень ссылок для авторов, начинающихся с заданной
         последовательности символов + 1 дополнительный символ.
         Если же число символов более заданного в настройках, то возвращается
         перечень ссылок на авторов.
 
-        :param item: Начало фамилии автора.
-        :type item: str | None
+        :param item: Элемент фида с данными автора (dict).
+        :type item: dict[str, Any]
 
-        :returns: сссылка на продолжение поиска по авторам.
+        :returns: Ссылка на продолжение поиска по авторам.
         :rtype: str
         """
-        last_name_full = len(item["sid"]) < item["l"]
+        last_name_full = len(item["sid"]) < item["template_length"]
         if (item["cnt"] >= config.SOPDS_SPLITITEMS) and not last_name_full:
             return reverse(
                 "opds_catalog:chars_authors",
@@ -1235,9 +1250,9 @@ class SeriesFeed(SOPDSBaseFeed):
             return reverse(
                 "opds_catalog:searchseries",
                 kwargs={
-                    "searchtype": SearchType.ByStartWith
+                    "searchtype": SearchType.BY_START_WITH
                     if not series_full
-                    else SearchType.ByExactMatch,
+                    else SearchType.BY_EXACT_MATCH,
                     "searchterms": item.id,
                 },
             )
@@ -1310,7 +1325,7 @@ class GenresFeed(SOPDSBaseFeed):
             return reverse(
                 "opds_catalog:searchbooks",
                 kwargs={
-                    "searchtype": SearchType.ByGenre,
+                    "searchtype": SearchType.BY_GENRE,
                     "searchterms": item["id"],
                 },
             )
