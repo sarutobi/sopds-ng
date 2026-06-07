@@ -17,6 +17,8 @@ import logging
 from book_tools.exceptions import FB2StructureException
 from book_tools.format.fb2sax import fb2parser
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class FB2Namespace(object):
@@ -28,7 +30,7 @@ class FB2Namespace(object):
 
 
 class EbookMetaParser(ABC):
-    """Абстрактный класс парсера для электронной книги"""
+    """Абстрактный класс парсера для электронной книги."""
 
     ns_map = {"fb": FB2Namespace.FICTION_BOOK20, "l": FB2Namespace.XLINK}
 
@@ -37,8 +39,7 @@ class EbookMetaParser(ABC):
 
     @abstractmethod
     def extract_cover(self) -> bytes | None:
-        """
-        Извлечение обложки книги
+        """Извлечение обложки книги.
 
         Returns:
             bytes: байтовый поток обложки если обложка существует
@@ -175,25 +176,30 @@ class FB2(EbookMetaParser):
         return self.extract_cover()
 
     def extract_cover(self) -> bytes | None:
-        """Извлечение обложки книги"""
+        """Извлечение обложки книги."""
+        logger.info("Извлечение обложки")
         try:
             res = self._find_elements_with_namespaces(
                 "/fb:FictionBook/fb:description/fb:title-info/fb:coverpage/fb:image"
             )
 
             if len(res) == 0:
+                logger.info("В заголовке книги ссылка на обложку не найдена.")
                 res = self._find_elements_with_namespaces(
                     "/fb:FictionBook/fb:body//fb:image"
                 )
 
+            logger.info(f"Найдено {len(res)} кандидатов для обложки")
             cover_id: str = res[0].get("{" + FB2Namespace.XLINK + "}href")[1:]
-
+            logger.info(f"идентификатор обложки {cover_id}")
             res = self._find_elements_with_namespaces(
                 '/fb:FictionBook/fb:binary[@id="%s"]' % cover_id
             )
+            logger.info(f"Найдено {len(res)} элементов")
             content = base64.b64decode(res[0].text)
             return content
         except Exception as err:
+            logger.error(f"Ошибка при извлечении обложки: {err}")
             print("exception Extract %s" % err)
             return None
 

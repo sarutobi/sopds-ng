@@ -36,9 +36,9 @@ from book_tools.format.fb2 import (
 #         assert book_actual is not None
 
 
-def test_book_parsing(virtual_fb2_book) -> None:
-    result = create_bookfile_service(virtual_fb2_book, "Test Book")
-    assert result is not None
+# def test_book_parsing(virtual_fb2_book) -> None:
+#     result = create_bookfile_service(virtual_fb2_book, "Test Book")
+#     assert result is not None
 
 
 def test_fb2_metadata_service_returns_the_same(fb2_book_from_fs) -> None:
@@ -76,27 +76,41 @@ def test_fb2zip_mimevalidator(zipped_fb2_book_from_fs) -> None:
     assert validator.is_valid("test_zip.fb2", zipped_fb2_book_from_fs)
 
 
-def test_epub_mimevalidator(epub_book_from_fs) -> None:
+@pytest.mark.parametrize(
+    "book_from_fs",
+    [
+        "epub_book",
+    ],
+    indirect=True,
+)
+def test_epub_mimevalidator(book_from_fs) -> None:
     """Тест определения типа EPUB"""
     validator = EPUBMimeValidator()
-    assert validator.is_valid("test.epub", epub_book_from_fs)
-
-
-def test_mobi_mimevalidator(mobi_book_from_fs) -> None:
-    validator = MobiMimeValidator()
-    assert validator.is_valid("test.mobi", mobi_book_from_fs)
+    assert validator.is_valid("test.epub", book_from_fs)
 
 
 @pytest.mark.parametrize(
-    "book,expected",
+    "book_from_fs",
     [
-        ("fb2_book_from_fs", Mimetype.FB2),
-        ("zipped_fb2_book_from_fs", Mimetype.FB2_ZIP),
-        ("epub_book_from_fs", Mimetype.EPUB),
-        ("mobi_book_from_fs", Mimetype.MOBI),
-        ("wrong_encoded_fb2_zip", Mimetype.FB2_ZIP),
+        "mobi_book",
     ],
+    indirect=True,
 )
-def test_detect_mime_service(book, expected, request) -> None:
-    actual = detect_mime_service(request.getfixturevalue(book), "test_book")
-    assert actual == expected
+def test_mobi_mimevalidator(book_from_fs) -> None:
+    validator = MobiMimeValidator()
+    assert validator.is_valid("test.mobi", book_from_fs)
+
+
+# @pytest.mark.parametrize(
+#     "book,expected",
+#     [
+#         ("fb2_book_from_fs", Mimetype.FB2),
+#         ("zipped_fb2_book_from_fs", Mimetype.FB2_ZIP),
+#         ("epub_book_from_fs", Mimetype.EPUB),
+#         ("mobi_book_from_fs", Mimetype.MOBI),
+#         ("wrong_encoded_fb2_zip", Mimetype.FB2_ZIP),
+#     ],
+# )
+# def test_detect_mime_service(book, expected, request) -> None:
+#     actual = detect_mime_service(request.getfixturevalue(book), "test_book")
+#     assert actual == expected

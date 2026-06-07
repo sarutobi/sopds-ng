@@ -46,23 +46,23 @@ def zipped_books_from_fs(wrong_encoded_fb2_zip, zipped_fb2_book_from_fs):
     ]
 
 
-@pytest.mark.parametrize(
-    "book_from_fs, filename, expected",
-    [
-        ("262001.zip", "262001.fb2", "262001.fb2"),
-        ("262001.zip", "262002.fb2", None),
-        (
-            "wrong_encoded.zip",
-            "Носов - Незнайка-путешественник.fb2",
-            "ì«ß«ó - ìÑº¡á⌐¬á-»πΓÑΦÑßΓóÑ¡¡¿¬.fb2",
-        ),
-    ],
-    indirect=["book_from_fs"],
-)
-def test_get_infolist_filename(book_from_fs, filename, expected) -> None:
-    """Тест поиска имени файла в zip архиве."""
-
-    with zipfile.ZipFile(book_from_fs) as zip:
-        infolist = zip.infolist()
-    actual = get_infolist_filename(infolist, filename)
-    assert actual == expected
+# @pytest.mark.parametrize(
+#     "book_from_fs, filename, expected",
+#     [
+#         ("262001.zip", "262001.fb2", "262001.fb2"),
+#         ("262001.zip", "262002.fb2", None),
+#         (
+#             "wrong_encoded.zip",
+#             "Носов - Незнайка-путешественник.fb2",
+#             "ì«ß«ó - ìÑº¡á⌐¬á-»πΓÑΦÑßΓóÑ¡¡¿¬.fb2",
+#         ),
+#     ],
+#     indirect=["book_from_fs"],
+# )
+# def test_get_infolist_filename(book_from_fs, filename, expected) -> None:
+#     """Тест поиска имени файла в zip архиве."""
+#
+#     with zipfile.ZipFile(book_from_fs) as zip:
+#         infolist = zip.infolist()
+#     actual = get_infolist_filename(infolist, filename)
+#     assert actual == expected

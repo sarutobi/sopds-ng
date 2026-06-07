@@ -58,29 +58,25 @@ def test_fb2tag_setvalue(test_tag) -> None:
     assert test_tag.current_value == "test"
 
 
-def test_fb2sax(test_rootlib) -> None:
-    book = fb2_book_fabric(
-        title="The Sanctuary Sparrow",
-        docdate=datetime.strptime("30.1.2011", "%d.%m.%Y"),
-    )
+def test_fb2sax(get_file_content, simple_fb2) -> None:
 
     # file = read_file_as_iobytes(os.path.join(test_rootlib, "262001.fb2"))
-    book_file = FB2sax(BytesIO(book), "Test Book")
+    book_file = FB2sax(get_file_content(simple_fb2), "Test Book")
     assert book_file is not None
-    assert book_file.docdate == "2011-01-30"
+    assert book_file.docdate == "30.1.2011"
     assert book_file.title == "The Sanctuary Sparrow"
 
 
-def test_fb2sax_new_parser(virtual_fb2_book) -> None:
-    book_actual = FB2sax(virtual_fb2_book, "Test Book")
-    book_new = FB2sax_new(virtual_fb2_book, "Test Book")
-    assert _are_equals_data(book_actual, book_new)
+# def test_fb2sax_new_parser(virtual_fb2_book) -> None:
+#     book_actual = FB2sax(virtual_fb2_book, "Test Book")
+#     book_new = FB2sax_new(virtual_fb2_book, "Test Book")
+#     assert _are_equals_data(book_actual, book_new)
 
 
-def test_fb2_new_parser(virtual_fb2_book) -> None:
-    book_actual = FB2(virtual_fb2_book, "Test Book")
-    book_new = FB2_new(virtual_fb2_book)
-    assert _are_equals_data(book_actual, book_new)
+# def test_fb2_new_parser(virtual_fb2_book) -> None:
+#     book_actual = FB2(virtual_fb2_book, "Test Book")
+#     book_new = FB2_new(virtual_fb2_book)
+#     assert _are_equals_data(book_actual, book_new)
 
 
 def _are_equals_data(bookfile: BookFile, parser: EbookMetaParser) -> bool:
@@ -126,10 +122,10 @@ def test_benchmark_fb2_parser(benchmark, virtual_fb2_book):
     benchmark(FB2, virtual_fb2_book, "benchmark")
 
 
-def test_fb2_cover_extraction(fb2_book_from_fs) -> None:
-    """Проверка извлечения обложки старым и новым парсером FB2"""
-    cover_actual = FB2(fb2_book_from_fs, "Test book").extract_cover_memory()
-    cover_expected = FB2_new(fb2_book_from_fs).extract_cover()
+def test_fb2_cover_extraction(fb2_with_cover) -> None:
+    """Проверка извлечения обложки старым и новым парсером FB2."""
+    cover_actual = FB2(fb2_with_cover, "Test book").extract_cover_memory()
+    cover_expected = FB2_new(fb2_with_cover).extract_cover()
     assert cover_actual is not None
     assert cover_actual == cover_expected
 

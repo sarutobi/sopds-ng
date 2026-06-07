@@ -636,7 +636,7 @@ def OpenSearch(request):
 class SearchTypesFeed(SOPDSBaseFeed):
     """Навигационный фид типов поиска книг."""
 
-    def get_object(self, request, searchterms=""):  # ty:ignore [invalid-method-override]
+    def get_object(self, request, searchterms=""):
         """Получение объекта фида."""
         return searchterms.replace("+", " ")
 
@@ -863,17 +863,17 @@ class SearchAuthorsFeed(SOPDSBaseFeed):
         """Заголовок фида."""
         return "%s | %s" % (settings.TITLE, _("Authors found"))
 
-    def get_object(self, request, searchterms, searchtype, page=1):  # ty:ignore[invalid-method-override]
+    def get_object(self, request, searchtype, searchterms, page=1):
         """Содержимое фида.
 
         :param request: HTTP запрос.
         :type request: HttpRequest
 
-        :param searchterms: Строка для поиска авторов.
-        :type searchterms: str
-
         :param searchtype: Тип поиска в виде строки (преобразуется в SearchType).
         :type searchtype: str
+
+        :param searchterms: Строка для поиска авторов.
+        :type searchterms: str
 
         :param page: Номер страницы.
         :type page: int
@@ -958,7 +958,7 @@ class SearchSeriesFeed(SOPDSBaseFeed):
         """Заголовок фида."""
         return "%s | %s" % (settings.TITLE, _("Series found"))
 
-    def get_object(self, request, searchterms, searchtype, page=1):  # ty: ignore[invalid-method-override]
+    def get_object(self, request, searchtype, searchterms, page=1):
         """Получение элементов фида."""
         self.author_id = None
         if not isinstance(page, int):

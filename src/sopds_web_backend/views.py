@@ -61,7 +61,7 @@ def _extract_input_parameters(request) -> dict[str, str]:
     args["searchterms"] = request.GET.get("searchterms", "")
     args["searchterms0"] = request.GET.get("searchterms0")
     args["page_num"] = request.GET.get("page")
-    args["user"] = request.user.usernname
+    args["user"] = request.user.username
     return args
 
 
@@ -84,8 +84,8 @@ def SearchBooksView(request):
         books = book_services.search_book(
             args["searchtype"], args["searchterms"], args["searchterms0"], args["user"]
         )
-        if args["searchtype"] in "mb":
-            args["breadcrumbs"] = [_("Books"), _("Search by title"), searchterms]
+        if args["searchtype"] in ("m", "b"):
+            args["breadcrumbs"] = [_("Books"), _("Search by title"), args["searchterms"]]
             args["searchobject"] = "title"
 
         elif args["searchtype"] == "a":
@@ -152,7 +152,7 @@ def SearchBooksView(request):
         # Поиск книги по ID. Хотел найти еще и дубликаты к книге, но почему-то не работает запрос правильно. Ума не приложу почему.
         elif args["searchtype"] == "i":
             try:
-                book_id = int(searchterms)
+                book_id = int(args["searchterms"])
                 # mbook = Book.objects.get(id=book_id)
             except:
                 book_id = 0
@@ -179,6 +179,7 @@ def SearchBooksView(request):
             Prefetch("genres", to_attr="c_genres"),
         )
         books_count = books.count()
+        page_num = to_int(args.get("page_num", 1))
         op = OPDS_Paginator(
             books_count, 0, page_num, config.SOPDS_MAXITEMS, HALF_PAGES_LINKS
         )
@@ -255,13 +256,13 @@ def SearchBooksView(request):
                 items.pop(0)
 
         args["paginator"] = op.get_data_dict()
-        args["searchterms"] = searchterms
-        args["searchtype"] = searchtype
+        args["searchterms"] = args["searchterms"]
+        args["searchtype"] = args["searchtype"]
         args["books"] = items
         args["current"] = "search"
-        args["cache_id"] = "%s:%s:%s" % (searchterms, searchtype, op.page_num)
+        args["cache_id"] = "%s:%s:%s" % (args["searchterms"], args["searchtype"], op.page_num)
 
-        if searchtype == "u":
+        if args["searchtype"] == "u":
             args["cache_t"] = 0
         else:
             args["cache_t"] = config.SOPDS_CACHE_TIME

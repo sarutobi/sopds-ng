@@ -1,10 +1,9 @@
-"""Фикстуры для модуля book_tools"""
+"""Фикстуры для модуля book_tools."""
 
 from io import BytesIO
 
 import pytest
 
-from book_tools.format.fb2 import Namespace
 from book_tools.format.fb2sax import fb2tag
 from book_tools.format.parsers import EbookMetaParser, EpubParser
 from opds_catalog import opdsdb
@@ -13,149 +12,111 @@ from tests.opds_catalog.helpers import create_book
 
 
 @pytest.fixture(scope="module")
-def epub_parser(epub_book_from_fs) -> EbookMetaParser:
-    """Парсер формата EPub"""
-    return EpubParser(epub_book_from_fs)
+def epub_parser(get_file_content, epub_book) -> EbookMetaParser:
+    """Парсер формата EPub.
+
+    Возвращает экземпляр ``EpubParser`` для реального epub-файла. Позволяет тестировать
+    работу парсера EPub без многократного создания.
+
+    :scope: module
+    :returns: EpubParser
+    :rtype: EbookMetaParser
+    """
+    return EpubParser(get_file_content(epub_book))
 
 
 @pytest.fixture(scope="module")
-def invalid_epub(zipped_fb2_book_from_fs) -> BytesIO:
-    """Некорректный тип книги в формате EPub"""
-    return zipped_fb2_book_from_fs
+def invalid_epub(get_file_content, zipped_fb2) -> BytesIO:
+    """Некорректный тип книги в формате EPub.
+
+    Возвращает содержимое, которое не является корректным epub (на самом деле это ZIP
+    с FB2-файлом). Используется для проверки отлова неверного формата.
+
+    :scope: module
+    :returns: BytesIO
+    :rtype: BytesIO
+    """
+    return get_file_content(zipped_fb2)
 
 
 @pytest.fixture
 def test_tag() -> fb2tag:
+    """Создаёт объект fb2tag с путём (description, title-info, author, first-name).
+
+    Применяется в тестах разбора FB2-тегов.
+
+    :scope: function
+    :returns: fb2tag
+    :rtype: fb2tag
+    """
     # TODO: перенести фикстуру в пакет тестов fb2sax
     return fb2tag(("description", "title-info", "author", "first-name"))
 
 
-@pytest.fixture(params=(None, Namespace.FICTION_BOOK20, Namespace.FICTION_BOOK21))
-def namespace(request):
-    """Предоставляет различные неймспейсы для книг в формате fb2"""
-    return request.param
+@pytest.fixture
+def fb2_params() -> dict:
+    """Параметры для построения FB2 книги.
 
+    Возвращает словарь со всеми возможными полями:
+    ``title``, ``authors``, ``genres``, ``lang``, ``docdate``, ``annotation``,
+    ``series_name``, ``series_no``, ``correct``.
+    Тест может переопределить нужные ключи через ``request.getfixturevalue``
+    или напрямую изменить возвращаемый словарь.
 
-@pytest.fixture(params=(None, "", "Generated Book"))
-def title(request):
-    return request.param
-
-
-@pytest.fixture(
-    params=(
-        None,
-        [],
-        [
-            Author("Pytest", last_name="Genius"),
-        ],
-        [
-            Author("Pytest", last_name="Genius"),
-            Author("Pytest", "Another", "Genius"),
-        ],
-    )
-)
-def authors(request):
-    return request.param
-
-
-@pytest.fixture(
-    params=(
-        None,
-        [],
-        [
-            "genre1",
-        ],
-        [
-            "genre1",
-            "genre2",
-        ],
-    )
-)
-def genres(request):
-    print(request)
-    return request.param
-
-
-@pytest.fixture(params=(None, "", "ru"))
-def lang(request):
-    return request.param
-
-
-@pytest.fixture(params=(None, "", "1970-01-01"))
-def docdate(request):
-    return request.param
-
-
-@pytest.fixture(params=(None, "", "Test annotation"))
-def annotation(request):
-    return request.param
-
-
-@pytest.fixture(params=(None, "", "Test series"))
-def series_name(request):
-    return request.param
-
-
-@pytest.fixture(params=(None, "", 1))
-def series_no(request):
-    return request.param
-
-
-@pytest.fixture(params=(True, False))
-def correct(request):
-    return request.param
-
-
-# @pytest.fixture
-# def fb2_book_fabric(
-#     namespace,
-#     # namespace: str | None = Namespace.FICTION_BOOK20,
-#     title,
-#     authors,
-#     genres,
-#     lang="en",
-#     docdate="01.01.1970",
-#     series_name=None,
-#     series_no=None,
-#     annotation="<p>Somedescription</p>",
-#     correct=True,
-# ) -> bytes:
-#     book = FictionBook()
-#     book.title = title
-#     book.authors = authors
-#     book.genres = genres
-#     book.lang = lang
-#     book.docdate = docdate
-#     data = book.build(namespace)
-#     if not correct:
-#         data = data.replace(b"genre>", b"genre", 1)
-#     return data
-
-
-# @pytest.fixture
-# def fb_generator() -> EBookData:
-#     return EBookData()
+    :scope: function
+    :returns: dict с параметрами
+    :rtype: dict
+    """
+    return {
+        "namespace": None,
+        "title": "Generated Book",
+        "authors": [Author("Pytest", last_name="Genius")],
+        "genres": ["genre1"],
+        "lang": "ru",
+        "docdate": "1970-01-01",
+        "annotation": "Test annotation",
+        "series_name": "Test series",
+        "series_no": 1,
+        "correct": True,
+    }
 
 
 @pytest.fixture
-def create_regular_book():
-    # TODO: переименовать фикстуру
-    book = create_book(filename="262001.fb2", cat_type=opdsdb.CAT_NORMAL, path=".")
-    book.save()
-    return book
+def virtual_fb2_book(fb2_params) -> BytesIO:
+    """Формирует виртуальную книгу в формате FB2 на основе fb2_params.
 
+    Формирует виртуальную (сгенерированную на лету) FB2-книгу как ``BytesIO``, используя
+    значения из ``fb2_params``. Позволяет тестировать парсинг без реальных файлов.
 
-@pytest.fixture
-def virtual_fb2_book(namespace) -> BytesIO:
-    """Формирует виртуальную книгу в формате FB2"""
-    return BytesIO(fb2_book_fabric(namespace=namespace))
-
-
-# @pytest.fixture
-# def author_factory():
-#     return AuthorFactory()
+    :scope: function
+    :returns: BytesIO с FB2-контентом
+    :rtype: BytesIO
+    """
+    return BytesIO(
+        fb2_book_fabric(
+            namespace=fb2_params["namespace"],
+            title=fb2_params["title"],
+            authors=fb2_params["authors"],
+            genres=fb2_params["genres"],
+            lang=fb2_params["lang"],
+            docdate=fb2_params["docdate"],
+            series_name=fb2_params["series_name"],
+            series_no=fb2_params["series_no"],
+            annotation=fb2_params["annotation"],
+            correct=fb2_params["correct"],
+        )
+    )
 
 
 @pytest.fixture
 def create_incorrect_book():
+    """Заведомо неверная книга.
+
+    Возвращает ``BytesIO(b"I'm not a fiction book")`` — заведомо неверную книгу.
+    Используется для проверки реакций на полностью некорректные входные данные.
+
+    :scope: function
+    :returns: BytesIO с некорректным содержимым
+    :rtype: BytesIO
+    """
     return BytesIO(b"I'm not a fiction book")
