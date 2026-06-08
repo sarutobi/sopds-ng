@@ -1,6 +1,7 @@
 # from django.conf.urls import url
 from django.urls import re_path
-from opds_catalog import feeds, dl
+
+from opds_catalog import dl, feeds
 
 app_name = "opds_catalog"
 

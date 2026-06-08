@@ -39,4 +39,3 @@ All changes are present in dev branch in current repository
 - gunicorn
 
 - docker
-

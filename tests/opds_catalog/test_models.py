@@ -1,24 +1,23 @@
 from datetime import datetime
 
+from django.conf import settings as main_settings
+from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
-from django.contrib.auth.models import User
-from django.conf import settings as main_settings
 
+from opds_catalog import models, opdsdb
 from opds_catalog.models import (
+    Author,
     Book,
     Catalog,
-    Author,
+    Counter,
     Genre,
     Series,
-    bookshelf,
-    Counter,
     bauthor,
     bgenre,
+    bookshelf,
     bseries,
 )
-from opds_catalog import models
-from opds_catalog import opdsdb
 
 
 class modelsTestCase(TestCase):

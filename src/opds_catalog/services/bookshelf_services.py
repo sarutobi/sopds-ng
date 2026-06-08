@@ -1,7 +1,8 @@
 """Сервисы для работы с книжной полкой пользователя."""
 
-from opds_catalog.models import Book, bookshelf
 from django.contrib.auth.models import User
+
+from opds_catalog.models import Book, bookshelf
 
 
 def get_bookshelf_books_count(user: User) -> int:

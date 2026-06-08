@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - dev
+      - master
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.13-slim
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies (including dev)
+        run: uv sync --group dev
+
+      - name: Set dummy Django SECRET_KEY
+        run: echo "SECRET_KEY=django-insecure-ci-dummy-key" >> .env
+
+      - name: Run ruff
+        run: uv run ruff check .
+
+      - name: Run mypy
+        run: uv run mypy .
+
+      - name: Run pytest
+        run: uv run pytest

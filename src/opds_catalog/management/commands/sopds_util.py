@@ -1,11 +1,10 @@
-from django.core.management.base import BaseCommand
 from django.core.management import call_command
+from django.core.management.base import BaseCommand
 from django.db import transaction
+
 # from django.db import connection
 # from django.conf import settings as main_settings
-
-from opds_catalog import opdsdb
-from opds_catalog import models
+from opds_catalog import models, opdsdb
 from opds_catalog.models import Counter
 
 # from constance import config

@@ -1,8 +1,10 @@
 """Сервисы работы с жанрами."""
 
-from opds_catalog.models import Genre
-from django.db.models import QuerySet, Min, Count
 from typing import Any
+
+from django.db.models import Count, Min, QuerySet
+
+from opds_catalog.models import Genre
 
 
 def get_genres() -> QuerySet[Genre, dict[str, Any]]:

@@ -29,4 +29,3 @@ USER foundation
 
 RUN git clone https://github.com/foundation/foundation-zurb-template .
 RUN yarn
-

@@ -1,33 +1,30 @@
-from opds_catalog.services import (
-    authors_services,
-    book_services,
-    series_services,
-    genre_services,
-)
-from django.shortcuts import render, redirect
-from django.template.context_processors import csrf
-from django.db.models import Count, Prefetch
-from django.utils.translation import gettext as _
-from django.contrib.auth import authenticate, login, logout, REDIRECT_FIELD_NAME
+from constance import config
+from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
-from django.views.decorators.vary import vary_on_headers
+from django.db.models import Count, Prefetch
+from django.shortcuts import redirect, render
+from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
 from django.utils.html import strip_tags
+from django.utils.translation import gettext as _
+from django.views.decorators.vary import vary_on_headers
 
 from opds_catalog.models import (
     Book,
-    Author,
-    Series,
-    bookshelf,
     Catalog,
     Genre,
+    Series,
+    bookshelf,
     lang_menu,
 )
-
-from constance import config
 from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
+from opds_catalog.services import (
+    authors_services,
+    book_services,
+    genre_services,
+    series_services,
+)
 from opds_catalog.utils import get_lang_name, to_int
-
 from sopds_web_backend.settings import HALF_PAGES_LINKS
 
 BREADCRUMBS = {
@@ -85,7 +82,11 @@ def SearchBooksView(request):
             args["searchtype"], args["searchterms"], args["searchterms0"], args["user"]
         )
         if args["searchtype"] in ("m", "b"):
-            args["breadcrumbs"] = [_("Books"), _("Search by title"), args["searchterms"]]
+            args["breadcrumbs"] = [
+                _("Books"),
+                _("Search by title"),
+                args["searchterms"],
+            ]
             args["searchobject"] = "title"
 
         elif args["searchtype"] == "a":
@@ -260,7 +261,11 @@ def SearchBooksView(request):
         args["searchtype"] = args["searchtype"]
         args["books"] = items
         args["current"] = "search"
-        args["cache_id"] = "%s:%s:%s" % (args["searchterms"], args["searchtype"], op.page_num)
+        args["cache_id"] = "%s:%s:%s" % (
+            args["searchterms"],
+            args["searchtype"],
+            op.page_num,
+        )
 
         if args["searchtype"] == "u":
             args["cache_t"] = 0

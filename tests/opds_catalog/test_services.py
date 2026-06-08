@@ -1,9 +1,11 @@
 """Тесты для сервисов opds_catalog."""
 
-import pytest
 import zipfile
-from opds_catalog.services import extract_fb2_cover, unzip_fb2_service
+
+import pytest
+
 from book_tools.exceptions import FB2StructureException
+from opds_catalog.services import extract_fb2_cover, unzip_fb2_service
 
 
 @pytest.mark.django_db

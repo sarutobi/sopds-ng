@@ -1,10 +1,10 @@
-from book_tools.format.parsers import EbookMetaParser, EpubParser
+import os
 
 # from tests.conftest import epub_book_from_fs
 import pytest
-import os
 
 from book_tools.format.epub import EPub, EPub_new
+from book_tools.format.parsers import EbookMetaParser, EpubParser
 from tests.opds_catalog.helpers import read_file_as_iobytes
 
 

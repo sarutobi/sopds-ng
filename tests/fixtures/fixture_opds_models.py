@@ -1,8 +1,8 @@
 """Фикстуры моделей opds_catalog."""
 
-from opds_catalog.models import Author, Book, Catalog, bauthor, Genre
-
 import pytest
+
+from opds_catalog.models import Author, Book, Catalog, Genre, bauthor
 
 
 @pytest.fixture

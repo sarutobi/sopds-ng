@@ -1,21 +1,18 @@
+import logging
 import os
 import signal
 import sys
-import logging
 
 from apscheduler.schedulers.blocking import BlockingScheduler
-
-
-from django.core.management.base import BaseCommand
-from django.db import transaction, connection, connections
+from constance import config
 from django.conf import settings as main_settings
-
-from opds_catalog.models import Counter
-from opds_catalog.sopdscan import opdsScanner
+from django.core.management.base import BaseCommand
+from django.db import connection, connections, transaction
 
 # from opds_catalog.settings import SCANNER_LOG, SCAN_SHED_DAY, SCAN_SHED_DOW, SCAN_SHED_HOUR, SCAN_SHED_MIN, LOGLEVEL, SCANNER_PID
 from opds_catalog import settings
-from constance import config
+from opds_catalog.models import Counter
+from opds_catalog.sopdscan import opdsScanner
 
 
 class Command(BaseCommand):
@@ -23,9 +20,7 @@ class Command(BaseCommand):
     scan_is_active = False
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "command", help="Use [ scan | start | stop | restart ]"
-        )
+        parser.add_argument("command", help="Use [ scan | start | stop | restart ]")
         parser.add_argument(
             "--verbose",
             action="store_true",
@@ -42,15 +37,11 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        self.pidfile = os.path.join(
-            main_settings.BASE_DIR, config.SOPDS_SCANNER_PID
-        )
+        self.pidfile = os.path.join(main_settings.BASE_DIR, config.SOPDS_SCANNER_PID)
         action = options["command"]
         self.logger = logging.getLogger("")
         self.logger.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(
-            "%(asctime)s %(levelname)-8s %(message)s"
-        )
+        formatter = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
 
         if settings.LOGLEVEL != logging.NOTSET:
             # Создаем обработчик для записи логов в файл
@@ -173,9 +164,7 @@ class Command(BaseCommand):
             minute=self.SCAN_SHED_MIN,
             id="scan",
         )
-        self.sched.add_job(
-            self.check_settings, "cron", minute="*/10", id="check"
-        )
+        self.sched.add_job(self.check_settings, "cron", minute="*/10", id="check")
         quit_command = "CTRL-BREAK" if sys.platform == "win32" else "CONTROL-C"
         self.stdout.write("Quit the server with %s.\n" % quit_command)
         try:

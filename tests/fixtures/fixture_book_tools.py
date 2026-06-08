@@ -6,9 +6,7 @@ import pytest
 
 from book_tools.format.fb2sax import fb2tag
 from book_tools.format.parsers import EbookMetaParser, EpubParser
-from opds_catalog import opdsdb
 from tests.book_tools.format.helpers import Author, fb2_book_fabric
-from tests.opds_catalog.helpers import create_book
 
 
 @pytest.fixture(scope="module")

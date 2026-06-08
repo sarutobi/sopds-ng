@@ -348,3 +348,4 @@ webpack-stats.json
 # Custom compose options
 docker-compose.override.yml
 
+!.gitea/

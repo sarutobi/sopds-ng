@@ -1,16 +1,17 @@
+from abc import abstractmethod
 import base64
+from dataclasses import dataclass
+from io import BytesIO
 import os
 import zipfile
-from lxml import etree
-from abc import abstractmethod
 
-from io import BytesIO
+from lxml import etree
+from lxml.etree import _ElementTree
+
+from book_tools.exceptions import FB2StructureException
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.util import list_zip_file_infos, normalize_string
-from lxml.etree import _ElementTree
-from dataclasses import dataclass
-from book_tools.exceptions import FB2StructureException
 
 
 @dataclass
@@ -98,7 +99,6 @@ class FB2Base(BookFile):
     def __detect_namespaces(self, tree: etree._ElementTree) -> None:
         if tree.getroot().tag.find(Namespace.FICTION_BOOK21) > 0:
             self.__namespaces["fb"] = Namespace.FICTION_BOOK21
-        return None
 
     def __detect_title(self, tree: etree._ElementTree) -> None:
         res = tree.xpath(
@@ -111,8 +111,6 @@ class FB2Base(BookFile):
             )
         if len(res) > 0:
             self.__set_title__(res[0].text)
-
-        return None
 
     def __detect_docdate(self, tree: etree._ElementTree) -> None:
         is_attrib = 1
@@ -133,8 +131,6 @@ class FB2Base(BookFile):
             res = tree.xpath("/FictionBook/description/document-info/date")
         if len(res) > 0:
             self.__set_docdate__(res[0] if is_attrib else res[0].text)
-
-        return None
 
     def __detect_authors(self, tree: etree._ElementTree) -> None:
         use_namespaces: bool = True

@@ -1,9 +1,8 @@
 """Фикстуры для книг, размещенных в файловой системе."""
 
-from typing import Callable
-
-import os
 from io import BytesIO
+import os
+from typing import Callable
 import zipfile
 
 import pytest
@@ -139,9 +138,10 @@ def book_from_fs(get_file_content, request) -> BytesIO:
 
     Использование в тесте::
 
-        @pytest.mark.parametrize('book_from_fs', ['simple_fb2', 'zipped_fb2', ...], indirect=True)
-        def test_something(book_from_fs):
-            ...
+        @pytest.mark.parametrize(
+            "book_from_fs", ["simple_fb2", "zipped_fb2", ...], indirect=True
+        )
+        def test_something(book_from_fs): ...
 
     :scope: session
     :param request: объект запроса pytest

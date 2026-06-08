@@ -1,20 +1,19 @@
 """Сервисы для работы с авторами."""
 
-from typing import Any, TypedDict
+from typing import TypedDict
 
-from opds_catalog.models import Author
-from opds_catalog.utils import to_int
 from django.db.models import (
-    F,
-    Func,
-    Value,
-    IntegerField,
     CharField,
     Count,
+    F,
+    Func,
+    IntegerField,
     QuerySet,
+    Value,
 )
-
 from django.utils.translation import gettext_lazy as _
+
+from opds_catalog.models import Author
 from opds_catalog.services import SearchType
 
 
@@ -26,7 +25,7 @@ class AuthorTemplateResult(TypedDict):
 
 def find_authors_by_template(
     chars: str, length: int, lang_code: int | None
-) -> QuerySet[AuthorTemplateResult]:
+) -> QuerySet:
     """Поиск авторов по шаблону.
 
     Выполняется поиск авторов, фамилии которых начинаются с указанного шаблона.
@@ -38,7 +37,7 @@ def find_authors_by_template(
     :type lang_code: int|None
 
     :returns: Запрос для поиска авторов по шаблону.
-    :rtype: QuerySet[AuthorTemplateResult]
+    :rtype: QuerySet
     """
     query = (
         Author.objects.filter(search_full_name__startswith=chars)
@@ -86,9 +85,9 @@ def search_authors(searchtype: SearchType, searchterms: str) -> QuerySet[Author]
             search_full_name__startswith=search_terms_upper
         ).order_by("search_full_name")
     elif searchtype == SearchType.BY_EXACT_MATCH:
-        authors = Author.objects.filter(
-            search_full_name=search_terms_upper
-        ).order_by("search_full_name")
+        authors = Author.objects.filter(search_full_name=search_terms_upper).order_by(
+            "search_full_name"
+        )
     else:
         raise ValueError(f"Unsupported search type: {searchtype}")
     return authors

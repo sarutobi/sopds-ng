@@ -1,9 +1,7 @@
-import pytest
-import zipfile
-
 from django.test import TestCase
+import pytest
 
-from opds_catalog.utils import get_lang_name, translit, get_infolist_filename
+from opds_catalog.utils import get_lang_name, translit
 
 
 class TestOpdsUtils(TestCase):

@@ -1,8 +1,8 @@
 """Сервисные функции opds_catalog."""
 
 from enum import StrEnum
-import zipfile
 from io import BytesIO
+import zipfile
 
 from constance import config
 

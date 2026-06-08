@@ -6,15 +6,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('opds_catalog', '0001_initial'),
+        ("opds_catalog", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='catalog',
-            name='cat_size',
+            model_name="catalog",
+            name="cat_size",
             field=models.BigIntegerField(default=0, null=True),
         ),
     ]

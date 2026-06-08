@@ -2,14 +2,15 @@
 
 import base64
 import os
-import zipfile
 from pathlib import Path
+import zipfile
 
-import pytest
 from constance import config
 from django.test import TestCase
 from django.urls import reverse
+import pytest
 
+from opds_catalog.models import Book
 from opds_catalog.utils import (
     get_fs_book_path,
     getFileData,
@@ -19,7 +20,6 @@ from opds_catalog.utils import (
     read_from_regular_file,
     read_from_zipped_file,
 )
-from opds_catalog.models import Book
 from tests.opds_catalog.helpers import (
     BookFactoryMixin,
     read_book_from_zip_file,

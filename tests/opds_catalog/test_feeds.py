@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
-from opds_catalog import settings
-import pytest
-
 from io import BytesIO
-from lxml import etree
-from django.urls import reverse
-from django.test import TestCase, Client
-from django.utils.translation import gettext as _
-import helpers
-from opds_catalog import opdsdb
 
 # from opds_catalog import settings
 from constance import config
+from django.test import Client, TestCase
+from django.urls import reverse
+from django.utils.translation import gettext as _
+import helpers
+from lxml import etree
+import pytest
+
+from opds_catalog import opdsdb, settings
 
 
 class feedsTestCase(TestCase):

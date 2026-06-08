@@ -1,12 +1,12 @@
 """Helper functions for testing purpose."""
 
-from lxml.etree import _ElementTree
-from lxml import etree
 from io import BytesIO
 import zipfile
 
-# from codecs import open
+from lxml import etree
+from lxml.etree import _ElementTree
 
+# from codecs import open
 from opds_catalog import opdsdb
 from opds_catalog.models import Book, Catalog
 

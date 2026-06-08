@@ -19,24 +19,24 @@
 	        <ul class="menu sopdsmenu">
 	        {% for key, value in lang_menu.items %}
 	            <li><a href="{% url "web:book" %}?lang={{ key }}">{{ value }}</a></li>
-	        {% endfor %}    
+	        {% endfor %}
 	        </ul>
 	    </li>
-	    <li {% if current == "author" %} class="active" {% endif %}><a href="#">{% trans "Authors" %}</a>	    
+	    <li {% if current == "author" %} class="active" {% endif %}><a href="#">{% trans "Authors" %}</a>
 	        <ul class="menu sopdsmenu">
 	        {% for key, value in lang_menu.items %}
 	            <li><a href="{% url "web:author" %}?lang={{ key }}">{{ value }}</a></li>
-	        {% endfor %}  
-	        </ul>	    
+	        {% endfor %}
+	        </ul>
 	    </li>
-	    <li {% if current == "genre" %} class="active" {% endif %}><a href="{% url "web:genre" %}">{% trans "Genres" %}</a>    
+	    <li {% if current == "genre" %} class="active" {% endif %}><a href="{% url "web:genre" %}">{% trans "Genres" %}</a>
 	    </li>
 	    <li {% if current == "series" %} class="active" {% endif %}><a href="#">{% trans "Series" %}</a>
 	        <ul class="menu sopdsmenu">
 	        {% for key, value in lang_menu.items %}
 	            <li><a href="{% url "web:series" %}?lang={{ key }}">{{ value }}</a></li>
-	        {% endfor %}  
-	        </ul>	    
+	        {% endfor %}
+	        </ul>
 	    </li>
 	  </ul>
 	</div>

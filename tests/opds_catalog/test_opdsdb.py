@@ -1,6 +1,6 @@
 from django.test import TestCase
-from opds_catalog.models import Catalog, bseries
 
+from opds_catalog.models import Catalog, bseries
 from src.opds_catalog import opdsdb
 
 

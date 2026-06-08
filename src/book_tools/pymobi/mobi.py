@@ -1,17 +1,18 @@
-import os.path
-import datetime
-import struct
-import re
 import array
-import sys
 
 # try:
 from collections import OrderedDict
+import datetime
+import os.path
+import re
+import struct
+import sys
+
+from book_tools.pymobi import compression
+
 # except:
 # from ordereddict import OrderedDict
-
-from book_tools.pymobi.util import hexdump, decodeVarint, toStr, toByte
-from book_tools.pymobi import compression
+from book_tools.pymobi.util import decodeVarint, hexdump, toByte, toStr
 
 DEBUG = False
 
@@ -487,7 +488,7 @@ class BookMobi(object):
             toByte(r"""<img\s+src=['"]kindle:embed:(\d+)\?mime=image/jpg['"]"""),
         )
         for pattern in img_pattern:
-            regex = re.compile(pattern, re.I)
+            regex = re.compile(pattern, re.IGNORECASE)
             data = regex.sub(repl, data)
         if self.mobi["textEncoding"] == 65001:
             charset = "utf-8"
@@ -500,9 +501,9 @@ class BookMobi(object):
                 % charset
             ),
             data,
-            re.I,
+            re.IGNORECASE,
         )
-        print("")
+        print()
         return data
 
     def unpackMobi(self, output_file):
@@ -549,9 +550,9 @@ class BookMobi(object):
                 '<head>\n<link rel="stylesheet" href="%s" type="text/css"/>'
                 % os.path.basename(css_filename),
                 data_text,
-                re.I,
+                re.IGNORECASE,
             )
-        print("")
+        print()
         if self.mobi["firstImageIndex"] != 0xFFFFFFFF:
             data_text = self.loadTextResource(data_text, basename)
         with open(output_file, "wb") as f:
@@ -592,7 +593,7 @@ class BookMobi(object):
                     # SRCS
                     f.write(rec[16:])
             f.close()
-        print("")
+        print()
         print("Output MOBI file: %s" % outmobi)
         with open(outmobi, "wb") as f:
             self.f.seek(0)
@@ -617,7 +618,7 @@ class BookMobi(object):
                 fix_offset = self.records[rn][0] - offset
                 struct.pack_into(">L", recordlist_data, rn * 8, fix_offset)
             f.write(recordlist_data)
-            print("")
+            print()
             # gap
             gapToDataLength = self.records[0][0] - f.tell()
             if gapToDataLength:
@@ -644,5 +645,5 @@ class BookMobi(object):
                 sys.stdout.flush()
                 rec = self.loadRecord(rn)
                 f.write(rec)
-            print("")
+            print()
         print("Remove SRCS successfully")

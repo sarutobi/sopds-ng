@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-
 import xml.etree.ElementTree as ET
 
 
@@ -59,4 +58,6 @@ def fb2_book_fabric(
                 last_name_el = ET.SubElement(author_el, "last-name")
                 last_name_el.text = author.last_name
 
-    return b'<?xml version="1.0" encoding="utf-8"?>\n' + ET.tostring(root, encoding="utf-8")
+    return b'<?xml version="1.0" encoding="utf-8"?>\n' + ET.tostring(
+        root, encoding="utf-8"
+    )

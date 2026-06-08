@@ -12,7 +12,7 @@
 	   <a href="{% url "web:searchbooks" %}?searchtype=g&searchterms={{g.id}}">{{ g.subsection }}</a>
 	{% endif %}
 	<span style="font-size:80%">{% blocktrans with g_num_book=g.num_book %}Total: {{ g_num_book }} books.{% endblocktrans %}</span>
-</div>		
+</div>
 {% endfor %}
 {% endautoescape %}
 

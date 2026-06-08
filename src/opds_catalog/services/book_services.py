@@ -1,24 +1,20 @@
 """Сервисные функции для работы с книгами."""
 
-from django.db.models.functions import Substr
+from typing import Callable, TypeVar
 
-from django.contrib.auth.models import User
-
-from typing import TypeVar, Callable
-
-from django.core.exceptions import ImproperlyConfigured
-
-from django.db.models.query import RawQuerySet
-
-from opds_catalog.utils import to_int
 from constance import config
-from django.db.models import QuerySet, Value, CharField, Count
+from django.contrib.auth.models import User
+from django.core.exceptions import ImproperlyConfigured
+from django.db.models import CharField, Count, QuerySet, Value
+from django.db.models.functions import Substr
+from django.db.models.query import RawQuerySet
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
-from opds_catalog.services import SearchType
-from opds_catalog.models import Book, Author
-from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
 
+from opds_catalog.models import Author, Book
+from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
+from opds_catalog.services import SearchType
+from opds_catalog.utils import to_int
 
 T = TypeVar("T")
 
@@ -168,7 +164,9 @@ def paginated_book_content(
             "authors": row.authors.values(),
             "genres": row.genres.values(),
             "series": row.series.values(),
-            "ser_no": row.bseries_set.values("ser_no"),  # ty: ignore[unresolved-attribute]
+            "ser_no": row.bseries_set.values(
+                "ser_no"
+            ),  # ty: ignore[unresolved-attribute]
         }
         if summary_DOUBLES_HIDE:
             title: str = p["title"]
@@ -259,8 +257,8 @@ def find_books_by_template(
     if lang_code:
         books.filter(lang_code=lang_code)
 
-        sql = """select %(length)s as l, substring(search_title,1,%(length)s) as id, count(*) as cnt 
-                from opds_catalog_book 
+        sql = """select %(length)s as l, substring(search_title,1,%(length)s) as id, count(*) as cnt
+                from opds_catalog_book
                 where lang_code=%(lang_code)s and search_title like '%(chars)s%%%%'
                 group by substring(search_title,1,%(length)s)
                 order by id""" % {
@@ -270,8 +268,8 @@ def find_books_by_template(
         }
 
     else:
-        sql = """select %(length)s as l, substring(search_title,1,%(length)s) as id, count(*) as cnt 
-                from opds_catalog_book 
+        sql = """select %(length)s as l, substring(search_title,1,%(length)s) as id, count(*) as cnt
+                from opds_catalog_book
                 where search_title like '%(chars)s%%%%'
                 group by substring(search_title,1,%(length)s)
                 order by id""" % {"length": length, "chars": chars}

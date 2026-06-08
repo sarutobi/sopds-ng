@@ -1,5 +1,6 @@
 from django.contrib import admin
-from opds_catalog.models import Genre, Book
+
+from opds_catalog.models import Genre
 
 
 # Register your models here.

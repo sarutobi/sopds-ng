@@ -1,12 +1,12 @@
-from opds_catalog.opdsdb import CAT_ZIP
-from opds_catalog.dl import getFileData
 import os
 
-import pytest
 from constance import config
+import pytest
 
 from opds_catalog import opdsdb
+from opds_catalog.dl import getFileData
 from opds_catalog.models import Author, Book, Catalog, Genre, Series
+from opds_catalog.opdsdb import CAT_ZIP
 from opds_catalog.sopdscan import opdsScanner
 
 

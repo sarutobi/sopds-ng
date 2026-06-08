@@ -1,5 +1,6 @@
-from book_tools.format.util import normalize_string
 import pytest
+
+from book_tools.format.util import normalize_string
 
 
 @pytest.mark.parametrize(

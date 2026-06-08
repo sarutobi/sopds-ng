@@ -1,21 +1,18 @@
-from book_tools.format.mimetype import Mimetype
-import pytest
-
 from io import BytesIO
-from book_tools.services import (
-    create_bookfile_service,
-    GenericMimeValidator,
-    FB2MimeValidator,
-    FB2ZipMimeValidator,
-    EPUBMimeValidator,
-    MobiMimeValidator,
-    detect_mime_service,
-)
+
+import pytest
 
 from book_tools.format.fb2 import (
     FB2,
 )
-
+from book_tools.services import (
+    EPUBMimeValidator,
+    FB2MimeValidator,
+    FB2ZipMimeValidator,
+    GenericMimeValidator,
+    MobiMimeValidator,
+    create_bookfile_service,
+)
 
 # fb2_books_to_try = (
 #     (fb2_book_fabric(title="Good Book"), nullcontext()),

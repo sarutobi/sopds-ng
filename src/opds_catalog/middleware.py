@@ -10,7 +10,6 @@ from django.middleware.cache import (
 from django.utils import translation
 from django.utils.deprecation import MiddlewareMixin
 
-
 # class BasicAuthMiddleware(object):
 #     """Если включена авторизация в каталоге, а клиент по каким то причинам
 #     не поддерживает авторизацию через формы, то пытаемся авторизовать

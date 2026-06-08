@@ -2,9 +2,9 @@
 
 from opds_catalog.models import (
     Counter,
-    counter_allcatalogs,
-    counter_allbooks,
     counter_allauthors,
+    counter_allbooks,
+    counter_allcatalogs,
     counter_allgenres,
     counter_allseries,
 )

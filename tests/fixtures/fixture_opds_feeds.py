@@ -1,13 +1,11 @@
 """Фикстуры для фидов opds."""
 
 import os
+
 from lxml import etree
-
-from django.contrib.auth.models import AnonymousUser
-
-
-from opds_catalog.feeds import MainFeed, GenresFeed
 import pytest
+
+from opds_catalog.feeds import GenresFeed, MainFeed
 
 
 @pytest.fixture

@@ -10,7 +10,6 @@ import django.utils.timezone
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -19,137 +18,282 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Author',
+            name="Author",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('full_name', models.CharField(db_index=True, default=None, max_length=128)),
-                ('search_full_name', models.CharField(db_index=True, default=None, max_length=128)),
-                ('lang_code', models.IntegerField(db_index=True, default=9)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "full_name",
+                    models.CharField(db_index=True, default=None, max_length=128),
+                ),
+                (
+                    "search_full_name",
+                    models.CharField(db_index=True, default=None, max_length=128),
+                ),
+                ("lang_code", models.IntegerField(db_index=True, default=9)),
             ],
         ),
         migrations.CreateModel(
-            name='bauthor',
+            name="bauthor",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('author', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='opds_catalog.Author')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "author",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="opds_catalog.Author",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='bgenre',
+            name="bgenre",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Book',
+            name="Book",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('filename', models.CharField(db_index=True, max_length=256)),
-                ('path', models.CharField(db_index=True, max_length=1000)),
-                ('filesize', models.IntegerField(db_index=True, default=0)),
-                ('format', models.CharField(db_index=True, max_length=8)),
-                ('cat_type', models.IntegerField(default=0)),
-                ('registerdate', models.DateTimeField(db_index=True, default=django.utils.timezone.now)),
-                ('docdate', models.CharField(max_length=32)),
-                ('lang', models.CharField(max_length=16)),
-                ('title', models.CharField(db_index=True, max_length=256)),
-                ('search_title', models.CharField(db_index=True, default=None, max_length=256)),
-                ('annotation', models.CharField(max_length=10000)),
-                ('lang_code', models.IntegerField(db_index=True, default=9)),
-                ('avail', models.IntegerField(db_index=True, default=0)),
-                ('authors', models.ManyToManyField(through='opds_catalog.bauthor', to='opds_catalog.Author')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("filename", models.CharField(db_index=True, max_length=256)),
+                ("path", models.CharField(db_index=True, max_length=1000)),
+                ("filesize", models.IntegerField(db_index=True, default=0)),
+                ("format", models.CharField(db_index=True, max_length=8)),
+                ("cat_type", models.IntegerField(default=0)),
+                (
+                    "registerdate",
+                    models.DateTimeField(
+                        db_index=True, default=django.utils.timezone.now
+                    ),
+                ),
+                ("docdate", models.CharField(max_length=32)),
+                ("lang", models.CharField(max_length=16)),
+                ("title", models.CharField(db_index=True, max_length=256)),
+                (
+                    "search_title",
+                    models.CharField(db_index=True, default=None, max_length=256),
+                ),
+                ("annotation", models.CharField(max_length=10000)),
+                ("lang_code", models.IntegerField(db_index=True, default=9)),
+                ("avail", models.IntegerField(db_index=True, default=0)),
+                (
+                    "authors",
+                    models.ManyToManyField(
+                        through="opds_catalog.bauthor", to="opds_catalog.Author"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='bookshelf',
+            name="bookshelf",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('readtime', models.DateTimeField(default=django.utils.timezone.now)),
-                ('book', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='opds_catalog.Book')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("readtime", models.DateTimeField(default=django.utils.timezone.now)),
+                (
+                    "book",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="opds_catalog.Book",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='bseries',
+            name="bseries",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ser_no', models.IntegerField(default=0)),
-                ('book', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='opds_catalog.Book')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("ser_no", models.IntegerField(default=0)),
+                (
+                    "book",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="opds_catalog.Book",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Catalog',
+            name="Catalog",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('cat_name', models.CharField(db_index=True, max_length=128)),
-                ('path', models.CharField(db_index=True, max_length=1000)),
-                ('cat_type', models.IntegerField(default=0)),
-                ('cat_size', models.IntegerField(default=0, null=True)),
-                ('parent', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='opds_catalog.Catalog')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("cat_name", models.CharField(db_index=True, max_length=128)),
+                ("path", models.CharField(db_index=True, max_length=1000)),
+                ("cat_type", models.IntegerField(default=0)),
+                ("cat_size", models.IntegerField(default=0, null=True)),
+                (
+                    "parent",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="opds_catalog.Catalog",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Counter',
+            name="Counter",
             fields=[
-                ('name', models.CharField(max_length=16, primary_key=True, serialize=False)),
-                ('value', models.IntegerField(default=0)),
-                ('update_time', models.DateTimeField(default=django.utils.timezone.now)),
+                (
+                    "name",
+                    models.CharField(max_length=16, primary_key=True, serialize=False),
+                ),
+                ("value", models.IntegerField(default=0)),
+                (
+                    "update_time",
+                    models.DateTimeField(default=django.utils.timezone.now),
+                ),
             ],
             managers=[
-                ('obj', django.db.models.manager.Manager()),
+                ("obj", django.db.models.manager.Manager()),
             ],
         ),
         migrations.CreateModel(
-            name='Genre',
+            name="Genre",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('genre', models.CharField(db_index=True, max_length=32)),
-                ('section', models.CharField(db_index=True, max_length=64)),
-                ('subsection', models.CharField(db_index=True, max_length=100)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("genre", models.CharField(db_index=True, max_length=32)),
+                ("section", models.CharField(db_index=True, max_length=64)),
+                ("subsection", models.CharField(db_index=True, max_length=100)),
             ],
         ),
         migrations.CreateModel(
-            name='Series',
+            name="Series",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ser', models.CharField(db_index=True, max_length=80)),
-                ('search_ser', models.CharField(db_index=True, default=None, max_length=80)),
-                ('lang_code', models.IntegerField(db_index=True, default=9)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("ser", models.CharField(db_index=True, max_length=80)),
+                (
+                    "search_ser",
+                    models.CharField(db_index=True, default=None, max_length=80),
+                ),
+                ("lang_code", models.IntegerField(db_index=True, default=9)),
             ],
         ),
         migrations.AddField(
-            model_name='bseries',
-            name='ser',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='opds_catalog.Series'),
+            model_name="bseries",
+            name="ser",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="opds_catalog.Series"
+            ),
         ),
         migrations.AddField(
-            model_name='book',
-            name='catalog',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='opds_catalog.Catalog'),
+            model_name="book",
+            name="catalog",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="opds_catalog.Catalog"
+            ),
         ),
         migrations.AddField(
-            model_name='book',
-            name='genres',
-            field=models.ManyToManyField(through='opds_catalog.bgenre', to='opds_catalog.Genre'),
+            model_name="book",
+            name="genres",
+            field=models.ManyToManyField(
+                through="opds_catalog.bgenre", to="opds_catalog.Genre"
+            ),
         ),
         migrations.AddField(
-            model_name='book',
-            name='series',
-            field=models.ManyToManyField(through='opds_catalog.bseries', to='opds_catalog.Series'),
+            model_name="book",
+            name="series",
+            field=models.ManyToManyField(
+                through="opds_catalog.bseries", to="opds_catalog.Series"
+            ),
         ),
         migrations.AddField(
-            model_name='bgenre',
-            name='book',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='opds_catalog.Book'),
+            model_name="bgenre",
+            name="book",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="opds_catalog.Book"
+            ),
         ),
         migrations.AddField(
-            model_name='bgenre',
-            name='genre',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='opds_catalog.Genre'),
+            model_name="bgenre",
+            name="genre",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="opds_catalog.Genre"
+            ),
         ),
         migrations.AddField(
-            model_name='bauthor',
-            name='book',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='opds_catalog.Book'),
+            model_name="bauthor",
+            name="book",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="opds_catalog.Book"
+            ),
         ),
     ]

@@ -6,21 +6,10 @@ http://spec.opds.io/opds-1.2.html
 
 from __future__ import annotations
 
-from opds_catalog.services import (
-    book_services,
-    bookshelf_services,
-    catalog_services,
-    counter_services,
-    genre_services,
-    series_services,
-    authors_services,
-)
-from opds_catalog.utils import to_int
 from dataclasses import dataclass
 
 from constance import config
 from django.contrib.syndication.views import Feed
-
 from django.http import HttpRequest
 from django.shortcuts import render
 from django.urls import reverse
@@ -30,10 +19,19 @@ from django.utils.translation import gettext as _
 
 from book_tools.format.mimetype import Mimetype
 from opds_catalog import settings
-
 from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
+from opds_catalog.services import (
+    SearchType,
+    authors_services,
+    book_services,
+    bookshelf_services,
+    catalog_services,
+    counter_services,
+    genre_services,
+    series_services,
+)
+from opds_catalog.utils import to_int
 
-from opds_catalog.services import SearchType
 from .decorators import sopds_auth_validate
 
 
@@ -490,7 +488,9 @@ class MainFeed(SOPDSBaseFeed):
                 {  # ty: ignore
                     "id": 6,
                     "title": _("%(username)s Book shelf")
-                    % ({"username": self.request.user.username}),  # ty: ignore[unresolved-attribute]
+                    % (
+                        {"username": self.request.user.username}
+                    ),  # ty: ignore[unresolved-attribute]
                     "link": "opds_catalog:bookshelf",
                     "descr": _("%(username)s books readed: %(bookshelf)s."),
                     "counters": {
@@ -1087,7 +1087,9 @@ class BooksFeed(SOPDSBaseFeed):
         """Заголовок фида."""
         return f"{settings.TITLE} | {_('Select books by substring')}"
 
-    def get_object(self, request, lang_code=0, chars=None):  # ty: ignore [invalid-method-override]
+    def get_object(
+        self, request, lang_code=0, chars=None
+    ):  # ty: ignore [invalid-method-override]
         """Формирование шаблона названия книги."""
         self.lang_code = int(lang_code)
         if chars is None:
@@ -1138,7 +1140,9 @@ class AuthorsFeed(SOPDSBaseFeed):
         """Заголовок фида."""
         return f"{settings.TITLE} | {_('Select authors by substring')}"
 
-    def get_object(self, request, lang_code=0, chars=None):  # ty: ignore [invalid-method-override]
+    def get_object(
+        self, request, lang_code=0, chars=None
+    ):  # ty: ignore [invalid-method-override]
         """Формирование шаблона для поиска авторов."""
         self.lang_code = int(lang_code)
         if chars is None:
@@ -1205,7 +1209,9 @@ class SeriesFeed(SOPDSBaseFeed):
         """Заголовок фида серий."""
         return f"{settings.TITLE} | {_('Select series by substring')}"
 
-    def get_object(self, request, lang_code=0, chars=None):  # ty: ignore[invalid-method-override]
+    def get_object(
+        self, request, lang_code=0, chars=None
+    ):  # ty: ignore[invalid-method-override]
         """Получение основного объекта фида."""
         self.lang_code = int(lang_code)
         if chars is None:
@@ -1275,7 +1281,9 @@ class GenresFeed(SOPDSBaseFeed):
             _("Select genres (%s)") % (_("section") if obj == 0 else _("subsection")),
         )
 
-    def get_object(self, request, section: int = 0):  # ty:ignore [invalid-method-override]
+    def get_object(
+        self, request, section: int = 0
+    ):  # ty:ignore [invalid-method-override]
         """Получение данных фида."""
         if not isinstance(section, int):
             self.section_id = int(section)

@@ -51,7 +51,7 @@ up:
     @docker compose up -d --remove-orphans
 
 # Stop and remove containers
-down: 
+down:
     @docker compose down
 
 # Restart containers
@@ -68,7 +68,7 @@ shell +args:
     @docker compose exec -it {{args}} /bin/bash
 
 # Rebuid containers
-rebuild-containers: 
+rebuild-containers:
     just down
     @docker compose build --progress=plain
     just up
@@ -146,4 +146,3 @@ django *args:
 
 collect-django-messages:
     just django makemessages --locale ru --ignore book_tools --ignore inpx --ignore manage.py --ignore sopds
-

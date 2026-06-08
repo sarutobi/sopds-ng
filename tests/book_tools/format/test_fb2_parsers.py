@@ -1,22 +1,17 @@
-from datetime import datetime
-from io import BytesIO
-
 import pytest
 
 from book_tools.format.bookfile import BookFile
 from book_tools.format.fb2 import (
     FB2,
 )
-
 from book_tools.format.fb2sax import FB2sax
-from book_tools.format.parsers import FB2sax as FB2sax_new
-from book_tools.format.parsers import (
-    EbookMetaParser,
-)
 from book_tools.format.parsers import (
     FB2 as FB2_new,
 )
-from tests.book_tools.format.helpers import fb2_book_fabric
+from book_tools.format.parsers import (
+    EbookMetaParser,
+)
+from book_tools.format.parsers import FB2sax as FB2sax_new
 
 
 def test_fb2tag_tagopen(test_tag) -> None:
@@ -59,7 +54,6 @@ def test_fb2tag_setvalue(test_tag) -> None:
 
 
 def test_fb2sax(get_file_content, simple_fb2) -> None:
-
     # file = read_file_as_iobytes(os.path.join(test_rootlib, "262001.fb2"))
     book_file = FB2sax(get_file_content(simple_fb2), "Test Book")
     assert book_file is not None
@@ -79,27 +73,27 @@ def test_fb2sax(get_file_content, simple_fb2) -> None:
 #     assert _are_equals_data(book_actual, book_new)
 
 
-def _are_equals_data(bookfile: BookFile, parser: EbookMetaParser) -> bool:
-    # Парсер возвращает перечень авторов в виде списка кортежей, а в описателе
-    # книги список авторов хранится в словаре, поэтому делаем преобразование
-    expected_authors: list[dict[str, str]] = []
-    for a in parser.authors:
-        name, skey = a
-        author = {"name": name, "sortkey": skey.lower()}
-        expected_authors.append(author)
-
-    return (
-        bookfile.title == parser.title
-        and bookfile.description == parser.description
-        and (
-            sorted(bookfile.authors, key=lambda a: a["name"])
-            == sorted(expected_authors, key=lambda a: a["name"])
-        )
-        and (sorted(bookfile.tags) == sorted(parser.tags))
-        and bookfile.series_info == parser.series_info
-        and bookfile.language_code == parser.language_code
-        and bookfile.docdate == parser.docdate
-    )
+# def _are_equals_data(bookfile: BookFile, parser: EbookMetaParser) -> bool:
+#     # Парсер возвращает перечень авторов в виде списка кортежей, а в описателе
+#     # книги список авторов хранится в словаре, поэтому делаем преобразование
+#     expected_authors: list[dict[str, str]] = []
+#     for a in parser.authors:
+#         name, skey = a
+#         author = {"name": name, "sortkey": skey.lower()}
+#         expected_authors.append(author)
+#
+#     return (
+#         bookfile.title == parser.title
+#         and bookfile.description == parser.description
+#         and (
+#             sorted(bookfile.authors, key=lambda a: a["name"])
+#             == sorted(expected_authors, key=lambda a: a["name"])
+#         )
+#         and (sorted(bookfile.tags) == sorted(parser.tags))
+#         and bookfile.series_info == parser.series_info
+#         and bookfile.language_code == parser.language_code
+#         and bookfile.docdate == parser.docdate
+#     )
 
 
 @pytest.mark.benchmark

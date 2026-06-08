@@ -71,7 +71,7 @@
     a { color : $sopds-title-color; }
     a:hover { color: $sopds-hover-color; }
   }
-  .sopds-title-bar-title { 
+  .sopds-title-bar-title {
     @extend .title-bar-title;
     color : $sopds-title-color;
     }
@@ -96,14 +96,14 @@ margin-right: 1rem;
 .sopdsbg {
   background-color: $sopds-bg-color;
   a { color : $sopds-title-color; }
-  a:hover { color: $sopds-hover-color; } 
+  a:hover { color: $sopds-hover-color; }
   color : $sopds-title-color;
 }
 
 .sopdsmenu {
   background-color: $sopds-menu-bg-color;
   a { color : $sopds-menu-color; }
-  a:hover { background-color: $sopds-menu-bg-hover-color; } 
+  a:hover { background-color: $sopds-menu-bg-hover-color; }
   color : $sopds-menu-color;
 }
 

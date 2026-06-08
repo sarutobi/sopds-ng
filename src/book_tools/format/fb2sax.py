@@ -1,10 +1,10 @@
-import xml.parsers.expat
 import base64
+import xml.parsers.expat
 
+from book_tools.exceptions import FB2StructureException
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.util import strip_symbols
-from book_tools.exceptions import FB2StructureException
 
 
 class fb2tag:
@@ -291,7 +291,6 @@ class FB2sax(BookFile):
             res = self.fb2parser.book_title.getvalue()[0].strip(strip_symbols)
         if len(res) > 0:
             self.__set_title__(res)
-        return None
 
     def __detect_docdate(self):
         res = self.fb2parser.docdate.getattr("value") or ""
@@ -299,7 +298,6 @@ class FB2sax(BookFile):
             res = self.fb2parser.docdate.getvalue()[0].strip()
         if len(res) > 0:
             self.__set_docdate__(res)
-        return None
 
     def __detect_authors(self):
         for idx, author in enumerate(self.fb2parser.author_last.getvalue()):
@@ -308,7 +306,6 @@ class FB2sax(BookFile):
                 strip_symbols
             )
             self.__add_author__(" ".join([first_name, last_name]), last_name)
-        return None
 
     def __detect_language(self):
         res = ""
@@ -316,7 +313,6 @@ class FB2sax(BookFile):
             res = self.fb2parser.lang.getvalue()[0].strip(strip_symbols)
         if len(res) > 0:
             self.language_code = res
-        return None
 
     def __detect_tags(self):
         for genre in self.fb2parser.genre.getvalue():

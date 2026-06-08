@@ -1,17 +1,16 @@
 # Сервисы для работы с электронными книгами
-import logging
-from lxml.etree import XMLSyntaxError
-import os
-import zipfile
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from io import BytesIO
+import logging
+import os
+import zipfile
 
 from lxml import etree
+from lxml.etree import XMLSyntaxError
 
 from .format.bookfile import BookFile
 from .format.mimetype import Mimetype
-
 from .format.parsers import FB2
 
 logger = logging.getLogger(__name__)

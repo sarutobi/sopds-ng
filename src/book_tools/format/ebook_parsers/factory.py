@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from book_tools.format.parsers.base import EbookParser
 from book_tools.exceptions import UnsupportedFormatError
+from book_tools.format.parsers.base import EbookParser
 
 
 class ParserFactory:

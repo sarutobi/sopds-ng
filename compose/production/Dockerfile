@@ -19,7 +19,7 @@ COPY . /sopds/
 RUN useradd --create-home sopds \
 && chown sopds:sopds -R /sopds \
 && pip install --upgrade pip \
-&& pip install --no-cache-dir -r $REQUIREMENTS 
+&& pip install --no-cache-dir -r $REQUIREMENTS
 
 USER sopds
 

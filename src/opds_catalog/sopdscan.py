@@ -1,22 +1,20 @@
 # -*- coding: utf-8 -*-
 
-import os
-import time
 import datetime
 import logging
+import os
 import re
+import time
 
-from book_tools.format import create_bookfile
-from book_tools.format.util import strip_symbols
+from constance import config
 
 # from django.db import transaction
 from django.utils.translation import gettext as _
 
-from opds_catalog import fb2parse, opdsdb
-from opds_catalog import inpx_parser
+from book_tools.format import create_bookfile
+from book_tools.format.util import strip_symbols
+from opds_catalog import fb2parse, inpx_parser, opdsdb
 import opds_catalog.zipf as zipfile
-
-from constance import config
 
 
 class opdsScanner:
@@ -305,15 +303,13 @@ class opdsScanner:
                             if book_data.title
                             else n
                         )
-                        annotation = (
-                            book_data.description if book_data.description else ""
-                        )
+                        annotation = book_data.description or ""
                         annotation = (
                             annotation.strip(strip_symbols)
                             if isinstance(annotation, str)
                             else annotation.decode("utf8").strip(strip_symbols)
                         )
-                        docdate = book_data.docdate if book_data.docdate else ""
+                        docdate = book_data.docdate or ""
 
                         self.logger.info(f"Store book '{name}' metainfo in database")
                         book = opdsdb.addbook(

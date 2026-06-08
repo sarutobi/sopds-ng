@@ -1,10 +1,10 @@
 """Общие настройки для всего проекта."""
 
-import pytest
 import io
 import zipfile
 
 from django.contrib.auth.models import User
+import pytest
 
 from .fixtures import *  # noqa: F403
 

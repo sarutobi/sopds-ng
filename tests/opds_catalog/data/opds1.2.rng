@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  -*- rnc -*- 
+  -*- rnc -*-
   RELAX NG Compact Syntax Grammar for OPDS Catalog Feed & Entry Documents
   Version 2018-08-16
 -->
@@ -52,7 +52,7 @@
   <!--
     Note that this OPDS Catalog schema includes atom.rnc, so that schema must be
     present for validation.
-    
+
     Note also that atom.rnc defines atomUri as text and not as xsd:anyURI, and so
     wherever the Atom spec requires an IRI, the schema will not check the value
     against any URI pattern or logic. The OPDS Catalog schema overrides atom.rnc
@@ -232,7 +232,7 @@
     Instead of allowing every possible 3-letter combination as a currency
     code, here the permissible codes (as identified in ISO4217 as of
     2018-08-16) are enumerated. Code for metals and 3-digit equivalents are
-    excluded from this list. 
+    excluded from this list.
   -->
   <define name="opdsPriceCurrencyCode">
     <choice>

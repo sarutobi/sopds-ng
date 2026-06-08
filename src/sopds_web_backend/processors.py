@@ -1,7 +1,9 @@
 from random import randint
+
 from constance import config
+
 from opds_catalog import settings
-from opds_catalog.models import Book, bookshelf, Counter, lang_menu
+from opds_catalog.models import Book, Counter, bookshelf, lang_menu
 
 
 def sopds_processor(request):

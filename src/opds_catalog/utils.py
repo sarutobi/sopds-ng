@@ -3,20 +3,21 @@
 # Вспомогательные функции
 #
 # import unicodedata
-from typing import Any
-
-from django.conf import settings
+import codecs
+from io import BytesIO
 import logging
 import os
-from opds_catalog import opdsdb
-from opds_catalog.models import Book
-from constance import config
-from io import BytesIO
-import chardet
+import subprocess
+from typing import Any
 import zipfile
 from zipfile import ZipInfo
-import subprocess
-import codecs
+
+import chardet
+from constance import config
+from django.conf import settings
+
+from opds_catalog import opdsdb
+from opds_catalog.models import Book
 
 logger = logging.getLogger(__name__)
 

@@ -1,24 +1,24 @@
 # import magic
-from book_tools.format.bookfile import BookFile
-import logging
-from book_tools.services import create_bookfile_service, detect_mime_service
-import os
-import zipfile
-from xml import sax
-from io import BytesIO
 from contextlib import suppress
+from io import BytesIO
+import logging
+import os
+from xml import sax
+import zipfile
 
-from book_tools.format.mimetype import Mimetype
-
-from book_tools.format.util import list_zip_file_infos
+from book_tools.format.bookfile import BookFile
 from book_tools.format.epub import EPub
 from book_tools.format.fb2 import FB2Zip
+from book_tools.format.mimetype import Mimetype
+from book_tools.format.mobi import Mobipocket
 
 # from book_tools.format.fb2sax import FB2sax
 from book_tools.format.other import Dummy
-from book_tools.format.mobi import Mobipocket
+from book_tools.format.parsers import FB2 as FB2_
+from book_tools.format.parsers import FB2sax as FB2sax2
+from book_tools.format.util import list_zip_file_infos
+from book_tools.services import create_bookfile_service, detect_mime_service
 
-from book_tools.format.parsers import FB2sax as FB2sax2, FB2 as FB2_
 # from constance import config
 
 logger = logging.getLogger(__name__)

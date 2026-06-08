@@ -1,21 +1,19 @@
 # Парсеры для разных форматов электронных книг
-from lxml.etree import _Element
-from typing import Any
-import os
-import zipfile
-from lxml import etree
-
-
-import base64
 from abc import ABC, abstractmethod
-from io import BytesIO
+import base64
 from dataclasses import dataclass
-from book_tools.format.util import strip_symbols
-
+from io import BytesIO
 import logging
+import os
+from typing import Any
+import zipfile
+
+from lxml import etree
+from lxml.etree import _Element
 
 from book_tools.exceptions import FB2StructureException
 from book_tools.format.fb2sax import fb2parser
+from book_tools.format.util import strip_symbols
 
 logger = logging.getLogger(__name__)
 

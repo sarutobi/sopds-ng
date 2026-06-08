@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  -*- rnc -*- 
+  -*- rnc -*-
   RELAX NG Compact Syntax Grammar for OPDS Catalog Feed & Entry Documents
   Version 2010-08-18
 -->
@@ -50,7 +50,7 @@
   <!--
     Note that this OPDS Catalog schema includes atom.rnc, so that schema must be
     present for validation.
-    
+
     Note also that atom.rnc defines atomUri as text and not as xsd:anyURI, and so
     wherever the Atom spec requires an IRI, the schema will not check the value
     against any URI pattern or logic. The OPDS Catalog schema overrides atom.rnc

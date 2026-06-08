@@ -1,9 +1,8 @@
-from .helpers import fb2_book_fabric
-from book_tools.format.fb2 import FB2
-from .helpers import Author
-
-import pytest
 import io
+
+from book_tools.format.fb2 import FB2
+
+from .helpers import Author, fb2_book_fabric
 
 
 def test_generate_book() -> None:

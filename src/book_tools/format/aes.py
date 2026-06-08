@@ -1,13 +1,14 @@
-#import gzip, os
-#from Crypto.Cipher import AES
-#from tempfile import mktemp
+# import gzip, os
+# from Crypto.Cipher import AES
+# from tempfile import mktemp
+
 
 def encrypt(file_name, key, working_dir):
-    '''
+    """
     file_name:     full path to file to encrypt
     key:           16 byte string
     working_dir:   directory to create temorary files
-    '''
+    """
     # tmp_file_name = mktemp(dir=working_dir)
     # with open(file_name, 'rb') as istream:
     #     with gzip.open(tmp_file_name, 'wb') as ostream:

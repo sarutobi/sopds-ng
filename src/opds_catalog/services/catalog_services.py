@@ -1,11 +1,12 @@
 """Сервисы для работы с каталогами."""
 
+import logging
+
 from django.db.models import QuerySet
 from django.utils.html import strip_tags
 
 from opds_catalog.models import Book, Catalog
 from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
-import logging
 
 DUMMY_CATALOG = Catalog(id=0, cat_name="Empty", cat_type=0)
 
@@ -114,7 +115,9 @@ def paginated_catalog_content(
             "authors": row.authors.values(),
             "genres": row.genres.values(),
             "series": row.series.values(),
-            "ser_no": row.bseries_set.values("ser_no"),  # ty: ignore [unresolved-attribute]
+            "ser_no": row.bseries_set.values(
+                "ser_no"
+            ),  # ty: ignore [unresolved-attribute]
             "prefix": "b",
         }
         items.append(p)

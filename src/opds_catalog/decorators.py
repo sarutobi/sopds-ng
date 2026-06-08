@@ -1,11 +1,11 @@
 """Декораторы для SOPDS."""
 
+import base64
 from functools import wraps
 
-import base64
-from django.http import HttpResponse
-from django.contrib import auth
 from constance import config
+from django.contrib import auth
+from django.http import HttpResponse
 
 
 def sopds_auth_validate(view_function):

@@ -1,12 +1,13 @@
 """Сервисы для работы с сериями."""
 
 from typing import Any
-from opds_catalog.utils import to_int
+
+from django.db.models import Count, Model
+from django.db.models.query import RawQuerySet
 from django.utils.translation import gettext as _
 
-from django.db.models.query import RawQuerySet
-from django.db.models import Count, Model
 from opds_catalog.models import Series
+from opds_catalog.utils import to_int
 
 
 def get_series(chars: str, length: int, lang_code: int | None = None) -> RawQuerySet:
@@ -24,10 +25,10 @@ def get_series(chars: str, length: int, lang_code: int | None = None) -> RawQuer
     """
     if lang_code:
         sql = """select %(length)s as l, substring(search_ser,1,%(length)s) as id,
-        count(*) as cnt 
-                from opds_catalog_series 
+        count(*) as cnt
+                from opds_catalog_series
                 where lang_code=%(lang_code)s and search_ser like '%(chars)s%%%%'
-                group by substring(search_ser,1,%(length)s) 
+                group by substring(search_ser,1,%(length)s)
                 order by id""" % {
             "length": length,
             "lang_code": lang_code,
@@ -35,10 +36,10 @@ def get_series(chars: str, length: int, lang_code: int | None = None) -> RawQuer
         }
     else:
         sql = """select %(length)s as l, substring(search_ser,1,%(length)s) as id,
-        count(*) as cnt 
-                from opds_catalog_series 
+        count(*) as cnt
+                from opds_catalog_series
                 where search_ser like '%(chars)s%%%%'
-                group by substring(search_ser,1,%(length)s) 
+                group by substring(search_ser,1,%(length)s)
                 order by id""" % {"length": length, "chars": chars}
 
     dataset = Series.objects.raw(sql)

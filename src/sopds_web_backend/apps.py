@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class SopdsWebBackendConfig(AppConfig):
-    name = 'sopds_web_backend'
+    name = "sopds_web_backend"

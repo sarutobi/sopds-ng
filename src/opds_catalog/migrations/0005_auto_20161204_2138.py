@@ -6,20 +6,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('opds_catalog', '0004_auto_20161116_1852'),
+        ("opds_catalog", "0004_auto_20161116_1852"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='book',
-            name='filename',
+            model_name="book",
+            name="filename",
             field=models.CharField(db_index=True, max_length=512),
         ),
         migrations.AlterField(
-            model_name='book',
-            name='path',
+            model_name="book",
+            name="path",
             field=models.CharField(db_index=True, max_length=512),
         ),
     ]

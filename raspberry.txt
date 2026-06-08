@@ -27,16 +27,16 @@ sudo python3 manage.py sopds_server start --daemon
 ##
 sudo apt-get install mysql-server
 sudo apt-get install python3-mysqldb
-sudo mysql mysql  
-mysql > create database if not exists sopds default charset=utf8;  
-mysql > grant all on sopds.* to 'sopds'@'localhost' identified by 'sopds';  
-mysql > commit;  
+sudo mysql mysql
+mysql > create database if not exists sopds default charset=utf8;
+mysql > grant all on sopds.* to 'sopds'@'localhost' identified by 'sopds';
+mysql > commit;
 mysql > ^C
 cd /home/sopds
 sudo vi sopds/settings.py
 
 # Убираем комментарии в настройке БД Mysql
-DATABASES = {   
+DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'sopds',
@@ -47,7 +47,7 @@ DATABASES = {
             'init_command': "SET default_storage_engine=MyISAM;\
                              SET sql_mode='';"
         }
-    }             
+    }
 }
 
 
@@ -58,7 +58,7 @@ DATABASES = {
 #    'default': {
 #        'ENGINE': 'django.db.backends.sqlite3',
 #        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#    }        
+#    }
 #}
 
 ##

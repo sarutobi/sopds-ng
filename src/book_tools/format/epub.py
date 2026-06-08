@@ -1,9 +1,10 @@
 import os
 import shutil
+from tempfile import mktemp
 import urllib
 import zipfile
+
 from lxml import etree
-from tempfile import mktemp
 
 from book_tools.format.aes import encrypt
 from book_tools.format.bookfile import BookFile
@@ -205,7 +206,7 @@ class EPub(BookFile):
                 '/opf:package/opf:manifest/opf:item[@properties="cover-image"]'
             )
             return image_infos(node)
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -215,7 +216,7 @@ class EPub(BookFile):
                     '/opf:package/opf:manifest/opf:item[@id="%s"]' % node.get("content")
                 )
             )
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -225,7 +226,7 @@ class EPub(BookFile):
                     '/opf:package/opf:manifest/opf:item[@id="%s"]' % node.get("content")
                 )
             )
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -233,7 +234,7 @@ class EPub(BookFile):
             return image_infos(
                 xpath('/package/manifest/item[@id="%s"]' % node.get("content"))
             )
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -241,7 +242,7 @@ class EPub(BookFile):
                 '/opf:package/opf:guide/opf:reference[@type="other.ms-coverimage-standard"][@title="Cover"]'
             )
             return image_infos(item_for_href(node.get("href")))
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -249,13 +250,13 @@ class EPub(BookFile):
                 '/opf:package/opf:guide/opf:reference[@type="other.ms-coverimage-standard"]'
             )
             return image_infos(item_for_href(node.get("href")))
-        except Exception as err:
+        except Exception:
             pass
 
         try:
             node = xpath('/opf:package/opf:manifest/opf:item[@id="cover"]')
             return image_infos(node)
-        except Exception as err:
+        except Exception:
             pass
 
         return []
@@ -736,7 +737,7 @@ class EPub_new(object):
                 '/opf:package/opf:manifest/opf:item[@properties="cover-image"]'
             )
             return image_infos(node)
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -746,7 +747,7 @@ class EPub_new(object):
                     '/opf:package/opf:manifest/opf:item[@id="%s"]' % node.get("content")
                 )
             )
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -756,7 +757,7 @@ class EPub_new(object):
                     '/opf:package/opf:manifest/opf:item[@id="%s"]' % node.get("content")
                 )
             )
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -764,7 +765,7 @@ class EPub_new(object):
             return image_infos(
                 xpath('/package/manifest/item[@id="%s"]' % node.get("content"))
             )
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -772,7 +773,7 @@ class EPub_new(object):
                 '/opf:package/opf:guide/opf:reference[@type="other.ms-coverimage-standard"][@title="Cover"]'
             )
             return image_infos(item_for_href(node.get("href")))
-        except Exception as err:
+        except Exception:
             pass
 
         try:
@@ -780,13 +781,13 @@ class EPub_new(object):
                 '/opf:package/opf:guide/opf:reference[@type="other.ms-coverimage-standard"]'
             )
             return image_infos(item_for_href(node.get("href")))
-        except Exception as err:
+        except Exception:
             pass
 
         try:
             node = xpath('/opf:package/opf:manifest/opf:item[@id="cover"]')
             return image_infos(node)
-        except Exception as err:
+        except Exception:
             pass
 
         return []

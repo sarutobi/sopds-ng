@@ -1,34 +1,28 @@
 # -*- coding: utf-8 -*-
-import logging
-from book_tools.format.parsers import FB2
-import os
 import codecs
-
 import io
+import logging
+import os
 import subprocess
+import zipfile
 
+from constance import config
 from django.http import (
-    HttpResponse,
-    HttpResponseRedirect,
     Http404,
     HttpRequest,
+    HttpResponse,
     HttpResponseNotFound,
+    HttpResponseRedirect,
 )
-
-from opds_catalog.models import Book, bookshelf
-from opds_catalog import settings, utils, opdsdb
-from opds_catalog.utils import getFileData, getFileName
-
-import zipfile
+from PIL import Image
 
 from book_tools.format import create_bookfile, mime_detector
 from book_tools.format.mimetype import Mimetype
-
-from constance import config
-from PIL import Image
-
+from book_tools.format.parsers import FB2
+from opds_catalog import opdsdb, settings, utils
 from opds_catalog.decorators import sopds_auth_validate
-
+from opds_catalog.models import Book, bookshelf
+from opds_catalog.utils import getFileData, getFileName
 
 logger = logging.getLogger(__name__)
 SOPDS_DEFAULT_COVER = "/static/images/sopds-ng-nocover.png"
