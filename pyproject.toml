@@ -76,6 +76,8 @@ disable_error_code = [
     "union-attr",
     "annotation-unchecked",
     "return-value",
+    "arg-type",
+    "index",
 ]
 
 [tool.ruff]

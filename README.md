@@ -30,9 +30,9 @@ All changes are present in dev branch in current repository
 
 #### Technical stack
 
-- Python 3.19
+- Python 3.13
 
-- Django 5.1
+- Django 5.2
 
 - PostgreSQL 17
 
