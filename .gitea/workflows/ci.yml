@@ -13,8 +13,15 @@ jobs:
       image: python:3.13-slim
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Install git and basic tools
+        run: |
+          apt-get update
+          apt-get install -y git
+
+      - name: Checkout repository (git clone)
+        run: |
+          git clone --depth 1 --branch "${{ gitea.ref_name }}" \
+            "https://${{ gitea.server_url }}/${{ gitea.repository }}.git" .
 
       - name: Install uv
         run: pip install uv
