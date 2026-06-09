@@ -21,7 +21,7 @@ jobs:
       - name: Checkout repository (git clone)
         run: |
           git clone --depth 1 --branch "${{ gitea.ref_name }}" \
-            "https://${{ gitea.server_url }}/${{ gitea.repository }}.git" .
+            "${{ gitea.server_url }}/${{ gitea.repository }}.git" .
 
       - name: Install uv
         run: pip install uv
