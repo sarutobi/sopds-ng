@@ -29,9 +29,6 @@ jobs:
       - name: Install dependencies (including dev)
         run: uv sync --group dev
 
-      - name: Set dummy Django SECRET_KEY
-        run: echo "SECRET_KEY=django-insecure-ci-dummy-key" >> .env
-
       - name: Run ruff
         run: uv run ruff check .
 
@@ -39,4 +36,9 @@ jobs:
         run: uv run mypy .
 
       - name: Run pytest
-        run: uv run pytest
+        env:
+          DJANGO_SETTINGS_MODULE: "sopds.settings.test"
+          SECRET_KEY: "django-insecure-ci-dummy-key"
+          SOPDS_BOOK_PATH: "/tmp/books"
+          SOPDS_DB_ENGINE: "sqlite"
+        run: uv run pytest --disable-benchmark
