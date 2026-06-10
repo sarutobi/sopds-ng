@@ -41,5 +41,10 @@ jobs:
           SECRET_KEY: "django-insecure-ci-dummy-key"
           SOPDS_BOOK_PATH: "/tmp/books"
           SOPDS_DB_ENGINE: "postgres"
+          SOPDS_DB_HOST: "localhost"
+          SOPDS_DB_PORT: 5432
+          SOPDS_DB_NAME: "sopds-test"
+          SOPDS_DB_USER: ="sopds-test"
+          SOPDS_DB_PASSWORD: "Pa$$word!23"
           SOPDS_VERSION: "0.0.0-test"
         run: uv run pytest --disable-benchmark
