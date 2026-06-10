@@ -47,4 +47,4 @@ jobs:
           SOPDS_DB_USER: ="sopds-test"
           SOPDS_DB_PASSWORD: "Pa$$word!23"
           SOPDS_VERSION: "0.0.0-test"
-        run: uv run pytest --disable-benchmark
+        run: uv run pytest --benchmark-disable
