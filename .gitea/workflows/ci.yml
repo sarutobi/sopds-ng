@@ -40,6 +40,6 @@ jobs:
           DJANGO_SETTINGS_MODULE: "sopds.settings.test"
           SECRET_KEY: "django-insecure-ci-dummy-key"
           SOPDS_BOOK_PATH: "/tmp/books"
-          SOPDS_DB_ENGINE: "sqlite"
+          SOPDS_DB_ENGINE: "postgres"
           SOPDS_VERSION: "0.0.0-test"
         run: uv run pytest --disable-benchmark
