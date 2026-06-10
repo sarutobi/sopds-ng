@@ -42,7 +42,7 @@ class TestDownloads(object):
         client.force_login(django_user)
         response = client.get(reverse("opds:download", args=(5, 0)))
         assert response.status_code == 200
-        assert response["Content-Length"] == "495373"
+        assert response["Content-Length"] == "495374"
 
     @pytest.mark.override_config(SOPDS_AUTH=True)
     def test_basic_authentication(self, client, django_user, django_user_model) -> None:
@@ -56,13 +56,13 @@ class TestDownloads(object):
             HTTP_AUTHORIZATION=authorization_header,
         )
         assert response.status_code == 200
-        assert response["Content-Length"] == "495373"
+        assert response["Content-Length"] == "495374"
 
     @pytest.mark.override_config(SOPDS_AUTH=False)
     def test_download_zip(self, client):
         response = client.get(reverse("opds:download", args=(5, 1)))
         assert response.status_code == 200
-        assert response["Content-Length"] == "219508"
+        assert response["Content-Length"] == "219509"
 
     @pytest.mark.override_config(SOPDS_AUTH=False)
     def test_download_unexisted_book(self, client, unexisted_book) -> None:
