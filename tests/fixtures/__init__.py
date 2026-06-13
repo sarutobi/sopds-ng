@@ -41,3 +41,17 @@ from .fixture_real_book import (
     zipped_fb2_book_from_fs,
 )
 from .fixture_settings import fake_sopds_root_lib, test_rootlib
+
+# Новые фикстуры для моделей
+from .model_fixtures import (
+    author,
+    book,
+    book_with_relations,
+    bookshelf_entry,
+    catalog,
+    genre,
+    series,
+    test_datetime,
+    update_counters,
+    user,
+)

@@ -104,3 +104,4 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "*/migrations/*" = ["F403"]
+"tests/**/*.py" = ["F401", "F811"]

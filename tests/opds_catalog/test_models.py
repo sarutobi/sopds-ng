@@ -1,124 +1,164 @@
-from datetime import datetime
+"""Тесты моделей opds_catalog с использованием pytest."""
 
-from django.conf import settings as main_settings
-from django.contrib.auth.models import User
-from django.test import TestCase
-from django.utils import timezone
+import pytest
 
-from opds_catalog import models, opdsdb
+from tests.fixtures.model_fixtures import (  # noqa: F401  (импорт фикстур)
+    author,
+    book,
+    book_with_relations,
+    bookshelf_entry,
+    catalog,
+    genre,
+    series,
+    test_datetime,
+    update_counters,
+    user,
+)
+
+from opds_catalog import models
 from opds_catalog.models import (
-    Author,
-    Book,
-    Catalog,
     Counter,
-    Genre,
-    Series,
     bauthor,
     bgenre,
-    bookshelf,
     bseries,
+    bookshelf,
 )
 
 
-class modelsTestCase(TestCase):
-    testdatetime = datetime(2016, 1, 1, 0, 0)
-    if main_settings.USE_TZ:
-        testdatetime = testdatetime.replace(tzinfo=timezone.get_current_timezone())
+pytestmark = pytest.mark.django_db
 
-    def setUp(self):
-        opdsdb.clear_all()
-        book = Book.objects.create(
-            filename="testbook.fb2",
+
+class TestBook:
+    """Тесты модели Book."""
+
+    def test_fields(self, book):
+        """Проверка значений полей книги."""
+        assert book.filename == "testbook.fb2"
+        assert book.path == "."
+        assert book.filesize == 500
+        assert book.format == "fb2"
+        assert book.cat_type == 0
+        assert book.docdate == "01.01.2016"
+        assert book.lang == "ru"
+        assert book.title == "Книга"
+        assert book.search_title == "КНИГА"
+        assert book.annotation == "Аннотация"
+        assert book.avail == 2
+        assert book.catalog.path == "."
+        assert book.catalog.cat_name == "."
+        assert book.catalog.cat_type == 0
+
+    def test_str(self, book):
+        """__str__ возвращает название книги."""
+        assert str(book) == "Книга"
+
+
+class TestAuthor:
+    """Тесты модели Author."""
+
+    def test_author_relations(self, book_with_relations):
+        """Связь книги с автором."""
+        book = book_with_relations
+        assert book.authors.count() == 1
+        db_author = book.authors.get(full_name="Шелепнев Дмитрий")
+        assert db_author.search_full_name == "ШЕЛЕПНЕВ ДМИТРИЙ"
+
+    def test_bauthor_creation(self, book_with_relations, author):
+        """Промежуточная таблица bauthor создана."""
+        assert bauthor.objects.filter(book=book_with_relations, author=author).exists()
+
+
+class TestGenre:
+    """Тесты модели Genre."""
+
+    def test_genre_relations(self, book_with_relations):
+        """Связь книги с жанром."""
+        book = book_with_relations
+        assert book.genres.count() == 1
+        db_genre = book.genres.get(genre="fantastic0")
+        assert db_genre.section == "fantastic1"
+        assert db_genre.subsection == "fantastic2"
+
+    def test_bgenre_creation(self, book_with_relations, genre):
+        """Промежуточная таблица bgenre создана."""
+        assert bgenre.objects.filter(book=book_with_relations, genre=genre).exists()
+
+
+class TestSeries:
+    """Тесты модели Series."""
+
+    def test_series_relations(self, book_with_relations):
+        """Связь книги с серией."""
+        book = book_with_relations
+        assert book.series.count() == 1
+        ser = book.series.all()[0]
+        assert ser.ser == "mywork"
+        assert ser.search_ser == "MYWORK"
+        bseries_entry = bseries.objects.get(ser=ser)
+        assert bseries_entry.ser_no == 1
+
+
+class TestBookshelf:
+    """Тесты модели bookshelf."""
+
+    def test_bookshelf_creation(self, bookshelf_entry, user):
+        """Запись на книжной полке создана и связана с пользователем."""
+        assert bookshelf.objects.all().count() == 1
+        assert bookshelf.objects.filter(user=user).count() == 1
+
+    def test_bookshelf_multiple(self, book_with_relations, user, test_datetime):
+        """Несколько записей для одного пользователя."""
+        from opds_catalog.models import Book
+
+        # Создаём первую запись на полке
+        bookshelf.objects.create(
+            user=user, book=book_with_relations, readtime=test_datetime
+        )
+
+        # Создаём вторую книгу
+        second_book = Book.objects.create(
+            filename="second.fb2",
             path=".",
-            filesize=500,
+            filesize=300,
             format="fb2",
             cat_type=0,
-            registerdate=self.testdatetime,
+            registerdate=test_datetime,
             docdate="01.01.2016",
-            lang="ru",
-            title="Книга",
-            search_title="КНИГА",
-            annotation="Аннотация",
+            lang="en",
+            title="Second",
+            search_title="SECOND",
+            annotation="",
             avail=2,
-            catalog=Catalog.objects.create(
-                parent=None, cat_name=".", path=".", cat_type=0
-            ),
+            catalog=book_with_relations.catalog,
         )
-        author = Author.objects.create(
-            full_name="Шелепнев Дмитрий", search_full_name="ШЕЛЕПНЕВ ДМИТРИЙ"
-        )
-        genre = Genre.objects.create(
-            genre="fantastic0", section="fantastic1", subsection="fantastic2"
-        )
-        series = Series.objects.create(ser="mywork", search_ser="MYWORK")
-        bauthor.objects.create(book=book, author=author)
-        bgenre.objects.create(book=book, genre=genre)
-        bseries.objects.create(book=book, ser=series, ser_no=1)
-        user = User.objects.create_user(
-            "testuser",
-            "testuser@sopds.ru",
-            "testpassword",
-            first_name="Test",
-            last_name="User",
-        )
-        bookshelf.objects.create(user=user, book=book, readtime=self.testdatetime)
-        Counter.objects.update_known_counters()
+        bookshelf.objects.create(user=user, book=second_book, readtime=test_datetime)
+        assert bookshelf.objects.filter(user=user).count() == 2
 
-    def test_Book(self):
-        """Тестирование соответствия структуры модели Book и работоспособности БД"""
-        book = Book.objects.get(title="Книга")
-        self.assertEqual(book.filename, "testbook.fb2")
-        self.assertEqual(book.path, ".")
-        self.assertEqual(book.filesize, 500)
-        self.assertEqual(book.format, "fb2")
-        self.assertEqual(book.cat_type, 0)
-        self.assertEqual(book.registerdate, self.testdatetime)
-        self.assertEqual(book.docdate, "01.01.2016")
-        self.assertEqual(book.lang, "ru")
-        self.assertEqual(book.title, "Книга")
-        self.assertEqual(book.search_title, "КНИГА")
-        self.assertEqual(book.annotation, "Аннотация")
-        self.assertEqual(book.avail, 2)
-        self.assertEqual(book.catalog.path, ".")
-        self.assertEqual(book.catalog.cat_name, ".")
-        self.assertEqual(book.catalog.cat_type, 0)
 
-    def test_Author(self):
-        """Тестирование соответствия структуры моделей Author и bauthor и работоспособности БД"""
-        book = Book.objects.get(title="Книга")
-        self.assertEqual(book.authors.count(), 1)
-        self.assertEqual(
-            book.authors.get(full_name="Шелепнев Дмитрий").search_full_name,
-            "ШЕЛЕПНЕВ ДМИТРИЙ",
-        )
+class TestCounter:
+    """Тесты менеджера CounterManager."""
 
-    def test_Genre(self):
-        """Тестирование соответствия структуры моделей Genre и bgenre и работоспособности БД"""
-        book = Book.objects.get(title="Книга")
-        self.assertEqual(book.genres.count(), 1)
-        self.assertEqual(book.genres.get(genre="fantastic0").section, "fantastic1")
-        self.assertEqual(book.genres.get(genre="fantastic0").subsection, "fantastic2")
+    def test_initial_counters_zero(self):
+        """До вызова update_known_counters счётчики возвращают 0."""
+        assert Counter.objects.get_counter(models.counter_allbooks) == 0
+        assert Counter.objects.get_counter(models.counter_allauthors) == 0
+        assert Counter.objects.get_counter(models.counter_allcatalogs) == 0
+        assert Counter.objects.get_counter(models.counter_allgenres) == 0
+        assert Counter.objects.get_counter(models.counter_allseries) == 0
 
-    def test_Series(self):
-        """Тестирование соответствия структуры моделей Series и bseries и работоспособности БД"""
-        book = Book.objects.get(title="Книга")
-        self.assertEqual(book.series.count(), 1)
-        ser = book.series.all()[0]
-        self.assertEqual(ser.ser, "mywork")
-        self.assertEqual(ser.search_ser, "MYWORK")
-        self.assertEqual(bseries.objects.get(ser=ser).ser_no, 1)
+    def test_counters_after_update(self, book_with_relations, update_counters):
+        """После обновления счётчики соответствуют количеству записей."""
+        assert Counter.objects.get_counter(models.counter_allbooks) == 1
+        assert Counter.objects.get_counter(models.counter_allauthors) == 1
+        assert Counter.objects.get_counter(models.counter_allcatalogs) == 1
+        assert Counter.objects.get_counter(models.counter_allgenres) == 1
+        assert Counter.objects.get_counter(models.counter_allseries) == 1
 
-    def test_bookshelf(self):
-        """Тестирование соответствия структуры модели bookshelf и работоспособности БД"""
-        user = User.objects.get(username="testuser")
-        self.assertEqual(bookshelf.objects.all().count(), 1)
-        self.assertEqual(bookshelf.objects.filter(user=user).count(), 1)
-        self.assertEqual(bookshelf.objects.get(user=user).book.title, "Книга")
+    def test_get_lastscan_none(self):
+        """Если счётчиков нет, get_lastscan возвращает None."""
+        assert Counter.objects.get_lastscan() is None
 
-    def test_Counter(self):
-        """Тестирование соответствия структуры модели Counter, менеджера CounterManager и работоспособности БД"""
-        self.assertEqual(Counter.objects.get_counter(models.counter_allbooks), 1)
-        self.assertEqual(Counter.objects.get_counter(models.counter_allauthors), 1)
-        self.assertEqual(Counter.objects.get_counter(models.counter_allcatalogs), 1)
-        self.assertEqual(Counter.objects.get_counter(models.counter_allgenres), 1)
-        self.assertEqual(Counter.objects.get_counter(models.counter_allseries), 1)
+    def test_get_lastscan_after_update(self, update_counters):
+        """После обновления get_lastscan возвращает не None."""
+        lastscan = Counter.objects.get_lastscan()
+        assert lastscan is not None
