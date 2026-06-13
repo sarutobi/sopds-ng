@@ -1,42 +1,35 @@
-
 services:
   web:
     build:
       context: .
-      dockerfile: ./compose/local/Dockerfile
-    image: ${DOCKER_IMAGE_TAG}
-
+      dockerfile: Dockerfile
+      target: final-prod
+      args:
+        BUILD_TARGET: prod
+    image: ${DOCKER_IMAGE_TAG:-sopds-ng:prod}
     ports:
       - "8008:8008"
     volumes:
-     - ./src:/app/src
-     # - ./pytest.ini:/sopds/pytest.ini
-     - ${SOPDS_BOOK_PATH}:/books:ro
-     - ./.env:/app/src/.env
-     - ./bootstrap.sh:/app/src/bootstrap.sh
-     - ./pyproject.toml:/app/pyproject.toml
+      - ./secret_key.txt:/app/src/secret_key.txt
+      - ./.env:/app/src/.env
+      - ${SOPDS_BOOK_PATH:-./books}:/books:ro
     environment:
-      DJANGO_SETTINGS_MODULE: "${DJANGO_SETTINGS_MODULE:-sopds.settings.prod}"
-      PYTHONDONTWRITEBYTECODE: "${PYTHONDONTWRITEBYTECODE:-1}"
- #     DEBUG: ${DEBUG}
- #     SECRET_KEY: ${SECRET_KEY}
+      DJANGO_SETTINGS_MODULE: "sopds.settings.base"
+      PYTHONDONTWRITEBYTECODE: "true"
     depends_on:
-    - db
-
+      - db
 
   db:
     image: postgres:17
     restart: always
-    shm_size: 128 mb
+    shm_size: 128mb
     ports:
       - "5432:5432"
-
     environment:
-      POSTGRES_PASSWORD: ${SOPDS_DB_PASSWORD}
-      POSTGRES_DB: 'sopds'
+      POSTGRES_PASSWORD: ${SOPDS_DB_PASSWORD:-sopds}
+      POSTGRES_DB: sopds
     volumes:
       - sopds-ng-db:/var/lib/postgresql/data/
 
-
 volumes:
-   sopds-ng-db:
+  sopds-ng-db:

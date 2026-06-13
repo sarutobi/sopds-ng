@@ -7,9 +7,13 @@
 !/bootstrap.sh
 !/requirements
 !/src
+!/scripts/
+!/version.txt
 !/LICENSE
 
 # But still do not include
 /src/.pytest*
 /src/.env
 /src/static
+/src/.*
+/**/__pycache__
