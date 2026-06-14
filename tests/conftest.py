@@ -3,10 +3,9 @@
 import io
 import zipfile
 
-from django.contrib.auth.models import User
 import pytest
 
-from .fixtures import *  # noqa: F403
+pytest_plugins = ["tests.fixtures"]
 
 
 @pytest.fixture(scope="session")
@@ -233,17 +232,3 @@ def zip_with_non_fb2():
         zip_file.writestr("book.txt", b"This is not an FB2 file")
     zip_buffer.seek(0)
     return zip_buffer
-
-
-@pytest.fixture
-def user():
-    """Тестовый пользователь.
-
-    Создаёт тестового пользователя Django с логином ``testuser`` и паролем ``testpass123``.
-    Используется там, где требуется аутентифицированный пользователь.
-
-    :scope: function
-    :returns: User
-    :rtype: django.contrib.auth.models.User
-    """
-    return User.objects.create_user(username="testuser", password="testpass123")

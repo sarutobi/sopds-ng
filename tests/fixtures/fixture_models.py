@@ -1,114 +1,136 @@
-"""Фикстуры моделей opds_catalog."""
+"""Фикстуры для моделей opds_catalog."""
+
+import datetime
+
+from django.conf import settings as main_settings
+from django.contrib.auth.models import User
+from django.utils import timezone
 
 import pytest
 
-from opds_catalog.models import Author, Book, Catalog, Genre, bauthor
+from opds_catalog.models import (
+    Author,
+    Book,
+    Catalog,
+    Counter,
+    Genre,
+    Series,
+    bauthor,
+    bgenre,
+    bseries,
+    bookshelf,
+)
+
+
+@pytest.fixture
+def test_datetime():
+    """Возвращает фиксированную дату с учётом настройки USE_TZ."""
+    dt = datetime.datetime(2016, 1, 1, 0, 0)
+    if main_settings.USE_TZ:
+        dt = dt.replace(tzinfo=timezone.get_current_timezone())
+    return dt
 
 
 @pytest.fixture
 def catalog():
-    """Фикстура для создания тестового каталога.
-
-    Создаёт запись ``Catalog`` с именем ``"Test Catalog"``, путём ``"/test/path"``.
-
-    :scope: session
-    :returns: Catalog
-    :rtype: opds_catalog.models.Catalog
-    """
+    """Создаёт корневой каталог."""
     return Catalog.objects.create(
-        cat_name="Test Catalog", path="/test/path", cat_type=0, cat_size=0
+        parent=None,
+        cat_name=".",
+        path=".",
+        cat_type=0,
+    )
+
+
+@pytest.fixture
+def book(catalog, test_datetime):
+    """Создаёт книгу с минимальными полями."""
+    return Book.objects.create(
+        filename="testbook.fb2",
+        path=".",
+        filesize=500,
+        format="fb2",
+        cat_type=0,
+        registerdate=test_datetime,
+        docdate="01.01.2016",
+        lang="ru",
+        title="Книга",
+        search_title="КНИГА",
+        annotation="Аннотация",
+        avail=2,
+        catalog=catalog,
     )
 
 
 @pytest.fixture
 def author():
-    """Фикстура для создания тестового автора.
-
-    Создаёт одного автора — ``Author`` с именем ``"Иван Иванов"`` (кириллица, lang_code=1).
-
-    :scope: session
-    :returns: Author
-    :rtype: opds_catalog.models.Author
-    """
+    """Создаёт автора."""
     return Author.objects.create(
-        full_name="Иван Иванов", search_full_name="ИВАН ИВАНОВ", lang_code=1
+        full_name="Шелепнев Дмитрий",
+        search_full_name="ШЕЛЕПНЕВ ДМИТРИЙ",
     )
 
 
 @pytest.fixture
-def author_cyrillic():
-    """Автор с кириллическим именем.
-
-    Создаёт автора с именем ``"Александр Пушкин"`` (lang_code=1).
-
-    :scope: session
-    :returns: Author
-    :rtype: opds_catalog.models.Author
-    """
-    return Author.objects.create(
-        full_name="Александр Пушкин", search_full_name="АЛЕКСАНДР ПУШКИН", lang_code=1
+def genre():
+    """Создаёт жанр."""
+    return Genre.objects.create(
+        genre="fantastic0",
+        section="fantastic1",
+        subsection="fantastic2",
     )
 
 
 @pytest.fixture
-def author_latin():
-    """Автор с латинским именем.
-
-    Создаёт автора с именем ``"John Smith"`` (lang_code=2).
-
-    :scope: session
-    :returns: Author
-    :rtype: opds_catalog.models.Author
-    """
-    return Author.objects.create(
-        full_name="John Smith", search_full_name="JOHN SMITH", lang_code=2
+def series():
+    """Создаёт серию."""
+    return Series.objects.create(
+        ser="mywork",
+        search_ser="MYWORK",
     )
 
 
 @pytest.fixture
-def author_with_books(catalog, author):
-    """Автор с несколькими книгами.
-
-    Автор, которому принадлежат две книги (``book1`` и ``book2``). Книги привязаны через
-    ``bauthor``. Полезно для тестов, где требуется автор с реальными книгами.
-
-    :scope: session
-    :returns: Author
-    :rtype: opds_catalog.models.Author
-    """
-    book1 = Book.objects.create(
-        filename="book1.fb2",
-        path="/books",
-        filesize=1024,
-        format="fb2",
-        catalog=catalog,
-        cat_type=0,
-        docdate="2020",
-        lang="ru",
-        title="Книга 1",
-        search_title="КНИГА 1",
-        annotation="Аннотация 1",
-        lang_code=1,
-        avail=1,
+def user():
+    """Создаёт тестового пользователя."""
+    return User.objects.create_user(
+        "testuser",
+        "testuser@sopds.ru",
+        "testpassword",
+        first_name="Test",
+        last_name="User",
     )
-    book2 = Book.objects.create(
-        filename="book2.fb2",
-        path="/books",
-        filesize=2048,
-        format="fb2",
-        catalog=catalog,
-        cat_type=0,
-        docdate="2021",
-        lang="ru",
-        title="Книга 2",
-        search_title="КНИГА 2",
-        annotation="Аннотация 2",
-        lang_code=1,
-        avail=1,
+
+
+@pytest.fixture
+def book_with_relations(book, author, genre, series):
+    """Создаёт книгу, связанную с автором, жанром и серией."""
+    bauthor.objects.create(book=book, author=author)
+    bgenre.objects.create(book=book, genre=genre)
+    bseries.objects.create(book=book, ser=series, ser_no=1)
+    return book
+
+
+@pytest.fixture
+def bookshelf_entry(book_with_relations, user, test_datetime):
+    """Создаёт запись на книжной полке."""
+    return bookshelf.objects.create(
+        user=user,
+        book=book_with_relations,
+        readtime=test_datetime,
     )
-    bauthor.objects.create(book=book1, author=author)
-    bauthor.objects.create(book=book2, author=author)
-    return author
+
+
+@pytest.fixture
+def update_counters():
+    """Обновляет все известные счётчики (вызов update_known_counters)."""
+    Counter.objects.update_known_counters()
+    return
+
+
+# ---------------------------------------------------------------------------
+# Фикстуры для сервисов авторов (перенесены из fixture_opds_models.py)
+# ---------------------------------------------------------------------------
 
 
 @pytest.fixture
@@ -118,7 +140,6 @@ def multiple_authors():
     Список из пяти авторов с разными именами и кодами языка. Используется для тестов поиска
     и сортировки.
 
-    :scope: session
     :returns: list[Author]
     :rtype: list
     """
@@ -154,7 +175,6 @@ def parametrized_author(request):
     Создаёт автора с различными данными (включая пустое имя, цифры, спецсимволы).
     Каждый вызов теста получает один из пяти наборов параметров.
 
-    :scope: function
     :param request: объект запроса pytest
     :type request: FixtureRequest
     :returns: Author
@@ -181,7 +201,6 @@ def parametrized_author_with_books(request, catalog):
     Создаёт автора и указанное количество книг (от 0 до 5).
     Типовые наборы: Пушкин (3 кн.), Толстой (5 кн.), Author 123 (1 кн.), Тест Автор (0 кн.).
 
-    :scope: function
     :param request: объект запроса pytest
     :type request: FixtureRequest
     :param catalog: Catalog
@@ -215,29 +234,3 @@ def parametrized_author_with_books(request, catalog):
         bauthor.objects.create(book=book, author=author)
 
     return author
-
-
-@pytest.fixture
-def genre() -> Genre:
-    """Жанр книги.
-
-    Создаёт запись ``Genre`` с секцией ``"Section A"`` и подсекцией ``"Subsection A1"``.
-
-    :scope: session
-    :returns: Genre
-    :rtype: opds_catalog.models.Genre
-    """
-    return Genre.objects.create(section="Section A", subsection="Subsection A1")
-
-
-@pytest.fixture
-def book(genre) -> Book:
-    """Книга.
-
-    Создаёт одну запись ``Book`` с названием ``"Test title"`` и привязанным жанром.
-
-    :scope: session
-    :returns: Book
-    :rtype: opds_catalog.models.Book
-    """
-    return Book.objects.create(title="Test title", genre=genre)

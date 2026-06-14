@@ -2,12 +2,6 @@
 
 import pytest
 
-from tests.fixtures.model_fixtures import (  # noqa: F401
-    book_with_relations,
-    series,
-    update_counters,
-)
-
 from opds_catalog.models import Series
 from opds_catalog.services import series_services
 

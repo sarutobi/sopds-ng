@@ -5,7 +5,7 @@ from django.test import RequestFactory
 import pytest
 
 from opds_catalog import opdsdb
-from opds_catalog.models import Book, Catalog
+from opds_catalog.models import Book
 
 
 @pytest.fixture
@@ -70,21 +70,20 @@ def load_db_data(django_db_setup, django_db_blocker):
 
 
 @pytest.fixture
-def create_regular_book(simple_fb2):
+def create_regular_book(simple_fb2, catalog):
     """Создаёт книгу (экземпляр ``Book``).
 
     Создаёт книгу с именем файла ``simple_fb2``, категорией ``opdsdb.CAT_NORMAL`` и путём ``"."``.
-    Книга удаляется после завершения теста.
+    Использует общую фикстуру ``catalog`` вместо создания собственного каталога.
 
     :scope: function
     :param simple_fb2: имя файла
     :type simple_fb2: str
+    :param catalog: Catalog из фикстуры
+    :type catalog: opds_catalog.models.Catalog
     :returns: Book
     :rtype: opds_catalog.models.Book
     """
-    # book = create_book(filename=simple_fb2, cat_type=opdsdb.CAT_NORMAL, path=".")
-    catalog = Catalog(cat_name="test_catalog", path=".")
-    catalog.save()
     book = Book(
         filename=simple_fb2,
         cat_type=opdsdb.CAT_NORMAL,
@@ -96,7 +95,6 @@ def create_regular_book(simple_fb2):
     book.save()
     yield book
     book.delete()
-    catalog.delete()
 
 
 @pytest.fixture

@@ -3,7 +3,7 @@
 Пакет реэкспортирует все фикстуры из модулей:
 
 - fixture_real_book
-- fixture_opds_models
+- fixture_models
 - fixture_settings
 - fixture_django
 - fixture_opds_feeds
@@ -24,12 +24,6 @@ from .fixture_django import (
     unexisted_book,
 )
 from .fixture_opds_feeds import opds_1_2
-from .fixture_opds_models import (
-    catalog,
-    multiple_authors,
-    parametrized_author,
-    parametrized_author_with_books,
-)
 from .fixture_real_book import (
     book_from_fs,
     epub_book,
@@ -41,15 +35,16 @@ from .fixture_real_book import (
     zipped_fb2_book_from_fs,
 )
 from .fixture_settings import fake_sopds_root_lib, test_rootlib
-
-# Новые фикстуры для моделей
-from .model_fixtures import (
+from .fixture_models import (
     author,
     book,
     book_with_relations,
     bookshelf_entry,
     catalog,
     genre,
+    multiple_authors,
+    parametrized_author,
+    parametrized_author_with_books,
     series,
     test_datetime,
     update_counters,

@@ -3,6 +3,7 @@
 !.gitignore
 !.dockerignore
 /tmp
+/log
 
 ### Python template
 # Byte-compiled / optimized / DLL files

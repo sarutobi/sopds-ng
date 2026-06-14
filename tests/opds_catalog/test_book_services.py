@@ -2,14 +2,6 @@
 
 import pytest
 
-from tests.fixtures.model_fixtures import (  # noqa: F401
-    book_with_relations,
-    catalog,
-    test_datetime,
-    update_counters,
-    user,
-)
-
 from opds_catalog.models import Book
 from opds_catalog.services import book_services
 

@@ -2,19 +2,6 @@
 
 import pytest
 
-from tests.fixtures.model_fixtures import (  # noqa: F401  (импорт фикстур)
-    author,
-    book,
-    book_with_relations,
-    bookshelf_entry,
-    catalog,
-    genre,
-    series,
-    test_datetime,
-    update_counters,
-    user,
-)
-
 from opds_catalog import models
 from opds_catalog.models import (
     Counter,
