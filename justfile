@@ -1,12 +1,9 @@
 ## Variables
-#export COMPOSE_FILE := "docker-compose.local.yml"
+set dotenv-filename := ".test.env"
+set dotenv-load := true
 export PYTHONDONTWRITEBYTECODE := '1'
 
-db_name := 'sopds'
-db_user := 'postgres'
-db_port := '5433'
-db_host := 'localhost'
-db_password := '123456'
+django_settings := 'sopds.settings.test'
 
 set quiet
 
@@ -21,16 +18,31 @@ _run *args:
 
 # Kill postgres container
 postgres_stop:
-    docker rm -f sopds-postgres-test
+    docker rm -f sopds-postgres-test 2>/dev/null; true
+
+# Wait for postgres to be ready
+_postgres_wait:
+    @echo "Waiting for postgres..."
+    @sh -c 'for i in $$(seq 1 30); do \
+        if docker exec sopds-postgres-test pg_isready -U postgres 2>/dev/null; then \
+            echo "Postgres ready"; exit 0; \
+        fi; \
+        sleep 1; \
+    done; echo "Postgres not ready after 30s"; exit 1'
 
 # Run postgres container
 postgres_start:
     just postgres_stop
-    docker run -d -e POSTGRES_DB={{ db_name }} -e POSTGRES_USER={{ db_user }} -e POSTGRES_PASSWORD={{ db_password }} -p {{ db_port }}:5432 --name sopds-postgres-test postgres:17
+    docker run -d -e POSTGRES_DB=sopds \
+        -e POSTGRES_USER=postgres \
+        -e POSTGRES_PASSWORD=123456 \
+        -p 5433:5432 \
+        --name sopds-postgres-test postgres:17
+    just _postgres_wait
 
 # Run sqlite3 tests
 test *args:
-    just _run pytest --benchmark-disable --ds=sopds.settings.test {{ args }}
+    just _run pytest --benchmark-disable --ds={{ django_settings }} {{ args }}
 
 # Run only benchmarks
 benchmark:
@@ -39,11 +51,16 @@ benchmark:
 # Generate coverage report
 coverage *args:
     just test --cov=src --cov-report=term-missing:skip-covered --cov-report=html
+    @echo "HTML report: file://$$(pwd)/htmlcov/index.html"
+
 # Run postgres tests
 postgres_tests *args:
-    just postgres_start
+    @CONTAINER_RUNNING=$$(docker ps -q -f name=sopds-postgres-test); \
+    if [ -z "$$CONTAINER_RUNNING" ]; then \
+        just postgres_start; \
+        trap 'just postgres_stop' EXIT; \
+    fi
     just _run pytest {{ args }}
-    just postgres_stop
 
 
 # Start up containers
@@ -69,9 +86,7 @@ shell +args:
 
 # Rebuid containers
 rebuild-containers:
-    just down
-    @docker compose build --progress=plain
-    just up
+    @docker compose up -d --build --remove-orphans
 
 # Clean release dir
 clean-release:
@@ -91,15 +106,11 @@ build-dev: (clean-dev)
     @rm -f src/bootstrap.sh
     @cp -lr src/* build/debug
     @cp -lr requirements build/debug
-    @cp pytest.ini build/debug/
     @cp bootstrap.sh build/debug/
-
     @chmod +x build/debug/bootstrap.sh
-
     @rm -rf build/debug/assets
     @rm -rf build/debug/static
     @rm -rf build/debug/.pytest_cache
-
     just build_containers
 
 # Create docker image for foundation
@@ -144,5 +155,22 @@ frontend-shell:
 django *args:
     @docker compose exec -it web ./manage.py {{args}}
 
-collect-django-messages:
-    just django makemessages --locale ru --ignore book_tools --ignore inpx --ignore manage.py --ignore sopds
+# Collect translation messages
+collect-django-messages *locale='ru':
+    just django makemessages --locale {{ locale }} --ignore book_tools --ignore inpx --ignore manage.py --ignore sopds
+
+# Lint check
+lint:
+    just _run ruff check src tests
+
+# Auto-format
+format:
+    just _run ruff format src tests
+
+# Type check
+typecheck:
+    just _run mypy src
+
+# Run development server
+runserver *args='0.0.0.0:8000':
+    just _run python src/manage.py runserver {{ args }}
