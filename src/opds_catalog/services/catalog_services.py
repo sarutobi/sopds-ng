@@ -1,12 +1,14 @@
 """Сервисы для работы с каталогами."""
 
+from __future__ import annotations
+
 import logging
 
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import QuerySet
 from django.utils.html import strip_tags
 
 from opds_catalog.models import Book, Catalog
-from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
 
 DUMMY_CATALOG = Catalog(id=0, cat_name="Empty", cat_type=0)
 
@@ -79,47 +81,67 @@ def paginated_catalog_content(
 ) -> tuple[list, dict]:
     """Предоставляет содержимое каталога в виде одной страницы."""
     catalogs_list = get_catalogs_query(cat).order_by("cat_name")
-    catalogs_count = catalogs_list.count()
-    # prefetch_related on sqlite on items >999 therow error "too many SQL variables"
     books_list = get_books_query(cat).order_by("search_title")
-    books_count = books_list.count()
 
-    # Получаем результирующий список
-    op = OPDS_Paginator(catalogs_count, books_count, current_page, pager_max_items)
-    items = []
+    # Собираем единый список: сначала подкаталоги, потом книги
+    merged: list[dict] = []
 
-    for row in catalogs_list[op.d1_first_pos : op.d1_last_pos + 1]:
-        p = {
-            "is_catalog": 1,
-            "title": row.cat_name,
-            "id": row.id,  # ty: ignore [unresolved-attribute]
-            "cat_type": row.cat_type,
-            "parent_id": row.parent_id,  # ty: ignore [unresolved-attribute]
-            "prefix": "c",
-        }
-        items.append(p)
+    for row in catalogs_list:
+        merged.append(
+            {
+                "is_catalog": 1,
+                "title": row.cat_name,
+                "id": row.id,
+                "cat_type": row.cat_type,
+                "parent_id": row.parent_id,
+                "prefix": "c",
+            }
+        )
 
-    for row in books_list[op.d2_first_pos : op.d2_last_pos + 1]:
-        p = {
-            "is_catalog": 0,
-            "lang_code": row.lang_code,
-            "filename": row.filename,
-            "path": row.path,
-            "registerdate": row.registerdate,
-            "id": row.id,  # ty: ignore [unresolved-attribute]
-            "annotation": strip_tags(row.annotation),
-            "docdate": row.docdate,
-            "format": row.format,
-            "title": row.title,
-            "filesize": row.filesize // 1000,
-            "authors": row.authors.values(),
-            "genres": row.genres.values(),
-            "series": row.series.values(),
-            "ser_no": row.bseries_set.values(
-                "ser_no"
-            ),  # ty: ignore [unresolved-attribute]
-            "prefix": "b",
-        }
-        items.append(p)
+    for row in books_list:
+        merged.append(
+            {
+                "is_catalog": 0,
+                "lang_code": row.lang_code,
+                "filename": row.filename,
+                "path": row.path,
+                "registerdate": row.registerdate,
+                "id": row.id,
+                "annotation": strip_tags(row.annotation),
+                "docdate": row.docdate,
+                "format": row.format,
+                "title": row.title,
+                "filesize": row.filesize // 1000,
+                "authors": row.authors.values(),
+                "genres": row.genres.values(),
+                "series": row.series.values(),
+                "ser_no": row.bseries_set.values("ser_no"),
+                "prefix": "b",
+            }
+        )
 
-    return items, op.get_data_dict()
+    paginator = Paginator(merged, pager_max_items)
+    try:
+        page = paginator.page(current_page)
+    except (EmptyPage, PageNotAnInteger):
+        page = paginator.page(paginator.num_pages)
+
+    return page.object_list, _paginator_to_dict(page)
+
+
+def _paginator_to_dict(page) -> dict:
+    """Преобразует Django Paginator Page в словарь, совместимый с OPDS."""
+    paginator = page.paginator
+    return {
+        "num_pages": paginator.num_pages,
+        "has_previous": page.has_previous(),
+        "has_next": page.has_next(),
+        "previous_page_number": page.previous_page_number()
+        if page.has_previous()
+        else 1,
+        "next_page_number": page.next_page_number()
+        if page.has_next()
+        else paginator.num_pages,
+        "number": page.number,
+        "page_range": list(paginator.page_range),
+    }

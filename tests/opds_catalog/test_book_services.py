@@ -62,11 +62,11 @@ class TestBookServices:
 
     def test_paginated_book_content(self, book_with_relations):
         """Пагинация списка книг."""
-        books = Book.objects.all()
+        books = Book.objects.order_by("id")
         items, paginator = book_services.paginated_book_content(books, 1, True)
         assert len(items) == 1
-        assert paginator.get_data_dict()["number"] == 1
-        assert paginator.get_data_dict()["has_next"] is False
+        assert paginator["number"] == 1
+        assert paginator["has_next"] is False
 
     def test_find_books_by_template_no_books(self):
         """Шаблон книг при пустой БД."""

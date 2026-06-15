@@ -24,10 +24,9 @@ from telegram.ext import (
     Updater,
 )
 
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from opds_catalog import dl, settings
 from opds_catalog.models import Book
-from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
-from sopds_web_backend.settings import HALF_PAGES_LINKS
 
 query_delimiter = "####"
 
@@ -164,26 +163,28 @@ class Command(BaseCommand):
         return books
 
     def BookPager(self, books, page_num, query):
-        books_count = books.count()
-        op = OPDS_Paginator(
-            books_count, 0, page_num, config.SOPDS_TELEBOT_MAXITEMS, HALF_PAGES_LINKS
-        )
+        paginator = Paginator(books, config.SOPDS_TELEBOT_MAXITEMS)
+        try:
+            page = paginator.page(page_num)
+        except (EmptyPage, PageNotAnInteger):
+            page = paginator.page(paginator.num_pages)
         items = []
 
         prev_title = ""
         prev_authors_set = set()
 
-        # Начаинам анализ с последнего элемента на предидущей странице, чторбы он "вытянул" с этой страницы
-        # свои дубликаты если они есть
         summary_DOUBLES_HIDE = config.SOPDS_DOUBLES_HIDE
-        start = (
-            op.d1_first_pos
-            if ((op.d1_first_pos == 0) or (not summary_DOUBLES_HIDE))
-            else op.d1_first_pos - 1
-        )
-        finish = op.d1_last_pos
 
-        for row in books[start : finish + 1]:
+        # Добавляем последний элемент предыдущей страницы для дедупликации на границе
+        if summary_DOUBLES_HIDE and page.has_previous():
+            prev_page = paginator.page(page.previous_page_number())
+            page_objects = [
+                prev_page.object_list[len(prev_page.object_list) - 1]
+            ] + list(page.object_list)
+        else:
+            page_objects = list(page.object_list)
+
+        for row in page_objects:
             p = {
                 "doubles": 0,
                 "lang_code": row.lang_code,
@@ -216,22 +217,23 @@ class Command(BaseCommand):
             else:
                 items.append(p)
 
-        # "вытягиваем" дубликаты книг со следующей страницы и удаляем первый элемент который с предыдущей страницы и "вытягивал" дубликаты с текущей
+        # Дубликаты: удаляем граничный элемент, вытягиваем со следующей страницы
         if summary_DOUBLES_HIDE:
-            double_flag = True
-            while ((finish + 1) < books_count) and double_flag:
-                finish += 1
-                if (
-                    books[finish].title.upper() == prev_title.upper()
-                    and {a["id"] for a in books[finish].authors.values()}
-                    == prev_authors_set
-                ):
-                    items[-1]["doubles"] += 1
-                else:
-                    double_flag = False
-
-            if op.d1_first_pos != 0:
+            # Удаляем граничный элемент с предыдущей страницы
+            if page.has_previous() and items:
                 items.pop(0)
+
+            # "Вытягиваем" дубликаты со следующей страницы
+            if page.has_next() and items:
+                next_page = paginator.page(page.next_page_number())
+                for row in next_page.object_list:
+                    if (
+                        row.title.upper() == prev_title.upper()
+                        and {a["id"] for a in row.authors.values()} == prev_authors_set
+                    ):
+                        items[-1]["doubles"] += 1
+                    else:
+                        break
 
         response = ""
         for b in items:
@@ -249,25 +251,26 @@ class Command(BaseCommand):
                 "1 <<", callback_data="%s%s%s" % (query, query_delimiter, 1)
             ),
             InlineKeyboardButton(
-                "%s <" % op.previous_page_number,
+                "%s <" % page.previous_page_number(),
                 callback_data="%s%s%s"
-                % (query, query_delimiter, op.previous_page_number),
+                % (query, query_delimiter, page.previous_page_number()),
             ),
             InlineKeyboardButton(
-                "[ %s ]" % op.number,
+                "[ %s ]" % page.number,
                 callback_data="%s%s%s" % (query, query_delimiter, "current"),
             ),
             InlineKeyboardButton(
-                "> %s" % op.next_page_number,
-                callback_data="%s%s%s" % (query, query_delimiter, op.next_page_number),
+                "> %s" % page.next_page_number(),
+                callback_data="%s%s%s"
+                % (query, query_delimiter, page.next_page_number()),
             ),
             InlineKeyboardButton(
-                ">> %s" % op.num_pages,
-                callback_data="%s%s%s" % (query, query_delimiter, op.num_pages),
+                ">> %s" % paginator.num_pages,
+                callback_data="%s%s%s" % (query, query_delimiter, paginator.num_pages),
             ),
         ]
 
-        markup = InlineKeyboardMarkup([buttons]) if op.num_pages > 1 else None
+        markup = InlineKeyboardMarkup([buttons]) if paginator.num_pages > 1 else None
 
         return {"message": response, "buttons": markup}
 

@@ -18,8 +18,8 @@ from django.utils.feedgenerator import Atom1Feed, Enclosure, rfc3339_date
 from django.utils.translation import gettext as _
 
 from book_tools.format.mimetype import Mimetype
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from opds_catalog import settings
-from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
 from opds_catalog.services import (
     SearchType,
     authors_services,
@@ -540,7 +540,7 @@ class CatalogsFeed(SOPDSBaseFeed):
 
         :returns: Содержимое каталога (подкаталоги и книги), метаданные текущего
         каталога, метаданные пейджера.
-        :rtype: list[list[Catalog], list[Book]], Catalog, OPDS_Paginator
+        :rtype: list[list[Catalog], list[Book]], Catalog, dict
         """
         page_num = to_int(page, default=1)
 
@@ -726,7 +726,7 @@ class SearchBooksFeed(SOPDSBaseFeed):
             "searchterms": searchterms,
             "searchterms0": searchterms0,
             "searchtype": searchtype,
-            "paginator": op.get_data_dict(),
+            "paginator": op,
         }
 
     def get_link_kwargs(self, obj):
@@ -887,25 +887,38 @@ class SearchAuthorsFeed(SOPDSBaseFeed):
 
         authors = authors_services.search_authors_with_counts(searchtype, searchterms)
 
-        # Создаем результирующее множество
-        authors_count = authors.count()
-        op = OPDS_Paginator(authors_count, 0, page_num, config.SOPDS_MAXITEMS)
-        items = []
-
-        for row in authors[op.d1_first_pos : op.d1_last_pos + 1]:
-            p = {
+        paginator = Paginator(authors, config.SOPDS_MAXITEMS)
+        try:
+            page = paginator.page(page_num)
+        except (EmptyPage, PageNotAnInteger):
+            page = paginator.page(paginator.num_pages)
+        items = [
+            {
                 "id": row.id,
                 "full_name": row.full_name,
                 "lang_code": row.lang_code,
                 "book_count": row.book_count,
             }
-            items.append(p)
+            for row in page.object_list
+        ]
 
         return {
             "authors": items,
             "searchterms": searchterms,
             "searchtype": searchtype,
-            "paginator": op.get_data_dict(),
+            "paginator": {
+                "num_pages": paginator.num_pages,
+                "has_previous": page.has_previous(),
+                "has_next": page.has_next(),
+                "previous_page_number": page.previous_page_number()
+                if page.has_previous()
+                else 1,
+                "next_page_number": page.next_page_number()
+                if page.has_next()
+                else paginator.num_pages,
+                "number": page.number,
+                "page_range": list(paginator.page_range),
+            },
         }
 
     def link(self, obj):
@@ -970,25 +983,38 @@ class SearchSeriesFeed(SOPDSBaseFeed):
 
         series = series_services.search_series(searchtype, searchterms, self.author_id)
 
-        # Создаем результирующее множество
-        series_count = series.count()
-        op = OPDS_Paginator(series_count, 0, page_num, config.SOPDS_MAXITEMS)
-        items = []
-
-        for row in series[op.d1_first_pos : op.d1_last_pos + 1]:
-            p = {
+        paginator = Paginator(series, config.SOPDS_MAXITEMS)
+        try:
+            page = paginator.page(page_num)
+        except (EmptyPage, PageNotAnInteger):
+            page = paginator.page(paginator.num_pages)
+        items = [
+            {
                 "id": row.id,
                 "ser": row.ser,
                 "lang_code": row.lang_code,
                 "book_count": row.count_book,
             }
-            items.append(p)
+            for row in page.object_list
+        ]
 
         return {
             "series": items,
             "searchterms": searchterms,
             "searchtype": searchtype,
-            "paginator": op.get_data_dict(),
+            "paginator": {
+                "num_pages": paginator.num_pages,
+                "has_previous": page.has_previous(),
+                "has_next": page.has_next(),
+                "previous_page_number": page.previous_page_number()
+                if page.has_previous()
+                else 1,
+                "next_page_number": page.next_page_number()
+                if page.has_next()
+                else paginator.num_pages,
+                "number": page.number,
+                "page_range": list(paginator.page_range),
+            },
         }
 
     def link(self, obj):

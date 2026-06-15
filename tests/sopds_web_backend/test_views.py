@@ -1,7 +1,10 @@
 """Тесты для views.py и processors.py sopds_web_backend."""
 
+from datetime import datetime
+
 from django.contrib.auth.models import AnonymousUser
 from django.urls import reverse
+from django.utils import timezone
 
 from constance.test import override_config
 import pytest
@@ -12,7 +15,11 @@ from opds_catalog.models import Book, Counter, bookshelf, Genre
 @pytest.fixture
 def counter_with_books(db) -> None:
     """Counter с 'allbooks' для работы sopds_processor."""
-    Counter.obj.create(name="allbooks", value=0, update_time="2024-01-01 00:00:00")
+    Counter.obj.create(
+        name="allbooks",
+        value=0,
+        update_time=timezone.make_aware(datetime(2024, 1, 1)),
+    )
 
 
 # ──────────────────────────────────────────────

@@ -1,10 +1,13 @@
 """Сервисные функции для работы с книгами."""
 
+from __future__ import annotations
+
 from typing import Callable, TypeVar
 
 from constance import config
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
+from django.core.paginator import Paginator
 from django.db.models import CharField, Count, QuerySet, Value
 from django.db.models.functions import Substr
 from django.db.models.query import RawQuerySet
@@ -12,7 +15,6 @@ from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 
 from opds_catalog.models import Author, Book
-from opds_catalog.opds_paginator import Paginator as OPDS_Paginator
 from opds_catalog.services import SearchType
 from opds_catalog.utils import to_int
 
@@ -127,78 +129,115 @@ def search_book(
     return search_function(config.SOPDS_AUTH, term, second_term, user)
 
 
+def _build_book_item(row: Book) -> dict:
+    """Преобразует Book в словарь для постраничного вывода."""
+    return {
+        "doubles": 0,
+        "lang_code": row.lang_code,
+        "filename": row.filename,
+        "path": row.path,
+        "registerdate": row.registerdate,
+        "id": row.id,
+        "annotation": strip_tags(row.annotation),
+        "docdate": row.docdate,
+        "format": row.format,
+        "title": row.title,
+        "filesize": row.filesize // 1000,
+        "authors": row.authors.values(),
+        "genres": row.genres.values(),
+        "series": row.series.values(),
+        "ser_no": row.bseries_set.values("ser_no"),
+    }
+
+
+def _dedup_items(
+    items: list[dict],
+) -> tuple[list[dict], str, set]:
+    """Схлопывает последовательные элементы с одинаковым названием+автором."""
+    if not items:
+        return [], "", set()
+
+    deduped: list[dict] = []
+    prev_title = ""
+    prev_authors_set: set[int] = set()
+
+    for p in items:
+        title: str = p["title"]
+        authors_set: set[int] = {a["id"] for a in p["authors"]}
+        if title.upper() == prev_title.upper() and authors_set == prev_authors_set:
+            deduped[-1]["doubles"] += 1
+        else:
+            deduped.append(p)
+        prev_title = title
+        prev_authors_set = authors_set
+
+    return deduped, prev_title, prev_authors_set
+
+
+def _paginator_to_dict(page) -> dict:
+    """Преобразует Django Paginator Page в словарь, совместимый с get_data_dict()."""
+    paginator = page.paginator
+    return {
+        "num_pages": paginator.num_pages,
+        "has_previous": page.has_previous(),
+        "has_next": page.has_next(),
+        "previous_page_number": page.previous_page_number()
+        if page.has_previous()
+        else 1,
+        "next_page_number": page.next_page_number()
+        if page.has_next()
+        else paginator.num_pages,
+        "number": page.number,
+        "page_range": list(paginator.page_range),
+    }
+
+
 def paginated_book_content(
     books: QuerySet[Book, Book], page_num: int, search_doubles: bool = False
-):
-    """Постраничный вывод списка книг."""
-    books_count = books.count()
-    op = OPDS_Paginator(books_count, 0, page_num, config.SOPDS_MAXITEMS)
-    items = []
+) -> tuple[list[dict], dict]:
+    """Постраничный вывод списка книг.
 
-    prev_title = ""
-    prev_authors_set = set()
+    :returns: (items, paginator_dict)
+    """
+    maxitems = config.SOPDS_MAXITEMS
+    django_paginator = Paginator(books, maxitems)
+    page = django_paginator.page(page_num)
 
-    # Начинаем анализ с последнего элемента на предидущей странице, чторбы он "вытянул"
-    # с этой страницы свои дубликаты если они есть
     summary_DOUBLES_HIDE = config.SOPDS_DOUBLES_HIDE and not search_doubles
-    start = (
-        op.d1_first_pos
-        if ((op.d1_first_pos == 0) or (not summary_DOUBLES_HIDE))
-        else op.d1_first_pos - 1
-    )
-    finish = op.d1_last_pos
 
-    for row in books[start : finish + 1]:
-        p = {
-            "doubles": 0,
-            "lang_code": row.lang_code,
-            "filename": row.filename,
-            "path": row.path,
-            "registerdate": row.registerdate,
-            "id": row.id,  # # ty: ignore[unresolved-attribute]
-            "annotation": strip_tags(row.annotation),
-            "docdate": row.docdate,
-            "format": row.format,
-            "title": row.title,
-            "filesize": row.filesize // 1000,
-            "authors": row.authors.values(),
-            "genres": row.genres.values(),
-            "series": row.series.values(),
-            "ser_no": row.bseries_set.values(
-                "ser_no"
-            ),  # ty: ignore[unresolved-attribute]
-        }
-        if summary_DOUBLES_HIDE:
-            title: str = p["title"]
-            authors_set: set[int] = {a["id"] for a in p["authors"]}
-            if title.upper() == prev_title.upper() and authors_set == prev_authors_set:
-                items[-1]["doubles"] += 1
-            else:
-                items.append(p)
-            prev_title = title
-            prev_authors_set = authors_set
-        else:
-            items.append(p)
+    # Собираем элементы страницы
+    if summary_DOUBLES_HIDE and page.has_previous():
+        # Добавляем последний элемент предыдущей страницы для корректной
+        # дедупликации на границе страниц
+        prev_page = django_paginator.page(page.previous_page_number())
+        page_objects = [prev_page.object_list[len(prev_page.object_list) - 1]] + list(
+            page.object_list
+        )
+    else:
+        page_objects = list(page.object_list)
 
-    # "вытягиваем" дубликаты книг со следующей страницы и удаляем первый элемент
-    # который с предыдущей страницы и "вытягивал" дубликаты с текущей
+    items = [_build_book_item(row) for row in page_objects]
+
     if summary_DOUBLES_HIDE:
-        double_flag = True
-        while ((finish + 1) < books_count) and double_flag:
-            finish += 1
-            if (
-                books[finish].title.upper() == prev_title.upper()
-                and {a["id"] for a in books[finish].authors.values()}
-                == prev_authors_set
-            ):
-                items[-1]["doubles"] += 1
-            else:
-                double_flag = False
+        items, prev_title, prev_authors_set = _dedup_items(items)
 
-        if op.d1_first_pos != 0:
+        # Удаляем граничный элемент с предыдущей страницы
+        if page.has_previous() and items:
             items.pop(0)
 
-    return items, op
+        # "Вытягиваем" дубликаты со следующей страницы
+        if page.has_next() and items:
+            next_page = django_paginator.page(page.next_page_number())
+            for row in next_page.object_list:
+                if (
+                    row.title.upper() == prev_title.upper()
+                    and {a["id"] for a in row.authors.values()} == prev_authors_set
+                ):
+                    items[-1]["doubles"] += 1
+                else:
+                    break
+
+    return items, _paginator_to_dict(page)
 
 
 def book_description(item) -> str:
