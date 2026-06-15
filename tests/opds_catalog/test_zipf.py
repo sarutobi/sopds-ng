@@ -2,7 +2,7 @@ import os
 
 from django.test import TestCase
 
-from src.opds_catalog import zipf as zipfile
+import zipfile
 
 
 class zipTestCase(TestCase):

@@ -13,8 +13,8 @@ from django.utils.translation import gettext as _
 
 from book_tools.format import create_bookfile
 from book_tools.format.util import strip_symbols
+import zipfile
 from opds_catalog import fb2parse, inpx_parser, opdsdb
-import opds_catalog.zipf as zipfile
 
 
 class opdsScanner:
