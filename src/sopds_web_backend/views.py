@@ -482,6 +482,7 @@ def BooksView(request):
 
     if request.GET:
         lang_code = to_int(request.GET.get("lang"))
+        chars = request.GET.get("chars", "")
     else:
         lang_code = 0
         chars = ""
