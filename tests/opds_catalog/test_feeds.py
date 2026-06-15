@@ -1,9 +1,6 @@
-# -*- coding: utf-8 -*-
 from io import BytesIO
 
-# from opds_catalog import settings
 from constance import config
-from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils.translation import gettext as _
 import helpers
@@ -12,169 +9,154 @@ import pytest
 
 from opds_catalog import opdsdb, settings
 
+pytestmark = [
+    pytest.mark.django_db,
+    pytest.mark.override_config(SOPDS_AUTH=False),
+]
 
-class feedsTestCase(TestCase):
-    fixtures = ["testdb.json"]
 
-    def setUp(self):
-        config.SOPDS_AUTH = False
+@pytest.mark.usefixtures("load_db_data")
+class TestFeeds:  # acceptance
+    """Тесты OPDS фидов (HTTP клиент, XML структура, авторизация)."""
 
-    def test_MainFeed(self):
-        c = Client()
-        response = c.get("/opds/")
-        self.assertEqual(response.status_code, 200)
-        response = c.get(reverse("opds:main"))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(_("By catalogs"), response.content.decode())
-        self.assertIn(
-            _("Catalogs: %(catalogs)s, books: %(books)s.")
-            % {"catalogs": 2, "books": 4},
-            response.content.decode(),
+    def test_main_feed(self, client) -> None:
+        response = client.get("/opds/")
+        assert response.status_code == 200
+        response = client.get(reverse("opds:main"))
+        assert response.status_code == 200
+        assert _("By catalogs") in response.content.decode()
+        assert (
+            _("Catalogs: %(catalogs)s, books: %(books)s.") % {"catalogs": 2, "books": 4}
+        ) in response.content.decode()
+        assert (
+            _("Authors: %(authors)s.") % {"authors": 4}
+        ) in response.content.decode()
+        assert (_("Genres: %(genres)s.") % {"genres": 4}) in response.content.decode()
+        assert settings.SUBTITLE in response.content.decode()
+
+    def test_catalogs_feed(self, client) -> None:
+        response = client.get("/opds/catalogs/")
+        assert response.status_code == 200
+        response = client.get(reverse("opds:catalogs"))
+        assert response.status_code == 200
+        assert "books.zip" in response.content.decode()
+        assert "The Sanctuary Sparrow" in response.content.decode()
+
+    def test_catalogs_feed_tree(self, client) -> None:
+        response = client.get("/opds/catalogs/4/")
+        assert response.status_code == 200
+        response = client.get(reverse("opds:cat_tree", args=["4"]))
+        assert response.status_code == 200
+        assert "Драконьи Услуги" in response.content.decode()
+        assert "Китайски сладкиш с късметче" in response.content.decode()
+        assert "Любовь в жизни Обломова" in response.content.decode()
+
+    def test_open_search(self, client) -> None:
+        response = client.get("/opds/search/")
+        assert response.status_code == 200
+        assert "www.sopds.ru" in response.content.decode()
+
+    def test_search_types(self, client) -> None:
+        response = client.get("/opds/search/Драк/")
+        assert response.status_code == 200
+        response = client.get(
+            reverse("opds:searchtypes", kwargs={"searchterms": "Драк"})
         )
-        self.assertIn(
-            _("Authors: %(authors)s.") % {"authors": 4}, response.content.decode()
-        )
-        self.assertIn(
-            _("Genres: %(genres)s.") % {"genres": 4}, response.content.decode()
-        )
-        self.assertIn(settings.SUBTITLE, response.content.decode())
+        assert response.status_code == 200
+        assert _("Search by titles") in response.content.decode()
 
-    def test_CatalogsFeed(self):
-        c = Client()
-        response = c.get("/opds/catalogs/")
-        self.assertEqual(response.status_code, 200)
-        response = c.get(reverse("opds:catalogs"))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("books.zip", response.content.decode())
-        self.assertIn("The Sanctuary Sparrow", response.content.decode())
-
-    def test_CatalogsFeedTree(self):
-        c = Client()
-        response = c.get("/opds/catalogs/4/")
-        self.assertEqual(response.status_code, 200)
-        response = c.get(reverse("opds:cat_tree", args=["4"]))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Драконьи Услуги", response.content.decode())
-        self.assertIn("Китайски сладкиш с късметче", response.content.decode())
-        self.assertIn("Любовь в жизни Обломова", response.content.decode())
-
-    def test_OpenSearch(self):
-        c = Client()
-        response = c.get("/opds/search/")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("www.sopds.ru", response.content.decode())
-
-    def test_SearchTypes(self):
-        c = Client()
-        response = c.get("/opds/search/Драк/")
-        self.assertEqual(response.status_code, 200)
-        response = c.get(reverse("opds:searchtypes", kwargs={"searchterms": "Драк"}))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(_("Search by titles"), response.content.decode())
-
-    def test_SearchBooks(self):
-        c = Client()
-        response = c.get("/opds/search/books/m/Драк/")
-        self.assertEqual(response.status_code, 200)
-        response = c.get(
+    def test_search_books(self, client) -> None:
+        response = client.get("/opds/search/books/m/Драк/")
+        assert response.status_code == 200
+        response = client.get(
             reverse(
                 "opds:searchbooks", kwargs={"searchtype": "m", "searchterms": "рак"}
             )
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Драконьи Услуги", response.content.decode())
-        self.assertIn("Куприянов Денис", response.content.decode())
-        response = c.get(
+        assert response.status_code == 200
+        assert "Драконьи Услуги" in response.content.decode()
+        assert "Куприянов Денис" in response.content.decode()
+        response = client.get(
             reverse(
                 "opds:searchbooks", kwargs={"searchtype": "b", "searchterms": "Драк"}
             )
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Драконьи Услуги", response.content.decode())
-        self.assertIn("Куприянов Денис", response.content.decode())
-        response = c.get(
+        assert response.status_code == 200
+        assert "Драконьи Услуги" in response.content.decode()
+        assert "Куприянов Денис" in response.content.decode()
+        response = client.get(
             reverse("opds:searchbooks", kwargs={"searchtype": "a", "searchterms": "8"})
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Драконьи Услуги", response.content.decode())
-        self.assertIn("Куприянов Денис", response.content.decode())
-        self.assertIn(
-            _("All books by %(full_name)s") % {"full_name": "Куприянов Денис"},
-            response.content.decode(),
-        )
-        self.assertIn("prose_contemporary", response.content.decode())
-        self.assertIn("<category ", response.content.decode())
+        assert response.status_code == 200
+        assert "Драконьи Услуги" in response.content.decode()
+        assert "Куприянов Денис" in response.content.decode()
+        assert (
+            _("All books by %(full_name)s") % {"full_name": "Куприянов Денис"}
+        ) in response.content.decode()
+        assert "prose_contemporary" in response.content.decode()
+        assert "<category " in response.content.decode()
 
-    def test_SearchAuthors(self):
-        c = Client()
-        response = c.get("/opds/search/authors/m/Логинов/")
-        self.assertEqual(response.status_code, 200)
-        response = c.get(
+    def test_search_authors(self, client) -> None:
+        response = client.get("/opds/search/authors/m/Логинов/")
+        assert response.status_code == 200
+        response = client.get(
             reverse(
                 "opds:searchauthors", kwargs={"searchtype": "m", "searchterms": "гинов"}
             )
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Логинов Святослав", response.content.decode())
-        response = c.get(
+        assert response.status_code == 200
+        assert "Логинов Святослав" in response.content.decode()
+        response = client.get(
             reverse(
                 "opds:searchauthors", kwargs={"searchtype": "b", "searchterms": "Лог"}
             )
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Логинов Святослав", response.content.decode())
+        assert response.status_code == 200
+        assert "Логинов Святослав" in response.content.decode()
 
-    def test_SearchGenres(self):
-        # response = c.get('/opds/search/genres/antiq/')
-        # self.assertEqual(response.status_code, 200)
-        # self.assertIn("The Sanctuary Sparrow", response.content.decode())
-        # self.assertIn("Peters Ellis", response.content.decode())
+    def test_search_genres(self) -> None:
         pass
 
-    def test_LangFeed(self):
-        c = Client()
-        response = c.get("/opds/books/")
-        self.assertEqual(response.status_code, 200)
-        response = c.get(reverse("opds:lang_books"))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(_("Cyrillic"), response.content.decode())
-        self.assertIn(_("Latin"), response.content.decode())
-        self.assertIn(_("Digits"), response.content.decode())
-        self.assertIn(_("Other symbols"), response.content.decode())
-        self.assertIn(_("Show all"), response.content.decode())
+    def test_lang_feed(self, client) -> None:
+        response = client.get("/opds/books/")
+        assert response.status_code == 200
+        response = client.get(reverse("opds:lang_books"))
+        assert response.status_code == 200
+        assert _("Cyrillic") in response.content.decode()
+        assert _("Latin") in response.content.decode()
+        assert _("Digits") in response.content.decode()
+        assert _("Other symbols") in response.content.decode()
+        assert _("Show all") in response.content.decode()
 
-    def test_BooksFeed(self):
-        c = Client()
-        response = c.get("/opds/books/0/")
-        self.assertEqual(response.status_code, 200)
+    def test_books_feed(self, client) -> None:
+        response = client.get("/opds/books/0/")
+        assert response.status_code == 200
         if config.SOPDS_ALPHABET_MENU:
-            response = c.get(reverse("opds:lang_books"))
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(_("Cyrillic"), response.content.decode())
-        response = c.get(reverse("opds:char_books", kwargs={"lang_code": 0}))
-        self.assertIn("<title>T</title>", response.content.decode())
+            response = client.get(reverse("opds:lang_books"))
+            assert response.status_code == 200
+            assert _("Cyrillic") in response.content.decode()
+        response = client.get(reverse("opds:char_books", kwargs={"lang_code": 0}))
+        assert "<title>T</title>" in response.content.decode()
 
-    def test_AuthorsFeed(self):
-        c = Client()
-        response = c.get("/opds/authors/0/")
-        self.assertEqual(response.status_code, 200)
+    def test_authors_feed(self, client) -> None:
+        response = client.get("/opds/authors/0/")
+        assert response.status_code == 200
         if config.SOPDS_ALPHABET_MENU:
-            response = c.get(reverse("opds:lang_authors"))
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(_("Cyrillic"), response.content.decode())
-        response = c.get(reverse("opds:char_authors", kwargs={"lang_code": 0}))
-        self.assertIn("<title>P</title>", response.content.decode())
+            response = client.get(reverse("opds:lang_authors"))
+            assert response.status_code == 200
+            assert _("Cyrillic") in response.content.decode()
+        response = client.get(reverse("opds:char_authors", kwargs={"lang_code": 0}))
+        assert "<title>P</title>" in response.content.decode()
 
-    def test_GenresFeed(self):
-        c = Client()
-        response = c.get("/opds/genres/")
-        self.assertEqual(response.status_code, 200)
-        response = c.get(reverse("opds:genres"))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(opdsdb.unknown_genre_en, response.content.decode())
-        response = c.get(reverse("opds:genres", kwargs={"section": 232}))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("prose_contemporary", response.content.decode())
+    def test_genres_feed(self, client) -> None:
+        response = client.get("/opds/genres/")
+        assert response.status_code == 200
+        response = client.get(reverse("opds:genres"))
+        assert response.status_code == 200
+        assert opdsdb.unknown_genre_en in response.content.decode()
+        response = client.get(reverse("opds:genres", kwargs={"section": 232}))
+        assert response.status_code == 200
+        assert "prose_contemporary" in response.content.decode()
 
 
 HTTP_OK = 200
@@ -208,9 +190,6 @@ def test_auth_feed(override_config, client, django_user, sopds_auth, expected) -
         reverse("opds_catalog:lang_series"),
         reverse("opds_catalog:nolang_series"),
         reverse("opds_catalog:genres"),
-        # reverse("opds_catalog:searchbooks"),
-        # reverse("opds_catalog:searchauthors"),
-        # reverse("opds_catalog:searchseries"),
     ],
 )
 @pytest.mark.django_db
@@ -225,7 +204,6 @@ def test_feed_structure(url, client, load_db_data, override_config, opds_1_2) ->
     assert helpers.opds_requirement_links(feed)
     assert helpers.opds_acquisition_links(feed)
     assert helpers.opds_search_rel(feed)
-    # assert helpers.opds_acquisition_or_navigation_feed(feed)
     assert helpers.opds_summary_is_plain_text(feed)
     assert helpers.opds_image_rel(feed)
     assert helpers.opds_image_bitmap(feed)

@@ -31,21 +31,6 @@ def read_book_from_zip_file(zip_file: str, bookname: str) -> BytesIO:
     return content
 
 
-class BookFactoryMixin:
-    def setup_regular_book(self, filename="", path="") -> Book:
-        """Генерирует книгу, размещенную в обычном файле в файловой системе."""
-        return self.setup_book(filename=filename, cat_type=opdsdb.CAT_NORMAL, path=path)
-
-    def setup_zipped_book(self, filename="", path="") -> Book:
-        """Генерирует книгу, размещенную в zip файле в файловой системе."""
-        return self.setup_book(filename=filename, cat_type=opdsdb.CAT_ZIP, path=path)
-
-    def setup_book(self, title="", format="", filename="", cat_type=0, path="") -> Book:
-        return Book(
-            title=title, format=format, filename=filename, cat_type=cat_type, path=path
-        )
-
-
 def create_catalog(
     cat_name: str = "Test catalog",
     path: str = "test_path",

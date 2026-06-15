@@ -18,6 +18,7 @@ from .fixture_book_tools import (
     virtual_fb2_book,
 )
 from .fixture_django import (
+    book_factory,
     create_regular_book,
     django_user,
     load_db_data,

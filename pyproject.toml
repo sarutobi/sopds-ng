@@ -46,6 +46,9 @@ markers = [
     "slow: this test is slow",
     "optional: marks test as optional",
     "benchmark: this test is benchmark",
+    "unit: unit test (no dependencies)",
+    "integration: integration test (DB, FS, network)",
+    "acceptance: acceptance test (HTTP client, full stack)",
 ]
 
 [tool.coverage.run]

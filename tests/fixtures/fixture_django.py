@@ -113,3 +113,26 @@ def unexisted_book():
     b.save()
     yield
     b.delete()
+
+
+@pytest.fixture
+def book_factory():
+    """Создаёт Book-объект без сохранения в БД.
+
+    Возвращает функцию ``factory(title='', format='', filename='', cat_type=0, path='')``,
+    которая создаёт и возвращает экземпляр ``Book`` без сохранения.
+
+    :scope: function
+    :returns: callable
+    """
+
+    def _factory(title="", format="", filename="", cat_type=0, path="") -> Book:
+        return Book(
+            title=title,
+            format=format,
+            filename=filename,
+            cat_type=cat_type,
+            path=path,
+        )
+
+    return _factory
