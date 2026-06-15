@@ -50,7 +50,7 @@ markers = [
 
 [tool.coverage.run]
 relative_files = true
-omit = ["manage.py", "*/migrations/*", "*/sopds/*", "src/inpx/*"]
+omit = ["manage.py", "*/migrations/*", "*/sopds/*", "src/inpx/*", "*/zipf*", "*/fb2parse*", "*/pymobi*"]
 source = ["src"]
 
 [tool.coverage.report]
