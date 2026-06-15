@@ -305,3 +305,32 @@ def test_wrong_encoded_fb2_zip(test_rootlib) -> None:
         "Носов - Незнайка-путешественник.fb2",
     )
     assert actual is not None
+
+
+@pytest.mark.django_db
+def test_cover_redirect_when_no_cover(
+    fake_sopds_root_lib,
+    create_regular_book,
+    client,
+) -> None:
+    """Cover без обложки → редирект на заглушку."""
+    book: Book = create_regular_book
+    book.filename = "nonexist.fb2"
+    book.save()
+    url = reverse("opds:cover", args=(book.id,))
+    response = client.get(url)
+    assert response.status_code == 302
+    assert "nocover" in response.url
+
+
+@pytest.mark.django_db
+def test_thumbnail(
+    fake_sopds_root_lib, create_regular_book, client, override_config
+) -> None:
+    """Проверка Thumbnail."""
+    book: Book = create_regular_book
+    url = reverse("opds:thumb", args=(book.id,))
+    with override_config(SOPDS_FB2SAX=True):
+        response = client.get(url)
+    assert response.status_code == 200
+    assert response["Content-Type"] == "image/jpeg"

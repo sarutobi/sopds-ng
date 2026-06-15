@@ -72,3 +72,89 @@ class TestBookServices:
         """Шаблон книг при пустой БД."""
         results = book_services.find_books_by_template("", 1, 0)
         assert len(results) == 0
+
+    def test_find_books_by_template_with_lang_code(self, catalog):
+        """Шаблон книг с фильтром по языку."""
+        book = Book.objects.create(
+            filename="test.fb2",
+            path=".",
+            format="fb2",
+            cat_type=0,
+            title="Test",
+            search_title="TEST",
+            lang_code=1,
+            catalog=catalog,
+        )
+        results = book_services.find_books_by_template("T", 1, lang_code=1)
+        assert len(results) > 0
+
+    def test_search_book_by_genre(self, book_with_relations):
+        """Поиск книг по жанру."""
+        genre = book_with_relations.genres.first()
+        results = book_services.search_book("g", str(genre.id), None, None)
+        assert results.count() == 1
+
+    def test_search_book_by_exact_title(self, book_with_relations):
+        """Поиск по точному названию (type='e')."""
+        book_with_relations.search_title = "КНИГА"
+        book_with_relations.save()
+        results = book_services.search_book("e", "КНИГА", None, None)
+        assert results.count() == 1
+
+    def test_search_book_unsupported_type(self):
+        """Поиск с неподдерживаемым типом."""
+        import pytest
+
+        with pytest.raises(ValueError, match="is not supported"):
+            book_services.search_book("x", "test", None, None)
+
+    def test_find_book_doubles(self, book_with_relations, catalog):
+        """Поиск дубликатов книги."""
+        # Создаём книгу-дубликат
+        book2 = Book.objects.create(
+            filename="dup.fb2",
+            path=".",
+            format="fb2",
+            cat_type=0,
+            title="Книга",
+            search_title="КНИГА",
+            catalog=catalog,
+        )
+        author = book_with_relations.authors.first()
+        from opds_catalog.models import bauthor
+
+        bauthor.objects.create(book=book2, author=author)
+        results = book_services.search_book(
+            "d", str(book_with_relations.id), None, None
+        )
+        assert results.count() == 1
+
+    def test_author_books_count(self, book_with_relations):
+        """Подсчёт книг автора."""
+        author = book_with_relations.authors.first()
+        count = book_services.author_books_count(author)
+        assert count == 1
+
+    def test_author_books_count_by_int(self, book_with_relations):
+        """Подсчёт книг автора по ID."""
+        author = book_with_relations.authors.first()
+        count = book_services.author_books_count(author.id)
+        assert count == 1
+
+    def test_book_description_with_ser_no(self, book_with_relations):
+        """Описание книги с номером в серии."""
+        book_data = {
+            "title": "Test",
+            "annotation": "Annot",
+            "authors": [{"full_name": "Author1"}],
+            "series": [{"ser": "Ser1"}],
+            "ser_no": [{"ser_no": 1}],
+            "genres": [{"subsection": "fantasy"}],
+            "language": "ru",
+            "filename": "test.fb2",
+            "filesize": 500,
+            "docdate": "01.01.2016",
+        }
+        desc = book_services.book_description(book_data)
+        assert "Ser1" in desc
+        assert "1" in desc

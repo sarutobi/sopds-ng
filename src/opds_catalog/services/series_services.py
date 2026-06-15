@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from django.db.models import Count, Model
+from django.db.models import Count
 from django.db.models.query import RawQuerySet
 from django.utils.translation import gettext as _
 
@@ -64,7 +64,7 @@ def get_series_name(id: Any) -> str:
     """Возвращает наименование серии."""
     ser_id = to_int(id)
     try:
-        ser_name = Series.objects.get(ser_id).ser
-    except Model.DoesNotExist:
+        ser_name = Series.objects.get(id=ser_id).ser
+    except Series.DoesNotExist:
         ser_name = _("Series not found")
     return ser_name
