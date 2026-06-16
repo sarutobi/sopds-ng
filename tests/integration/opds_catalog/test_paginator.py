@@ -9,6 +9,8 @@ from __future__ import annotations
 import pytest
 
 from django.core.paginator import Paginator
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from opds_catalog.models import Author, Book, Catalog, bauthor
 from opds_catalog.services import book_services, catalog_services
@@ -134,6 +136,44 @@ class TestPaginatedBookContent:
         items, _ = book_services.paginated_book_content(books, 1, False)
         assert len(items) == 4  # MAXITEMS=4
         assert all(item["doubles"] == 0 for item in items)
+
+    @pytest.mark.override_config(SOPDS_MAXITEMS=10)
+    def test_book_list_queries_count(self, book_with_relations):
+        """Проверка кол-ва SQL-запросов на странице списка книг (≤5)."""
+        author = book_with_relations.authors.first()
+        genre = book_with_relations.genres.first()
+        cat = book_with_relations.catalog
+        for i in range(3):
+            b = Book.objects.create(
+                filename=f"q{i}.fb2",
+                path=".",
+                format="fb2",
+                cat_type=0,
+                title=f"Query Book {i}",
+                search_title=f"QUERY BOOK {i}",
+                catalog=cat,
+            )
+            bauthor.objects.create(book=b, author=author)
+            from opds_catalog.models import bgenre
+
+            bgenre.objects.create(book=b, genre=genre)
+
+        qs = Book.objects.all().order_by("search_title")
+        with CaptureQueriesContext(connection) as ctx:
+            items, _ = book_services.paginated_book_content(qs, 1)
+        assert len(items) > 1
+        # Фильтруем запросы constance + savepoints (SQLite)
+        db_queries = [
+            q
+            for q in ctx.captured_queries
+            if "constance_constance" not in q["sql"]
+            and "SAVEPOINT" not in q["sql"]
+            and "RELEASE" not in q["sql"]
+        ]
+        # COUNT(*) + основная страница + 3 prefetch (authors, genres, series)
+        assert len(db_queries) <= 6, (
+            f"Запросов: {len(db_queries)} ({list(q['sql'][:50] for q in db_queries)})"
+        )
 
 
 # ---------------------------------------------------------------------------

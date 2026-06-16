@@ -8,13 +8,11 @@ from constance import config
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator
-from django.db.models import CharField, Count, QuerySet, Value
+from django.db.models import CharField, Count, Prefetch, QuerySet, Value
 from django.db.models.functions import Substr
 from django.db.models.query import RawQuerySet
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
-
-from django.db.models import Prefetch
 
 from opds_catalog.models import Author, Book, bookshelf
 from opds_catalog.services import SearchType
@@ -43,20 +41,19 @@ def find_by_author_and_series(
     _: bool, author_id: str, series_id: str | None = None, __=None
 ) -> QuerySet[Book]:
     """Поиск книг по автору и серии."""
-    DEFAULT_ORDER_BY.insert(0, "bseries__ser_no")
     return Book.objects.filter(
         author_id=to_int(author_id), series_id=to_int(series_id)
-    ).order_by(*DEFAULT_ORDER_BY)
+    ).order_by(*DEFAULT_ORDER_BY, "bseries__ser_no")
 
 
 def find_book_doubles(
     _: bool, book_id: str, __: str | None = None, ___=None
 ) -> QuerySet[Book]:
     """Поиск дубликатов книги."""
-    mbook = Book.objects.get(id=book_id)
+    mbook = Book.objects.only("title").get(id=to_int(book_id))
     return (
         Book.objects.filter(title__iexact=mbook.title, authors__in=mbook.authors.all())
-        .exclude(id=book_id)
+        .exclude(id=to_int(book_id))
         .order_by(*DEFAULT_ORDER_BY)
     )
 
@@ -97,8 +94,9 @@ def find_books_by_series(
     _: bool, series_id: str, __: str | None = None, ___=None
 ) -> QuerySet[Book]:
     """Поиск книг по серии."""
-    DEFAULT_ORDER_BY.insert(0, "bseries__ser_no")
-    return Book.objects.filter(series=to_int(series_id)).order_by(*DEFAULT_ORDER_BY)
+    return Book.objects.filter(series=to_int(series_id)).order_by(
+        *DEFAULT_ORDER_BY, "bseries__ser_no"
+    )
 
 
 def find_books_by_genre(

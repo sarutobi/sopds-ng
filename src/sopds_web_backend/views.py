@@ -104,8 +104,9 @@ def SearchBooksView(request):
         # Поиск книг по жанру
         elif args["searchtype"] == "g":
             try:
-                section: str = Genre.objects.get(id=args["searchterms"]).section
-                subsection: str = Genre.objects.get(id=args["searchterms"]).subsection
+                genre = Genre.objects.get(id=args["searchterms"])
+                section = genre.section
+                subsection = genre.subsection
                 args["breadcrumbs"] = [
                     _("Books"),
                     _("Search by genre"),
