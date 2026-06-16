@@ -2,7 +2,7 @@ import io
 
 from book_tools.format.fb2 import FB2
 
-from .helpers import Author, fb2_book_fabric
+from tests.book_tools.format.helpers import Author, fb2_book_fabric
 
 
 def test_generate_book() -> None:

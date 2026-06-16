@@ -34,6 +34,6 @@ def test_rootlib() -> str:
     :returns: путь к тестовой корневой директории
     :rtype: str
     """
-    test_module_path: str = os.path.dirname(Path(__file__).parent.resolve())
-    test_ROOTLIB = os.path.join(test_module_path, "opds_catalog/data")
+    test_module_path: str = str(Path(__file__).parent.parent.resolve())
+    test_ROOTLIB = os.path.join(test_module_path, "data")
     return test_ROOTLIB

@@ -2,12 +2,12 @@ import os
 import zipfile
 
 
-ROOT_LIB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+ROOT_LIB = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "data")
 TEST_ZIP = "books.zip"
 TEST_BAD_ZIP = "badfile.zip"
 
 
-class TestZip:  # integration
+class TestZip:  # unit
     """Тесты для работы с zip-архивами."""
 
     def test_zip_valid(self) -> None:

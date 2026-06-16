@@ -13,7 +13,9 @@ from opds_catalog.sopdscan import opdsScanner
 @pytest.mark.django_db
 @pytest.mark.usefixtures("fake_sopds_root_lib")
 class TestBookScaner(object):
-    test_module_path = os.path.dirname(os.path.abspath(__file__))
+    test_module_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir
+    )
     test_ROOTLIB = os.path.join(test_module_path, "data")
     test_fb2 = "262001.fb2"
     test_fb2zip = "262001.zip"

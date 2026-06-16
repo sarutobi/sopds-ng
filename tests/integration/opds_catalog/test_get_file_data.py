@@ -9,7 +9,7 @@ import pytest
 
 from opds_catalog.models import Book
 from opds_catalog.utils import get_fs_book_path, getFileData, getFileDataZip
-from tests.opds_catalog.helpers import read_book_from_zip_file, read_file_as_iobytes
+from tests.helpers import read_book_from_zip_file, read_file_as_iobytes
 
 pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
@@ -47,9 +47,9 @@ class TestGetFileData:
         assert actual is not None
         assert actual.getvalue() == expected.getvalue()
 
-    def test_read_book_from_inp_file(self) -> None:
+    def test_read_book_from_inp_file(self, test_rootlib) -> None:
         expected = read_book_from_zip_file(
-            os.path.join(os.path.dirname(Path(__file__)), "data/books.zip"),
+            os.path.join(test_rootlib, "books.zip"),
             "539273.fb2",
         )
         assert expected is not None
@@ -93,10 +93,10 @@ class TestGetFileData:
 class TestGetFileDataZip:
     """Тесты getFileDataZip — упаковка книги в zip-поток."""
 
-    def test_create_zip_stream(self) -> None:
+    def test_create_zip_stream(self, test_rootlib) -> None:
         expected_file_name = "zip_book.fb2"
         expected_content = read_file_as_iobytes(
-            os.path.join(os.path.dirname(Path(__file__)), "data/262001.fb2")
+            os.path.join(test_rootlib, "262001.fb2")
         )
         book = Book(
             title="zip book",

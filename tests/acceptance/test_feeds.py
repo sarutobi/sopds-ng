@@ -3,7 +3,19 @@ from io import BytesIO
 from constance import config
 from django.urls import reverse
 from django.utils.translation import gettext as _
-import helpers
+from tests.helpers import (
+    opds_acquisition_links,
+    opds_acquisition_or_navigation_feed,
+    opds_content_duplication,
+    opds_dc_namespace,
+    opds_image_bitmap,
+    opds_image_rel,
+    opds_link_profile_kind,
+    opds_requirement_links,
+    opds_root_link,
+    opds_search_rel,
+    opds_summary_is_plain_text,
+)
 from lxml import etree
 import pytest
 
@@ -201,16 +213,16 @@ def test_feed_structure(url, client, load_db_data, override_config, opds_1_2) ->
     assert response is not None
     feed = etree.parse(BytesIO(response.content))
     assert _validate_opds_feed(feed, opds_1_2)
-    assert helpers.opds_requirement_links(feed)
-    assert helpers.opds_acquisition_links(feed)
-    assert helpers.opds_search_rel(feed)
-    assert helpers.opds_summary_is_plain_text(feed)
-    assert helpers.opds_image_rel(feed)
-    assert helpers.opds_image_bitmap(feed)
-    assert helpers.opds_dc_namespace(feed)
-    assert helpers.opds_content_duplication(feed)
-    assert helpers.opds_root_link(feed)
-    assert helpers.opds_link_profile_kind(feed)
+    assert opds_requirement_links(feed)
+    assert opds_acquisition_links(feed)
+    assert opds_search_rel(feed)
+    assert opds_summary_is_plain_text(feed)
+    assert opds_image_rel(feed)
+    assert opds_image_bitmap(feed)
+    assert opds_dc_namespace(feed)
+    assert opds_content_duplication(feed)
+    assert opds_root_link(feed)
+    assert opds_link_profile_kind(feed)
 
 
 def _validate_opds_feed(feed, schema) -> bool:

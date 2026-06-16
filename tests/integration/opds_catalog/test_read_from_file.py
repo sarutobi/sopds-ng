@@ -9,7 +9,7 @@ from opds_catalog.utils import (
     read_from_regular_file,
     read_from_zipped_file,
 )
-from tests.opds_catalog.helpers import read_book_from_zip_file, read_file_as_iobytes
+from tests.helpers import read_book_from_zip_file, read_file_as_iobytes
 
 pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
