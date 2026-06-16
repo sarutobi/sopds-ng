@@ -14,9 +14,11 @@ from django.db.models.query import RawQuerySet
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 
-from opds_catalog.models import Author, Book
+from django.db.models import Prefetch
+
+from opds_catalog.models import Author, Book, bookshelf
 from opds_catalog.services import SearchType
-from opds_catalog.utils import to_int
+from opds_catalog.utils import get_lang_name, to_int
 
 T = TypeVar("T")
 
@@ -129,11 +131,30 @@ def search_book(
     return search_function(config.SOPDS_AUTH, term, second_term, user)
 
 
-def _build_book_item(row: Book) -> dict:
-    """Преобразует Book в словарь для постраничного вывода."""
+def _build_book_item(row: Book, user=None, auth_enabled=False) -> dict:
+    """Преобразует Book в словарь для постраничного вывода.
+
+    Требует prefetch_related:
+      - Prefetch('authors', to_attr='c_authors')
+      - Prefetch('genres', to_attr='c_genres')
+      - Prefetch('series', to_attr='c_series')
+      - Prefetch('bseries_set', to_attr='c_ser_no')
+    При auth_enabled дополнительно:
+      - Prefetch('bookshelf_set', queryset=bookshelf.objects.filter(user=user), to_attr='c_bookshelf')
+    """
+    authors_list = list(row.c_authors)
+    genres_list = list(row.c_genres)
+    series_list = list(row.c_series)
+    ser_no_list = list(row.c_ser_no)
+
+    readtime = None
+    if auth_enabled and hasattr(row, "c_bookshelf") and row.c_bookshelf:
+        readtime = row.c_bookshelf[0].readtime
+
     return {
         "doubles": 0,
         "lang_code": row.lang_code,
+        "lang": get_lang_name(row.lang),
         "filename": row.filename,
         "path": row.path,
         "registerdate": row.registerdate,
@@ -142,11 +163,12 @@ def _build_book_item(row: Book) -> dict:
         "docdate": row.docdate,
         "format": row.format,
         "title": row.title,
-        "filesize": row.filesize // 1000,
-        "authors": row.authors.values(),
-        "genres": row.genres.values(),
-        "series": row.series.values(),
-        "ser_no": row.bseries_set.values("ser_no"),
+        "filesize": row.filesize,
+        "authors": authors_list,
+        "genres": genres_list,
+        "series": series_list,
+        "ser_no": ser_no_list,
+        "readtime": readtime,
     }
 
 
@@ -163,7 +185,7 @@ def _dedup_items(
 
     for p in items:
         title: str = p["title"]
-        authors_set: set[int] = {a["id"] for a in p["authors"]}
+        authors_set: set[int] = {a.id for a in p["authors"]}
         if title.upper() == prev_title.upper() and authors_set == prev_authors_set:
             deduped[-1]["doubles"] += 1
         else:
@@ -193,13 +215,41 @@ def _paginator_to_dict(page) -> dict:
 
 
 def paginated_book_content(
-    books: QuerySet[Book, Book], page_num: int, search_doubles: bool = False
+    books: QuerySet[Book, Book],
+    page_num: int,
+    search_doubles: bool = False,
+    user=None,
+    auth_enabled: bool = False,
 ) -> tuple[list[dict], dict]:
     """Постраничный вывод списка книг.
+
+    :param books: QuerySet книг с применённым search_filter.
+    :param page_num: Номер страницы.
+    :param search_doubles: Если True — не скрывать дубликаты.
+    :param user: Пользователь (нужен для readtime, auth должен быть включен).
+    :param auth_enabled: Флаг авторизации.
 
     :returns: (items, paginator_dict)
     """
     maxitems = config.SOPDS_MAXITEMS
+
+    # Prefetch связанных объектов для устранения N+1
+    prefetch = [
+        Prefetch("authors", to_attr="c_authors"),
+        Prefetch("genres", to_attr="c_genres"),
+        Prefetch("series", to_attr="c_series"),
+        Prefetch("bseries_set", to_attr="c_ser_no"),
+    ]
+    if auth_enabled and user is not None:
+        prefetch.append(
+            Prefetch(
+                "bookshelf_set",
+                queryset=bookshelf.objects.filter(user=user),
+                to_attr="c_bookshelf",
+            )
+        )
+    books = books.prefetch_related(*prefetch)
+
     django_paginator = Paginator(books, maxitems)
     page = django_paginator.page(page_num)
 
@@ -216,7 +266,10 @@ def paginated_book_content(
     else:
         page_objects = list(page.object_list)
 
-    items = [_build_book_item(row) for row in page_objects]
+    items = [
+        _build_book_item(row, user=user, auth_enabled=auth_enabled)
+        for row in page_objects
+    ]
 
     if summary_DOUBLES_HIDE:
         items, prev_title, prev_authors_set = _dedup_items(items)
@@ -229,9 +282,10 @@ def paginated_book_content(
         if page.has_next() and items:
             next_page = django_paginator.page(page.next_page_number())
             for row in next_page.object_list:
+                authors_set = {a.id for a in row.c_authors}
                 if (
                     row.title.upper() == prev_title.upper()
-                    and {a["id"] for a in row.authors.values()} == prev_authors_set
+                    and authors_set == prev_authors_set
                 ):
                     items[-1]["doubles"] += 1
                 else:
@@ -246,30 +300,61 @@ def book_description(item) -> str:
         f"<b> {_('Book name:')}</b> {item['title']}<br/>",
     ]
     if item["authors"]:
-        s.append(
-            _(
-                "<b>Authors: </b>%s<br/>"
-                % ", ".join(a["full_name"] for a in item["authors"])
+        # Поддержка как ORM-объектов, так и dict (для тестов)
+        if isinstance(item["authors"][0], dict):
+            s.append(
+                _(
+                    "<b>Authors: </b>%s<br/>"
+                    % ", ".join(a["full_name"] for a in item["authors"])
+                )
             )
-        )
+        else:
+            s.append(
+                _(
+                    "<b>Authors: </b>%s<br/>"
+                    % ", ".join(a.full_name for a in item["authors"])
+                )
+            )
     if item["genres"]:
-        s.append(
-            _(
-                "<b>Genres: </b>%s<br/>"
-                % ", ".join(g["subsection"] for g in item["genres"])
+        if isinstance(item["genres"][0], dict):
+            s.append(
+                _(
+                    "<b>Genres: </b>%s<br/>"
+                    % ", ".join(g["subsection"] for g in item["genres"])
+                )
             )
-        )
+        else:
+            s.append(
+                _(
+                    "<b>Genres: </b>%s<br/>"
+                    % ", ".join(g.subsection for g in item["genres"])
+                )
+            )
     if item["series"]:
-        s.append(
-            _("<b>Series: </b>%s<br/>") % ", ".join(s["ser"] for s in item["series"])
-        )
-    if item["ser_no"]:
-        s.append(
-            _(
-                "<b>No in Series: </b>%s<br/>"
-                % ", ".join(str(s["ser_no"]) for s in item["ser_no"])
+        if isinstance(item["series"][0], dict):
+            s.append(
+                _("<b>Series: </b>%s<br/>")
+                % ", ".join(s["ser"] for s in item["series"])
             )
-        )
+        else:
+            s.append(
+                _("<b>Series: </b>%s<br/>") % ", ".join(s.ser for s in item["series"])
+            )
+    if item["ser_no"]:
+        if isinstance(item["ser_no"][0], dict):
+            s.append(
+                _(
+                    "<b>No in Series: </b>%s<br/>"
+                    % ", ".join(str(s["ser_no"]) for s in item["ser_no"])
+                )
+            )
+        else:
+            s.append(
+                _(
+                    "<b>No in Series: </b>%s<br/>"
+                    % ", ".join(str(s.ser_no) for s in item["ser_no"])
+                )
+            )
     s.append(
         _(
             f"<b>File: </b>{item['filename']}<br/><b>File size: </b>{item['filesize']}<br/><b>Changes date: </b>{item['docdate']}<br/>"

@@ -1,7 +1,6 @@
 from constance import config
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
-from django.db.models import Count, Prefetch
 from django.shortcuts import redirect, render
 from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
@@ -21,9 +20,11 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from opds_catalog.services import (
     authors_services,
     book_services,
+    catalog_services,
     genre_services,
     series_services,
 )
+from opds_catalog.services.catalog_services import DUMMY_CATALOG
 from opds_catalog.utils import get_lang_name, to_int
 
 BREADCRUMBS = {
@@ -137,7 +138,6 @@ def SearchBooksView(request):
 
         # Поиск дубликатов для книги
         elif args["searchtype"] == "d":
-            # try:
             book_id = int(args["searchterms"])
             mbook = Book.objects.get(id=book_id)
             books = (
@@ -149,128 +149,26 @@ def SearchBooksView(request):
             args["breadcrumbs"] = [_("Books"), _("Doubles for book"), mbook.title]
             args["searchobject"] = "title"
 
-        # Поиск книги по ID. Хотел найти еще и дубликаты к книге, но почему-то не работает запрос правильно. Ума не приложу почему.
+        # Поиск книги по ID
         elif args["searchtype"] == "i":
-            try:
-                book_id = int(args["searchterms"])
-                # mbook = Book.objects.get(id=book_id)
-            except:
-                book_id = 0
-                # mbook = None
+            book_id = to_int(args["searchterms"], 0)
             books = Book.objects.filter(id=book_id)
-            args["breadcrumbs"] = [_("Books"), books[0].title]
-            # books = Book.objects.filter(title=mbook.title, authors__in=mbook.authors.all()).distinct().order_by('-docdate')
-            # args['breadcrumbs'] = [_('Books'),mbook.title]
+            try:
+                args["breadcrumbs"] = [_("Books"), books[0].title]
+            except IndexError:
+                args["breadcrumbs"] = [_("Books")]
             args["searchobject"] = "title"
 
-        # prefetch_related on sqlite on items >999 therow error "too many SQL variables"
-        # if len(books)>0:
-        #    books = books.select_related('authors','genres','series')
-
-        # Добавляем Left Join с таблицей BookShelfб чтобы вытащить дату прочтения книги из книжной полки
-        # books = books.filter(Q(bookshelf__isnull=True)|Q(bookshelf__user=request.user))
-        # books = books.prefetch_related('bookshelf_set')
-        # print(books.query)
-
-        # Фильтруем дубликаты и формируем выдачу затребованной страницы
-        books = books.prefetch_related(
-            Prefetch("authors", to_attr="c_authors"),
-            Prefetch("series", to_attr="c_series"),
-            Prefetch("genres", to_attr="c_genres"),
-        )
         page_num = to_int(args.get("page_num", 1))
+        items, op = book_services.paginated_book_content(
+            books,
+            page_num,
+            search_doubles=(args["searchtype"] != "d"),
+            user=request.user,
+            auth_enabled=SOPDS_AUTH,
+        )
 
-        paginator = Paginator(books, config.SOPDS_MAXITEMS)
-        try:
-            page = paginator.page(page_num)
-        except (EmptyPage, PageNotAnInteger):
-            page = paginator.page(paginator.num_pages)
-        items = []
-
-        prev_title = ""
-        prev_authors_set = set()
-
-        summary_DOUBLES_HIDE = config.SOPDS_DOUBLES_HIDE and (args["searchtype"] != "d")
-
-        # Добавляем последний элемент предыдущей страницы для дедупликации на границе
-        if summary_DOUBLES_HIDE and page.has_previous():
-            prev_page = paginator.page(page.previous_page_number())
-            page_objects = [
-                prev_page.object_list[len(prev_page.object_list) - 1]
-            ] + list(page.object_list)
-        else:
-            page_objects = list(page.object_list)
-
-        for row in page_objects:
-            p = {
-                "doubles": 0,
-                "lang_code": row.lang_code,
-                "filename": row.filename,
-                "path": row.path,
-                "registerdate": row.registerdate,
-                "id": row.id,
-                "annotation": strip_tags(row.annotation),
-                "docdate": row.docdate,
-                "format": row.format,
-                "title": row.title,
-                "lang": get_lang_name(row.lang),
-                "filesize": row.filesize,
-                "authors": row.c_authors,
-                "genres": row.c_genres,
-                "series": row.c_series,
-                "ser_no": row.bseries_set.values("ser_no"),
-                "readtime": row.bookshelf_set.filter(user=request.user).values(
-                    "readtime"
-                )
-                if config.SOPDS_AUTH
-                else None,
-            }
-            if summary_DOUBLES_HIDE:
-                title: str = p["title"]
-                authors_set = {a.id for a in p["authors"]}
-                if (
-                    title.upper() == prev_title.upper()
-                    and authors_set == prev_authors_set
-                ):
-                    items[-1]["doubles"] += 1
-                else:
-                    items.append(p)
-                prev_title = title
-                prev_authors_set = authors_set
-            else:
-                items.append(p)
-
-        # Дубликаты: удаляем граничный элемент, вытягиваем со следующей страницы
-        if summary_DOUBLES_HIDE:
-            # Удаляем граничный элемент с предыдущей страницы
-            if page.has_previous() and items:
-                items.pop(0)
-
-            # "Вытягиваем" дубликаты со следующей страницы
-            if page.has_next() and items:
-                next_page = paginator.page(page.next_page_number())
-                for row in next_page.object_list:
-                    if (
-                        row.title.upper() == prev_title.upper()
-                        and {a.id for a in row.c_authors} == prev_authors_set
-                    ):
-                        items[-1]["doubles"] += 1
-                    else:
-                        break
-
-        args["paginator"] = {
-            "num_pages": paginator.num_pages,
-            "has_previous": page.has_previous(),
-            "has_next": page.has_next(),
-            "previous_page_number": page.previous_page_number()
-            if page.has_previous()
-            else 1,
-            "next_page_number": page.next_page_number()
-            if page.has_next()
-            else paginator.num_pages,
-            "number": page.number,
-            "page_range": list(paginator.page_range),
-        }
+        args["paginator"] = op
         args["searchterms"] = args["searchterms"]
         args["searchtype"] = args["searchtype"]
         args["books"] = items
@@ -278,7 +176,7 @@ def SearchBooksView(request):
         args["cache_id"] = "%s:%s:%s" % (
             args["searchterms"],
             args["searchtype"],
-            page.number,
+            op["number"],
         )
 
         if args["searchtype"] == "u":
@@ -303,18 +201,7 @@ def SearchSeriesView(request):
         page_num = int(request.GET.get("page", "1"))
         page_num = page_num if page_num > 0 else 1
 
-        if searchtype == "m":
-            series = Series.objects.filter(search_ser__contains=searchterms.upper())
-        elif searchtype == "b":
-            series = Series.objects.filter(search_ser__startswith=searchterms.upper())
-        elif searchtype == "e":
-            series = Series.objects.filter(search_ser=searchterms.upper())
-
-        # if len(series)>0:
-        #    series = series.order_by('ser')
-        series = (
-            series.annotate(count_book=Count("book")).distinct().order_by("search_ser")
-        )
+        series = series_services.search_series(searchtype, searchterms)
 
         # Создаем результирующее множество
         paginator = Paginator(series, config.SOPDS_MAXITEMS)
@@ -383,7 +270,7 @@ def SearchAuthorsView(request):
         #     authors = Author.objects.filter(
         #         search_full_name=searchterms.upper()
         #     ).order_by("search_full_name")
-        authors = authors_services.search_authors(searchtype, searchterms)
+        authors = authors_services.search_authors_with_counts(searchtype, searchterms)
         paginator = Paginator(authors, config.SOPDS_MAXITEMS)
         try:
             page = paginator.page(page_num)
@@ -396,7 +283,7 @@ def SearchAuthorsView(request):
                 "id": row.id,
                 "full_name": row.full_name,
                 "lang_code": row.lang_code,
-                "book_count": Book.objects.filter(authors=row).count(),
+                "book_count": row.book_count,
             }
             items.append(p)
 
@@ -445,69 +332,15 @@ def CatalogsView(request):
     except Catalog.DoesNotExist:
         cat = None
 
-    catalogs_list = Catalog.objects.filter(parent=cat).order_by("cat_name")
-    # prefetch_related on sqlite on items >999 therow error "too many SQL variables"
-    books_list = Book.objects.filter(catalog=cat).order_by("search_title")
+    items, op = catalog_services.paginated_catalog_content(
+        cat or DUMMY_CATALOG,
+        page_num,
+        config.SOPDS_MAXITEMS,
+        user=request.user,
+        auth_enabled=config.SOPDS_AUTH,
+    )
 
-    # Собираем единый список: подкаталоги + книги
-    merged = []
-    for row in catalogs_list:
-        merged.append(
-            {
-                "is_catalog": 1,
-                "title": row.cat_name,
-                "id": row.id,
-                "cat_type": row.cat_type,
-                "parent_id": row.parent_id,
-            }
-        )
-    for row in books_list:
-        merged.append(
-            {
-                "is_catalog": 0,
-                "lang_code": row.lang_code,
-                "filename": row.filename,
-                "path": row.path,
-                "registerdate": row.registerdate,
-                "id": row.id,
-                "annotation": strip_tags(row.annotation),
-                "docdate": row.docdate,
-                "format": row.format,
-                "title": row.title,
-                "lang": row.lang,
-                "filesize": row.filesize,
-                "authors": row.authors.values(),
-                "genres": row.genres.values(),
-                "series": row.series.values(),
-                "ser_no": row.bseries_set.values("ser_no"),
-                "readtime": row.bookshelf_set.filter(user=request.user).values(
-                    "readtime"
-                )
-                if config.SOPDS_AUTH
-                else None,
-            }
-        )
-
-    paginator = Paginator(merged, config.SOPDS_MAXITEMS)
-    try:
-        page = paginator.page(page_num)
-    except (EmptyPage, PageNotAnInteger):
-        page = paginator.page(paginator.num_pages)
-    items = list(page.object_list)
-
-    args["paginator"] = {
-        "num_pages": paginator.num_pages,
-        "has_previous": page.has_previous(),
-        "has_next": page.has_next(),
-        "previous_page_number": page.previous_page_number()
-        if page.has_previous()
-        else 1,
-        "next_page_number": page.next_page_number()
-        if page.has_next()
-        else paginator.num_pages,
-        "number": page.number,
-        "page_range": list(paginator.page_range),
-    }
+    args["paginator"] = op
     args["items"] = items
     args["cat_id"] = cat_id
     args["current"] = "catalog"
@@ -521,7 +354,7 @@ def CatalogsView(request):
     # breadcrumbs_list.insert(0, (_('Catalogs'),-1))
     args["breadcrumbs_cat"] = breadcrumbs_list
     args["breadcrumbs"] = [_("Catalogs")]
-    args["cache_id"] = "%s:%s:%s" % (args["current"], cat_id, page.number)
+    args["cache_id"] = "%s:%s:%s" % (args["current"], cat_id, op["number"])
     args["cache_t"] = config.SOPDS_CACHE_TIME
 
     return render(request, "sopds_catalogs.html", args)

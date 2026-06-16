@@ -157,18 +157,18 @@ class opdsFeed(Atom1Feed):
         if item.get("authors") is not None:
             for a in item["authors"]:
                 handler.startElement("author", {})
-                handler.addQuickElement("name", a["full_name"])
+                handler.addQuickElement("name", a.full_name)
                 # handler.addQuickElement("uri", item['author_link'])
                 handler.endElement("author")
                 self._add_link(
                     handler,
                     href=reverse(
                         "opds_catalog:searchbooks",
-                        kwargs={"searchtype": "a", "searchterms": a["id"]},
+                        kwargs={"searchtype": "a", "searchterms": a.id},
                     ),
                     rel="related",
                     type="application/atom+xml;profile=opds-catalog",
-                    title=_("All books by %(author)s") % {"author": a["full_name"]},
+                    title=_("All books by %(author)s") % {"author": a.full_name},
                 )
                 handler.characters("\n")
 
@@ -176,7 +176,7 @@ class opdsFeed(Atom1Feed):
         if item.get("genres") is not None:
             for g in item["genres"]:
                 handler.addQuickElement(
-                    "category", "", {"term": g["subsection"], "label": g["subsection"]}
+                    "category", "", {"term": g.subsection, "label": g.subsection}
                 )
             handler.characters("\n")
 

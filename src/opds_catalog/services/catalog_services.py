@@ -5,10 +5,11 @@ from __future__ import annotations
 import logging
 
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import QuerySet
+from django.db.models import Prefetch, QuerySet
 from django.utils.html import strip_tags
 
-from opds_catalog.models import Book, Catalog
+from opds_catalog.models import Book, Catalog, bookshelf
+from opds_catalog.utils import get_lang_name
 
 DUMMY_CATALOG = Catalog(id=0, cat_name="Empty", cat_type=0)
 
@@ -77,11 +78,34 @@ def get_books_count(root: Catalog) -> int:
 
 
 def paginated_catalog_content(
-    cat: Catalog, current_page: int, pager_max_items: int
+    cat: Catalog,
+    current_page: int,
+    pager_max_items: int,
+    user=None,
+    auth_enabled: bool = False,
 ) -> tuple[list, dict]:
     """Предоставляет содержимое каталога в виде одной страницы."""
+
+    # Prefetch связанных объектов для книг
+    prefetch = [
+        Prefetch("authors", to_attr="c_authors"),
+        Prefetch("genres", to_attr="c_genres"),
+        Prefetch("series", to_attr="c_series"),
+        Prefetch("bseries_set", to_attr="c_ser_no"),
+    ]
+    if auth_enabled and user is not None:
+        prefetch.append(
+            Prefetch(
+                "bookshelf_set",
+                queryset=bookshelf.objects.filter(user=user),
+                to_attr="c_bookshelf",
+            )
+        )
+
     catalogs_list = get_catalogs_query(cat).order_by("cat_name")
-    books_list = get_books_query(cat).order_by("search_title")
+    books_list = (
+        get_books_query(cat).order_by("search_title").prefetch_related(*prefetch)
+    )
 
     # Собираем единый список: сначала подкаталоги, потом книги
     merged: list[dict] = []
@@ -99,10 +123,20 @@ def paginated_catalog_content(
         )
 
     for row in books_list:
+        authors_list = list(row.c_authors)
+        genres_list = list(row.c_genres)
+        series_list = list(row.c_series)
+        ser_no_list = list(row.c_ser_no)
+
+        readtime = None
+        if auth_enabled and hasattr(row, "c_bookshelf") and row.c_bookshelf:
+            readtime = row.c_bookshelf[0].readtime
+
         merged.append(
             {
                 "is_catalog": 0,
                 "lang_code": row.lang_code,
+                "lang": get_lang_name(row.lang),
                 "filename": row.filename,
                 "path": row.path,
                 "registerdate": row.registerdate,
@@ -112,10 +146,11 @@ def paginated_catalog_content(
                 "format": row.format,
                 "title": row.title,
                 "filesize": row.filesize // 1000,
-                "authors": row.authors.values(),
-                "genres": row.genres.values(),
-                "series": row.series.values(),
-                "ser_no": row.bseries_set.values("ser_no"),
+                "authors": authors_list,
+                "genres": genres_list,
+                "series": series_list,
+                "ser_no": ser_no_list,
+                "readtime": readtime,
                 "prefix": "b",
             }
         )
