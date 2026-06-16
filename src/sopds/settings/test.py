@@ -12,8 +12,15 @@ DATABASES = {
     }
 }
 
-# Tell Whitenoice to ignore missing statis files during tests
-WHITENOICE_MANIFEST_STRICT = False
+# В тестах не запускается collectstatic, поэтому используем StaticFilesStorage без манифеста
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 
 
 SOPDS_SERVER_LOG_LEVEL = "INFO"
