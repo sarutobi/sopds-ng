@@ -38,6 +38,29 @@
 | `just typecheck` | mypy |
 | `just postgres_tests` | Тесты на postgres |
 
+## Cartog — навигация по коду через граф
+
+Проект проиндексирован [Cartog](https://github.com/jrollin/cartog). MCP-инструменты cartog
+возвращают структурированные результаты за микросекунды — дешевле grep + read.
+
+**Используй cartog когда нужно:**
+- «где определён X?» → `mcp_cartog_cartog_search`
+- «кто вызывает/импортирует/наследует X?» → `mcp_cartog_cartog_refs`
+- «что вызывает X?» → `mcp_cartog_cartog_callees`
+- «что сломается, если изменить X?» → `mcp_cartog_cartog_impact`
+- «дерево наследования X» → `mcp_cartog_cartog_hierarchy`
+- «что импортирует файл F?» → `mcp_cartog_cartog_deps`
+- «структура файла F» → `mcp_cartog_cartog_outline`
+- «найди код по смыслу» → `mcp_cartog_cartog_rag_search`
+- «ориентиры в репозитории» → `mcp_cartog_cartog_map`
+- «что недавно изменилось?» → `mcp_cartog_cartog_changes`
+- «здоров ли индекс?» → `mcp_cartog_cartog_stats`
+
+**grep / Read — только если:**
+- ищешь строковый литерал, комментарий, конфиг, не-код
+- целевой файл вне корня индекса
+- cartog вернул пустой результат
+
 ## Rules for AI
 1. Читай файлы перед изменениями — не угадывай API.
 2. Не добавляй комментарии «сгенерировано ИИ».
