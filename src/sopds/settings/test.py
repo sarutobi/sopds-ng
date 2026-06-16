@@ -8,9 +8,13 @@ ROOT_URLCONF = "sopds.urls.test"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "tmp/db.sqlite3",
+        "NAME": BASE_DIR / "tmp/db.sqlite3",  # type: ignore[name-defined]
     }
 }
+
+# Tell Whitenoice to ignore missing statis files during tests
+WHITENOICE_MANIFEST_STRICT = False
+
 
 SOPDS_SERVER_LOG_LEVEL = "INFO"
 
