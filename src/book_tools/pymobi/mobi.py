@@ -545,7 +545,7 @@ class BookMobi(object):
             css_filename = "%s.css" % basename
             with open(css_filename, "wb") as f:
                 f.write(data_css)
-            data_text = re.sub(
+            data_text = re.sub(  # type: ignore[call-overload]
                 r"""<head>""",
                 '<head>\n<link rel="stylesheet" href="%s" type="text/css"/>'
                 % os.path.basename(css_filename),

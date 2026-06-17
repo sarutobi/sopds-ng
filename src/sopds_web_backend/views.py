@@ -139,7 +139,7 @@ def SearchBooksView(request):
 
         # Поиск дубликатов для книги
         elif args["searchtype"] == "d":
-            book_id = int(args["searchterms"])
+            book_id = int(args["searchterms"])  # type: ignore[call-overload]
             mbook = Book.objects.get(id=book_id)
             books = (
                 Book.objects.filter(title=mbook.title, authors__in=mbook.authors.all())

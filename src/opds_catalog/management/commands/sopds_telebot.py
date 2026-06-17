@@ -497,17 +497,17 @@ class Command(BaseCommand):
         quit_command = "CTRL-BREAK" if sys.platform == "win32" else "CONTROL-C"
         self.stdout.write("Quit the sopds_telebot with %s.\n" % quit_command)
         try:
-            updater = Updater(token=config.SOPDS_TELEBOT_API_TOKEN)
+            updater = Updater(token=config.SOPDS_TELEBOT_API_TOKEN)  # type: ignore[call-arg]
             start_command_handler = CommandHandler("start", self.startCommand)
             getBook_handler = MessageHandler(Filters.text, self.getBooks)
-            download_handler = RegexHandler("^/download\d+$", self.downloadBooks)
+            download_handler = RegexHandler("^/download\\d+$", self.downloadBooks)
 
             updater.dispatcher.add_handler(start_command_handler)
             updater.dispatcher.add_handler(getBook_handler)
             updater.dispatcher.add_handler(download_handler)
             updater.dispatcher.add_handler(CallbackQueryHandler(self.botCallback))
 
-            updater.start_polling(clean=True)
+            updater.start_polling(clean=True)  # type: ignore[call-arg, unused-coroutine]
             updater.idle()
         except InvalidToken:
             self.stdout.write(

@@ -80,7 +80,7 @@ def read_lines(file_name):
         with open(file_name, "r") as inp:
             for line in inp:
                 yield line.strip("\n")
-    except FileNotFoundException:
+    except FileNotFoundError:
         print("No such file ")
     except Exception:
         print("Unknown exception !")
