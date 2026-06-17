@@ -106,6 +106,13 @@ def find_books_by_genre(
     return Book.objects.filter(genres=to_int(genre_id)).order_by(*DEFAULT_ORDER_BY)
 
 
+def find_book_by_id(
+    _: bool, book_id: str, __: str | None = None, ___=None
+) -> QuerySet[Book]:
+    """Поиск книги по идентификатору."""
+    return Book.objects.filter(id=book_id)
+
+
 SEARCH_BOOK_REGISTRY: dict[str, SearchFunction] = {
     SearchType.BY_USER: find_by_bookshelf,
     SearchType.BY_AUTHOR_AND_SERIES: find_by_author_and_series,
@@ -116,6 +123,7 @@ SEARCH_BOOK_REGISTRY: dict[str, SearchFunction] = {
     SearchType.BY_AUTHOR: find_books_by_author,
     SearchType.BY_SERIES: find_books_by_series,
     SearchType.BY_GENRE: find_books_by_genre,
+    SearchType.BY_ID: find_book_by_id,
 }
 
 

@@ -126,7 +126,7 @@ def search_authors_with_counts(
     return queryset
 
 
-def get_author_name(author_id: int) -> str:
+def get_author_name(id: int) -> str:
     """Возвращает полное имя автора по его ID.
 
     :param author_id: Идентификатор автора.
@@ -138,7 +138,7 @@ def get_author_name(author_id: int) -> str:
     :raises: Не вызывает исключения, возвращает строку в случае отсутствия автора.
     """
     try:
-        author = Author.objects.get(id=author_id)
+        author = Author.objects.get(id=id)
         return author.full_name
     except Author.DoesNotExist:
         return _("Author not found")

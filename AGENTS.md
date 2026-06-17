@@ -12,6 +12,10 @@
 - **Импорты:** stdlib → third-party → local, без `import *`
 - **Типизация:** аннотации для всех публичных функций, `|` вместо `Optional`/`Union`
 
+## Documentation
+- Docstrings в стиле **ReST** для всех публичных модулей, классов и функций.
+- Комментарии и docstrings — на русском языке.
+
 ## Testing
 - **Запуск:** `just test` или `python -m pytest tests/ --ds=sopds.settings.test`
 - **Фикстуры:** в `tests/fixtures/`, файлы `fixture_*.py`, реэкспорт через `__init__.py`

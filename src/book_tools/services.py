@@ -1,237 +1,339 @@
 # Сервисы для работы с электронными книгами
-from abc import ABC, abstractmethod
-from contextlib import suppress
+from datetime import date
 from io import BytesIO
 import logging
-import os
+from typing import Callable, Optional
 import zipfile
 
-from lxml import etree
-from lxml.etree import XMLSyntaxError
-
+from .exceptions import (
+    UnsupportedFormatException,
+    UnsupportedFileType,
+    FB2StructureException,
+    EpubStructureException,
+    EbookParserException,
+)
 from .format.bookfile import BookFile
+from .format.ebook_parsers.dto import Author, BookMetadata, Cover, Series
 from .format.mimetype import Mimetype
-from .format.parsers import FB2
+from .format.parsers import FB2, EpubParser
+from .format.epub import EPub as EPubOld
+from .mime_detector import detect_mime_service
+from .pymobi.mobi import BookMobi
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Parser registry
+# ---------------------------------------------------------------------------
+
+_parsers: dict[str, Callable] = {}
+
+
+def register_parser(mimetype: str, parser_fn: Callable) -> None:
+    """Register a parser function for the given mimetype."""
+    _parsers[mimetype] = parser_fn
+
+
+def get_parser(mimetype: str) -> Callable:
+    """Look up a parser by mimetype.
+
+    Raises UnsupportedFormatException if no parser is registered.
+    """
+    parser = _parsers.get(mimetype)
+    if parser is None:
+        raise UnsupportedFormatException(f"No parser registered for {mimetype}")
+    return parser
+
+
+# ---------------------------------------------------------------------------
+# BookMetadata → BookFile converter
+# ---------------------------------------------------------------------------
+
+
+def book_metadata_to_bookfile(
+    meta: BookMetadata,
+    file,
+    original_filename: str,
+    mimetype: str,
+) -> BookFile:
+    """Convert a BookMetadata DTO to the legacy BookFile container.
+
+    This ensures backwards compatibility for callers that still use
+    BookFile attributes directly.
+    """
+    book_file = BookFile(file, original_filename, mimetype)
+
+    book_file.__set_title__(meta.title)
+
+    for author in meta.authors:
+        name_parts = [
+            p for p in (author.first_name, author.middle_name, author.last_name) if p
+        ]
+        name = " ".join(name_parts)
+        sortkey = author.last_name or name.split()[-1] if name else ""
+        book_file.__add_author__(name, sortkey)
+
+    for genre in meta.genres:
+        book_file.__add_tag__(genre)
+
+    if meta.series is not None:
+        book_file.series_info = {
+            "title": meta.series.name,
+            "index": str(meta.series.series_no),
+        }
+
+    if meta.language:
+        book_file.language_code = meta.language
+
+    if meta.description:
+        book_file.description = meta.description
+
+    if meta.docdate:
+        book_file.__set_docdate__(meta.docdate)
+    elif meta.publication_date:
+        book_file.__set_docdate__(meta.publication_date.isoformat())
+
+    return book_file
+
+
+# ---------------------------------------------------------------------------
+# Parser functions (each returns BookMetadata)
+# ---------------------------------------------------------------------------
+
+
+def parse_fb2(file_obj, original_filename: str) -> BookMetadata:
+    """Parse FB2 file and return BookMetadata."""
+    try:
+        parser = FB2(file_obj)
+    except FB2StructureException:
+        raise
+    except Exception as e:
+        raise FB2StructureException(e) from e
+    return _fb2_parser_to_metadata(parser, file_obj, original_filename)
+
+
+def _fb2_parser_to_metadata(
+    parser: FB2,
+    file_obj,
+    original_filename: str,
+) -> BookMetadata:
+    """Convert an FB2 parser result to BookMetadata."""
+    title = parser.title or original_filename
+
+    authors: list[Author] = []
+    for name, sortkey in parser.authors:
+        parts = name.split()
+        first_name = parts[0] if parts else ""
+        last_name = parts[-1] if len(parts) > 1 else ""
+        middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else None
+        authors.append(
+            Author(first_name=first_name, last_name=last_name, middle_name=middle_name)
+        )
+
+    series: Optional[Series] = None
+    if parser.series_info:
+        series = Series(
+            name=parser.series_info.get("title", ""),
+            series_no=int(parser.series_info.get("index", 0) or 0),
+        )
+
+    genres = parser.tags or []
+    language = parser.language_code or ""
+
+    description: Optional[str] = None
+    if parser.description is not None:
+        desc = parser.description
+        if isinstance(desc, bytes):
+            description = desc.decode("utf-8")
+        else:
+            description = desc
+
+    docdate: str = parser.docdate or ""
+
+    return BookMetadata(
+        title=title,
+        authors=authors,
+        series=series,
+        genres=genres,
+        language=language,
+        description=description,
+        docdate=docdate,
+    )
+
+
+def parse_fb2_zip(file_obj, original_filename: str) -> BookMetadata:
+    """Parse FB2 file stored inside a ZIP archive."""
+    with zipfile.ZipFile(file_obj, "r") as z:
+        if len(z.infolist()) != 1:
+            raise FB2StructureException("Incorrect fb2 zip archive!")
+        fn = z.namelist()[0]
+        with z.open(fn, "r") as d:
+            content = BytesIO()
+            content.write(d.read())
+    content.seek(0)
+    return parse_fb2(content, fn)
+
+
+def parse_epub(file_obj, original_filename: str) -> BookMetadata:
+    """Parse EPUB file and return BookMetadata (uses legacy EPub parser)."""
+    try:
+        epub = EPubOld(file_obj, original_filename)
+    except Exception as e:
+        # Любые исключения EPub -> EpubStructureException
+        raise EpubStructureException(str(e)) from e
+
+    authors: list[Author] = []
+    for a in epub.authors:
+        # EPub хранит name как полное имя автора ("Александр  Мирер")
+        # сохраняем в DTO как first_name, без last_name — конвертер сам выделит sortkey
+        authors.append(Author(first_name=a["name"]))
+
+    series: Optional[Series] = None
+    if epub.series_info:
+        idx = epub.series_info.get("index")
+        series = Series(
+            name=epub.series_info.get("title", ""),
+            series_no=int(idx) if idx else 0,
+        )
+
+    docdate: str = epub.docdate or ""
+
+    desc: str | None = None
+    if epub.description:
+        desc = (
+            epub.description
+            if isinstance(epub.description, str)
+            else epub.description.decode("utf-8")
+        )
+
+    return BookMetadata(
+        title=epub.title,
+        authors=authors,
+        series=series,
+        genres=epub.tags or [],
+        language=epub.language_code or "",
+        description=desc,
+        docdate=docdate,
+    )
+
+
+def parse_mobi(file_obj, original_filename: str) -> BookMetadata:
+    """Parse MOBI file and return BookMetadata via BookMobi."""
+    try:
+        bm = BookMobi(file_obj)
+    except Exception as e:
+        raise EbookParserException(f"mobi parsing failed: {e}") from e
+
+    title = bm["title"] or original_filename
+
+    authors: list[Author] = []
+    raw_author = bm["author"] or ""
+    if raw_author:
+        parts = raw_author.split()
+        first_name = parts[0] if parts else ""
+        last_name = parts[-1] if len(parts) > 1 else ""
+        middle_name = " ".join(parts[1:-1]) if len(parts) > 2 else None
+        authors.append(
+            Author(first_name=first_name, last_name=last_name, middle_name=middle_name)
+        )
+
+    genres = (bm["subject"] or []) if bm["subject"] else []
+
+    description: Optional[str] = bm["description"] or None
+
+    docdate: str = ""
+    mod_date = bm["modificationDate"]
+    if mod_date:
+        try:
+            if hasattr(mod_date, "strftime"):
+                docdate = mod_date.strftime("%Y-%m-%d")
+            else:
+                docdate = str(mod_date)
+        except (ValueError, TypeError):
+            pass
+
+    return BookMetadata(
+        title=title,
+        authors=authors,
+        genres=genres,
+        language="",
+        description=description,
+        docdate=docdate,
+    )
+
+
+def parse_dummy(file_obj, original_filename: str) -> BookMetadata:
+    """Return minimal BookMetadata for unsupported formats."""
+    return BookMetadata(
+        title=original_filename,
+        authors=[],
+        genres=[],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Register parsers at import time
+# ---------------------------------------------------------------------------
+
+register_parser(Mimetype.FB2, parse_fb2)
+register_parser(Mimetype.FB2_ZIP, parse_fb2_zip)
+register_parser(Mimetype.EPUB, parse_epub)
+register_parser(Mimetype.MOBI, parse_mobi)
+register_parser(Mimetype.TEXT, parse_dummy)
+register_parser(Mimetype.PDF, parse_dummy)
+register_parser(Mimetype.MSWORD, parse_dummy)
+register_parser(Mimetype.RTF, parse_dummy)
+register_parser(Mimetype.DJVU, parse_dummy)
+
+
+# ---------------------------------------------------------------------------
+# create_bookfile_service (BytesIO entry point)
+# ---------------------------------------------------------------------------
+
 
 def create_bookfile_service(data: BytesIO, original_filename: str) -> BookFile:
-    """Извлечение метаданных электронной книги.
+    """Извлечение метаданных электронной книги через parser registry.
 
     Args:
         data(BytesIO): Содержимое файла электронной книги
+        original_filename(str): Имя файла
 
     Returns:
         BookFile: извлеченные метаданные книги
 
     Raises:
+        UnsupportedFileType — если для MIME-типа нет зарегистрированного парсера
         FB2StructureException
-
     """
     logger.info(f"Attempt to extract metadata from {original_filename}")
     logger.debug(f"Content size: {len(data.getvalue())}")
-    if zipfile.is_zipfile(data):
-        logger.info(f"{original_filename} id ZIP file")
+    mimetype = detect_mime_service(data, original_filename)
+
+    # Normalise FB2_ZIP → FB2 для поиска парсера и распаковываем ZIP
+    content_data: BytesIO
+    content_mimetype: str
+    if mimetype == Mimetype.FB2_ZIP:
+        content_mimetype = Mimetype.FB2
         with zipfile.ZipFile(data, "r") as z:
-            if len(z.infolist()) > 1:
-                raise Exception("Incorrect fb2 zip archive!")
+            if z.testzip():
+                raise FB2StructureException("corrupted zip archive")
+            if len(z.infolist()) != 1:
+                raise FB2StructureException("Incorrect fb2 zip archive!")
             fn = z.namelist()[0]
             with z.open(fn, "r") as d:
-                content = BytesIO()
-                content.write(d.read())
-
+                content_data = BytesIO()
+                content_data.write(d.read())
+        content_data.seek(0)
     else:
-        content = data
+        content_mimetype = mimetype
+        content_data = data
 
-    parser = FB2(content)
-    book_file = BookFile(data, original_filename, Mimetype.FB2)
-    book_file.mimetype = Mimetype.FB2
-    book_file.__set_title__(parser.title)
-    book_file.description = parser.description
-    for a in parser.authors:
-        name, sortkey = a
-        book_file.__add_author__(name, sortkey)
+    try:
+        parser_fn = get_parser(content_mimetype)
+    except UnsupportedFormatException as e:
+        raise UnsupportedFileType(content_mimetype, original_filename) from e
 
-    for t in parser.tags:
-        book_file.__add_tag__(t)
-
-    book_file.series_info = parser.series_info
-    book_file.language_code = parser.language_code
-    book_file.__set_docdate__(parser.docdate)
-    return book_file
-
-
-class MimetypeValidator(ABC):
-    """Определяет соответствие файла определенному mimetype."""
-
-    def __init__(self, mimetype: str):
-        self.mimetype = mimetype
-
-    @abstractmethod
-    def is_valid(self, filename: str, content: BytesIO) -> bool: ...
-
-    def filetype(self) -> str:
-        return self.mimetype
-
-
-class FB2MimeValidator(MimetypeValidator):
-    """Проверка на сответствие типу FB2."""
-
-    def __init__(self):
-        super().__init__(Mimetype.FB2)
-
-    def is_valid(self, filename, content) -> bool:
-        with suppress(XMLSyntaxError):
-            parser = etree.XMLParser(ns_clean=True)
-            root = etree.parse(content, parser=parser).getroot()
-            return etree.QName(root).localname == "FictionBook"
-        return False
-
-
-class FB2ZipMimeValidator(MimetypeValidator):
-    """Проверка на соотвествие типу FB2+Zip."""
-
-    def __init__(self):
-        super().__init__(Mimetype.FB2_ZIP)
-
-    def is_valid(self, filename, content) -> bool:
-        with suppress(zipfile.BadZipFile):
-            with zipfile.ZipFile(content) as zip_file:
-                if zip_file.testzip():
-                    return False
-
-                if len(zip_file.infolist()) > 1:
-                    return False
-
-                fn = zip_file.namelist()[0]
-                with zip_file.open(fn, "r") as f:
-                    content = BytesIO()
-                    content.write(f.read())
-            content.seek(0)
-            parser = etree.XMLParser(ns_clean=True)
-            root = etree.parse(content, parser=parser).getroot()
-            return etree.QName(root).localname == "FictionBook"
-
-        return False
-
-
-class EPUBMimeValidator(MimetypeValidator):
-    """Проверка на соотвествие типу EPUB."""
-
-    def __init__(self):
-        super().__init__(Mimetype.EPUB)
-
-    def is_valid(self, filename, content) -> bool:
-        with suppress(Exception):
-            with zipfile.ZipFile(content) as zip_file:
-                with zip_file.open("mimetype") as mimetype_file:
-                    return (
-                        mimetype_file.read(30).decode().rstrip("\n\r") == Mimetype.EPUB
-                    )
-        return False
-
-
-class MobiMimeValidator(MimetypeValidator):
-    """Проверка на соотвествие типу Mobi."""
-
-    def __init__(self):
-        super().__init__(Mimetype.MOBI)
-
-    def is_valid(self, filename, content) -> bool:
-        mobiflag = content.getvalue()[60:68]
-        return mobiflag.decode() == "BOOKMOBI"
-
-
-class SuffixMimeValidator(MimetypeValidator):
-    """Упрощенный валидатор, выставляет соответствие типу по суффиксу файла."""
-
-    def __init__(self, suffixes: list[str], mimetype: str):
-        super().__init__(mimetype)
-        self.suffixes = suffixes
-
-    def is_valid(self, filename, content) -> bool:
-        _, s = os.path.splitext(filename)
-        return s in self.suffixes
-
-
-class GenericMimeValidator(MimetypeValidator):
-    """Обобщенный тип файла OCTET_STREAM"""
-
-    def __init__(self):
-        super().__init__(Mimetype.OCTET_STREAM)
-
-    def is_valid(self, filename, content) -> bool:
-        return True
-
-
-def detect_mime_service(file: BytesIO, original_filename: str) -> str:
-    """Определение mimetype файла. Определение идет по содержимому и/или суффиксу файла.
-
-    Если нельзя определить конкретный тип, то возвращается обобщенный тип
-    application/octet-stream
-
-    Args:
-        file(BytesIO): Содержимое файла
-
-        original_filename(str): Имя файла
-
-    Returns:
-        str Установленный Mimetype файла.
-
-    """
-    logger.info(f"Detecting mimetype of {original_filename}")
-    # Перечень известных валидаторов. Должны быть описаны от конкретных к
-    # обобощенным.
-    detectors: list[MimetypeValidator] = [
-        FB2MimeValidator(),
-        FB2ZipMimeValidator(),
-        EPUBMimeValidator(),
-        MobiMimeValidator(),
-        SuffixMimeValidator(
-            [
-                ".xml",
-            ],
-            Mimetype.XML,
-        ),
-        SuffixMimeValidator(
-            [
-                ".zip",
-            ],
-            Mimetype.ZIP,
-        ),
-        SuffixMimeValidator(
-            [
-                ".pdf",
-            ],
-            Mimetype.PDF,
-        ),
-        SuffixMimeValidator([".doc", ".docx"], Mimetype.MSWORD),
-        SuffixMimeValidator(
-            [
-                ".djvu",
-            ],
-            Mimetype.DJVU,
-        ),
-        SuffixMimeValidator(
-            [
-                ".txt",
-            ],
-            Mimetype.TEXT,
-        ),
-        SuffixMimeValidator(
-            [
-                ".rtf",
-            ],
-            Mimetype.RTF,
-        ),
-    ]
-
-    for v in detectors:
-        logger.info(f"Check that {original_filename} is {v.mimetype}")
-        if v.is_valid(original_filename, file):
-            logger.info("Check successful")
-            return v.filetype()
-
-    logger.info(f"{original_filename} is {Mimetype.OCTET_STREAM}")
-    return Mimetype.OCTET_STREAM
+    metadata = parser_fn(content_data, original_filename)
+    return book_metadata_to_bookfile(
+        metadata, data, original_filename, content_mimetype
+    )

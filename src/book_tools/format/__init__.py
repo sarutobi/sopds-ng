@@ -7,17 +7,10 @@ from xml import sax
 import zipfile
 
 from book_tools.format.bookfile import BookFile
-from book_tools.format.epub import EPub
-from book_tools.format.fb2 import FB2Zip
 from book_tools.format.mimetype import Mimetype
-from book_tools.format.mobi import Mobipocket
-
-# from book_tools.format.fb2sax import FB2sax
-from book_tools.format.other import Dummy
-from book_tools.format.parsers import FB2 as FB2_
-from book_tools.format.parsers import FB2sax as FB2sax2
 from book_tools.format.util import list_zip_file_infos
-from book_tools.services import create_bookfile_service, detect_mime_service
+from book_tools.services import create_bookfile_service
+from book_tools.mime_detector import detect_mime_service
 
 # from constance import config
 
@@ -57,85 +50,81 @@ class mime_detector:
         return mime_detector.fmt(e[1:])
 
 
-def detect_mime(file, original_filename):
-    FB2_ROOT = "FictionBook"
-    mime = mime_detector.file(original_filename)
+# def detect_mime(file, original_filename):
+#     FB2_ROOT = "FictionBook"
+#     mime = mime_detector.file(original_filename)
+#
+#     # try:
+#     with suppress(Exception):
+#         if mime == Mimetype.XML:
+#             if FB2_ROOT == __xml_root_tag(file):
+#                 return Mimetype.FB2
+#         elif mime == Mimetype.ZIP:
+#             with zipfile.ZipFile(file) as zip_file:
+#                 if not zip_file.testzip():
+#                     infolist = list_zip_file_infos(zip_file)
+#                     if len(infolist) == 1:
+#                         if FB2_ROOT == __xml_root_tag(zip_file.open(infolist[0])):
+#                             return Mimetype.FB2_ZIP
+#                     with suppress(Exception):
+#                         with zip_file.open("mimetype") as mimetype_file:
+#                             if (
+#                                 mimetype_file.read(30).decode().rstrip("\n\r")
+#                                 == Mimetype.EPUB
+#                             ):
+#                                 return Mimetype.EPUB
+#                     # except Exception:
+#                     #     pass
+#         elif mime == Mimetype.OCTET_STREAM:
+#             mobiflag = file.read(68)
+#             mobiflag = mobiflag[60:]
+#             if mobiflag.decode() == "BOOKMOBI":
+#                 return Mimetype.MOBI
+#     # except Exception:
+#     #     pass
+#
+#     return mime
 
-    # try:
-    with suppress(Exception):
-        if mime == Mimetype.XML:
-            if FB2_ROOT == __xml_root_tag(file):
-                return Mimetype.FB2
-        elif mime == Mimetype.ZIP:
-            with zipfile.ZipFile(file) as zip_file:
-                if not zip_file.testzip():
-                    infolist = list_zip_file_infos(zip_file)
-                    if len(infolist) == 1:
-                        if FB2_ROOT == __xml_root_tag(zip_file.open(infolist[0])):
-                            return Mimetype.FB2_ZIP
-                    with suppress(Exception):
-                        with zip_file.open("mimetype") as mimetype_file:
-                            if (
-                                mimetype_file.read(30).decode().rstrip("\n\r")
-                                == Mimetype.EPUB
-                            ):
-                                return Mimetype.EPUB
-                    # except Exception:
-                    #     pass
-        elif mime == Mimetype.OCTET_STREAM:
-            mobiflag = file.read(68)
-            mobiflag = mobiflag[60:]
-            if mobiflag.decode() == "BOOKMOBI":
-                return Mimetype.MOBI
-    # except Exception:
-    #     pass
 
-    return mime
+def create_bookfile(path, original_filename=None) -> BookFile:
+    """Извлечение метаданных электронной книги.
 
+    Args:
+        path: Путь к файлу (строка) или file-like объект (BytesIO).
+        original_filename: Имя файла (обязательно если path — file-like).
 
-def create_bookfile(file, original_filename) -> BookFile:
-    logger.info(f"Extract metadata from {original_filename}")
-    if isinstance(file, str):
+    Returns:
+        BookFile: извлеченные метаданные книги.
+    """
+    if isinstance(path, str):
+        # If path is a string, open fd and pass raw (без BytesIO)
+        if original_filename is None:
+            original_filename = os.path.basename(path)
         logger.info(f"Read {original_filename} content from file system")
-        file = open(file, "rb")
-    file = BytesIO(file.read())
-    logger.info(f"Detect {original_filename} mimetype")
-    mimetype = detect_mime_service(file, original_filename)
-    if mimetype == Mimetype.EPUB:
-        return EPub(file, original_filename)
-    elif mimetype == Mimetype.FB2:
-        return create_bookfile_service(file, original_filename)
-        #     FB2sax2(file, original_filename)
-        #     if config.SOPDS_FB2SAX
-        #     else FB2_(file, original_filename, Mimetype.FB2)
-        # )
-    elif mimetype == Mimetype.FB2_ZIP:
-        return FB2Zip(file, original_filename)
-    elif mimetype == Mimetype.MOBI:
-        return Mobipocket(file, original_filename)
-    elif mimetype in (
-        Mimetype.TEXT,
-        Mimetype.PDF,
-        Mimetype.MSWORD,
-        Mimetype.RTF,
-        Mimetype.DJVU,
-    ):
-        return Dummy(file, original_filename, mimetype)
+        fd = open(path, "rb")
+        try:
+            return create_bookfile_service(BytesIO(fd.read()), original_filename)
+        finally:
+            fd.close()
     else:
-        raise Exception("File type '%s' is not supported, sorry" % mimetype)
+        # File-like object (BytesIO) — pass through directly
+        if original_filename is None:
+            raise ValueError("original_filename is required for file-like objects")
+        data = BytesIO(path.read())
+        return create_bookfile_service(data, original_filename)
 
 
-def __xml_root_tag(file):
-    class XMLRootFound(Exception):
-        def __init__(self, name):
-            self.name = name
-
-    class RootTagFinder(sax.handler.ContentHandler):
-        def startElement(self, name, attributes):
-            raise XMLRootFound(name)
-
-    try:
-        sax.parse(file, RootTagFinder())
-    except XMLRootFound as e:
-        return e.name
-    return None
+# def __xml_root_tag(file):
+#     class XMLRootFound(Exception):
+#         def __init__(self, name):
+#             self.name = name
+#
+#     class RootTagFinder(sax.handler.ContentHandler):
+#         def startElement(self, name, attributes):
+#             raise XMLRootFound(name)
+#
+#     try:
+#         sax.parse(file, RootTagFinder())
+#     except XMLRootFound as e:
+#         return e.name
+#     return None

@@ -25,5 +25,15 @@ class EpubStructureException(EbookParserException):
 class UnsupportedFormatException(EbookParserException):
     """Неподдерживаемый формат файла для парсинга."""
 
-    def __init_(self, message):
+    def __init__(self, message):
         super().__init__(f"Unsupported format exception: {message}")
+
+
+class UnsupportedFileType(EbookParserException):
+    """MIME-тип распознан, но для него нет зарегистрированного парсера."""
+
+    def __init__(self, mimetype: str, filename: str = ""):
+        msg = f"Нет парсера для типа {mimetype}"
+        if filename:
+            msg += f" ({filename})"
+        super().__init__(msg)

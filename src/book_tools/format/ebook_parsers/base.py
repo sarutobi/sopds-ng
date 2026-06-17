@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from book_tools.format.parsers.dto import BookMetadata, Cover
+from book_tools.format.ebook_parsers.dto import BookMetadata, Cover
 
 
 class EbookParser(ABC):

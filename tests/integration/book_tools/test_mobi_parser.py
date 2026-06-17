@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from book_tools.format.mobi import Mobipocket, Mobipocket_new
+from book_tools.format.mobi import Mobipocket
 from tests.helpers import read_file_as_iobytes
 
 
@@ -15,5 +15,5 @@ from tests.helpers import read_file_as_iobytes
 def test_mobi_parser(test_rootlib, book) -> None:
     file = read_file_as_iobytes(os.path.join(test_rootlib, book))
     book_actual = Mobipocket(file, "Test Book")
-    book_new = Mobipocket_new(file, "Test Book").parse_book_data(file, "Test Book")
+    book_new = Mobipocket.parse_book_data(file, "Test Book")
     assert book_actual == book_new

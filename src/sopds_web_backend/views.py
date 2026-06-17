@@ -160,7 +160,7 @@ def SearchBooksView(request):
                 args["breadcrumbs"] = [_("Books")]
             args["searchobject"] = "title"
 
-        page_num = to_int(args.get("page_num", 1))
+        page_num = to_int(args.get("page_num"), 1)
         items, op = book_services.paginated_book_content(
             books,
             page_num,

@@ -6,36 +6,14 @@ from book_tools.format.fb2 import (
     FB2,
 )
 from book_tools.services import (
-    EPUBMimeValidator,
-    FB2MimeValidator,
-    FB2ZipMimeValidator,
-    GenericMimeValidator,
-    MobiMimeValidator,
     create_bookfile_service,
 )
-
-# fb2_books_to_try = (
-#     (fb2_book_fabric(title="Good Book"), nullcontext()),
-#     (
-#         fb2_book_fabric(title="Bad Book", correct=False),
-#         pytest.raises(FB2StructureException),
-#     ),
-# )
-#
-#
-# @pytest.mark.parametrize(
-#     "book, expected_exception", fb2_books_to_try, ids=("Good file", "Bad file")
-# )
-# def test_extract_fb2_metadata_service(book, expected_exception) -> None:
-#     file = BytesIO(book)
-#     with expected_exception:
-#         book_actual = extract_fb2_metadata_service(file, "Test Book")
-#         assert book_actual is not None
-
-
-# def test_book_parsing(virtual_fb2_book) -> None:
-#     result = create_bookfile_service(virtual_fb2_book, "Test Book")
-#     assert result is not None
+from book_tools.mime_detector import (
+    EPUBContentValidator,
+    FB2ContentValidator,
+    FB2ZipContentValidator,
+    MobiContentValidator,
+)
 
 
 def test_fb2_metadata_service_returns_the_same(fb2_book_from_fs) -> None:
@@ -54,23 +32,17 @@ def test_fb2_metadata_service_returns_the_same_zipped(
     assert actual == expected
 
 
-def test_genericmimevalidator() -> None:
-    validator = GenericMimeValidator()
-    assert validator is not None
-    assert validator.is_valid("test.txt", BytesIO())
-
-
 @pytest.mark.parametrize(
     "fname, expected", [("test.fb2", True), ("test.xml", True), ("test.zip", True)]
 )
-def test_fb2_mimevalidator(fname, fb2_book_from_fs, expected) -> None:
-    validator = FB2MimeValidator()
-    assert validator.is_valid(fname, fb2_book_from_fs) == expected
+def test_fb2_content_validator(fname, fb2_book_from_fs, expected) -> None:
+    validator = FB2ContentValidator()
+    assert validator.is_valid(fb2_book_from_fs) == expected
 
 
-def test_fb2zip_mimevalidator(zipped_fb2_book_from_fs) -> None:
-    validator = FB2ZipMimeValidator()
-    assert validator.is_valid("test_zip.fb2", zipped_fb2_book_from_fs)
+def test_fb2zip_content_validator(zipped_fb2_book_from_fs) -> None:
+    validator = FB2ZipContentValidator()
+    assert validator.is_valid(zipped_fb2_book_from_fs)
 
 
 @pytest.mark.parametrize(
@@ -80,10 +52,10 @@ def test_fb2zip_mimevalidator(zipped_fb2_book_from_fs) -> None:
     ],
     indirect=True,
 )
-def test_epub_mimevalidator(book_from_fs) -> None:
+def test_epub_content_validator(book_from_fs) -> None:
     """Тест определения типа EPUB"""
-    validator = EPUBMimeValidator()
-    assert validator.is_valid("test.epub", book_from_fs)
+    validator = EPUBContentValidator()
+    assert validator.is_valid(book_from_fs)
 
 
 @pytest.mark.parametrize(
@@ -93,21 +65,6 @@ def test_epub_mimevalidator(book_from_fs) -> None:
     ],
     indirect=True,
 )
-def test_mobi_mimevalidator(book_from_fs) -> None:
-    validator = MobiMimeValidator()
-    assert validator.is_valid("test.mobi", book_from_fs)
-
-
-# @pytest.mark.parametrize(
-#     "book,expected",
-#     [
-#         ("fb2_book_from_fs", Mimetype.FB2),
-#         ("zipped_fb2_book_from_fs", Mimetype.FB2_ZIP),
-#         ("epub_book_from_fs", Mimetype.EPUB),
-#         ("mobi_book_from_fs", Mimetype.MOBI),
-#         ("wrong_encoded_fb2_zip", Mimetype.FB2_ZIP),
-#     ],
-# )
-# def test_detect_mime_service(book, expected, request) -> None:
-#     actual = detect_mime_service(request.getfixturevalue(book), "test_book")
-#     assert actual == expected
+def test_mobi_content_validator(book_from_fs) -> None:
+    validator = MobiContentValidator()
+    assert validator.is_valid(book_from_fs)

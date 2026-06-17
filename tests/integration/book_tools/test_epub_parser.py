@@ -3,7 +3,7 @@ import os
 # from tests.conftest import epub_book_from_fs
 import pytest
 
-from book_tools.format.epub import EPub, EPub_new
+from book_tools.format.epub import EPub
 from book_tools.format.parsers import EbookMetaParser, EpubParser
 from tests.helpers import read_file_as_iobytes
 
@@ -17,7 +17,7 @@ from tests.helpers import read_file_as_iobytes
 def test_epub_parser(test_rootlib, book) -> None:
     file = read_file_as_iobytes(os.path.join(test_rootlib, book))
     book_actual = EPub(file, "Test Book")
-    book_new = EPub_new(file, "Test Book").parse_book_data(file, "Test Book")
+    book_new = EPub(file, "Test Book").parse_book_data(file, "Test Book")
     assert book_actual == book_new
 
 

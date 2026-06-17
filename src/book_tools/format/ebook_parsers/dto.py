@@ -41,5 +41,6 @@ class BookMetadata:
     language: str = ""
     description: Optional[str] = None
     publication_date: Optional[date] = None
+    docdate: str = ""
     file_size: int = 0
     file_format: str = ""
