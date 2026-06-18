@@ -40,11 +40,10 @@ def sopds_processor(request):
             args["bookshelf"] = result
 
     # Формируем статистику по каталогу
-    stats_data = Counter.obj.all().values()
+    stats_data = list(Counter.obj.all().values())
     stats = {d["name"]: d["value"] for d in stats_data}
-    stats["lastscan_date"] = [
-        d["update_time"] for d in stats_data if d["name"] == "allbooks"
-    ][0]
+    lastscan = [d["update_time"] for d in stats_data if d["name"] == "allbooks"]
+    stats["lastscan_date"] = lastscan[0] if lastscan else None
     args["stats"] = stats
 
     # Поиск случайной книги

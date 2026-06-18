@@ -3,36 +3,12 @@
 {% load static %}
 
 {% block body %}
-<script>
-       function del_bsbook(b_id, b_t) {
-           $('#DeleteBook_btnYes').attr("href","{% url "web:bsdel" %}?book="+b_id);
-           $('#DeleteBook_image').attr("src","{% url "opds:covertmpl" %}"+b_id+"/");
-           $('#DeleteBook_title').text(b_t);
-           $('#DeleteBookModal').foundation('open');
-       }
-</script>
+<div id="list-content"
+     hx-target="this"
+     hx-select="#list-content"
+     hx-swap="outerHTML">
 
 {% spaceless %}
-<!-- Remove book from bookshelf -->
-<div id="DeleteBookModal" class="reveal tiny text-center" data-reveal>
-  <h5 id="DeleteBookModalTitle">{% trans "Confirm the deletion of the book from your bookshelf." %}</h5>
-  <table><tr>
-  <td width="100px" style="padding:0rem 0rem;">
-      <img src="" id="DeleteBook_image" style="max-height: 100px; max-width: 100px">
-  </td>
-  <td style="font-size:100%; padding:3px">
-      <p id="DeleteBook_title"></p>
-  </td>
-  </tr>
-  </table>
-  <p class="text-center"><a href="#" class="secondary button" id="DeleteBook_btnYes">{% trans "Delete" %}</a>
-                         &nbsp;&nbsp;&nbsp;<a class="close button" data-close>{% trans "Cancel" %}</a></p>
-  <button class="close-button" data-close aria-label="Close modal" type="button">
-    <span aria-hidden="true">&times;</span>
-  </button>
-</div>
-<!-- Remove book from bookshelf -->
-
 <!-- Bookshelf -->
  {% if isbookshelf %}
  <div id="ConfirmModal" class="reveal tiny text-center" data-reveal>
@@ -81,7 +57,12 @@
                         <i><a href="{% url 'opds_catalog:convert' b.id 'mobi' %}" title="mobi"><img src="{% static "images/sopds-ng-download-mobi.svg" %}" width="30" alt="mobi"></a></i>&nbsp;
                         {% endif %}
                         {% if isbookshelf %}
-                        &nbsp;&nbsp;<i><a href="#" onclick="del_bsbook({{ b.id }},'{{b.title}}');"><span class="secondary label small">&nbsp;{% trans "Delete from bookshelf" %}&nbsp;</span></a></i>
+                        &nbsp;&nbsp;<i><a href="#"
+                           hx-delete="{% url "web:bsdel" %}?book={{ b.id }}"
+                           hx-confirm="{% trans "Delete this book from bookshelf?" %}"
+                           hx-target="#list-content"
+                           hx-swap="outerHTML"
+                           hx-indicator="#page-indicator"><span class="secondary label small">&nbsp;{% trans "Delete from bookshelf" %}&nbsp;</span></a></i>
                         {% endif %}
                     </div>
                 </div>
@@ -142,9 +123,21 @@
 {% endfor %}
 
 {% if paginator.num_pages > 1 %}
+<div class="grid-x">
+  <div class="cell">
+    <div id="page-indicator" class="htmx-indicator text-center">
+      <span class="label secondary">{% trans "Loading..." %}</span>
+    </div>
+  </div>
+</div>
 <ul class="pagination" role="navigation" aria-label="Pagination">
   <li class="pagination-previous {% if not paginator.has_previous %}disabled{%endif%}">
-      {% if paginator.has_previous %}<a href="{% url "web:searchbooks" %}?searchtype={{searchtype}}&searchterms={{searchterms}}&page={{paginator.previous_page_number}}" aria-label="Previous page"> {%endif%}
+      {% if paginator.has_previous %}<a href="#"
+         hx-get="{% url "web:searchbooks" %}?searchtype={{searchtype}}&searchterms={{searchterms}}&page={{paginator.previous_page_number}}"
+         hx-target="#list-content"
+         hx-swap="outerHTML"
+         hx-indicator="#page-indicator"
+         aria-label="Previous page"> {%endif%}
          {% trans "Previous page" %}
       {% if paginator.has_previous %}</a>{%endif%}
   </li>
@@ -153,17 +146,28 @@
      {% if paginator.number == pn %}
         <li class="current">{{pn}}</li>
      {% else %}
-        <li><a href="{% url "web:searchbooks" %}?searchtype={{searchtype}}&searchterms={{searchterms}}&page={{pn}}" aria-label="Page {{pn}}">{{pn}}</a></li>
+        <li><a href="#"
+           hx-get="{% url "web:searchbooks" %}?searchtype={{searchtype}}&searchterms={{searchterms}}&page={{pn}}"
+           hx-target="#list-content"
+           hx-swap="outerHTML"
+           hx-indicator="#page-indicator"
+           aria-label="Page {{pn}}">{{pn}}</a></li>
      {% endif %}
         {# <li class="ellipsis" aria-hidden="true"></li> #}
   {% endfor %}
 
   <li class="pagination-next" {% if not paginator.has_next %}disabled{%endif%}>
-      {% if paginator.has_next %}<a href="{% url "web:searchbooks" %}?searchtype={{searchtype}}&searchterms={{searchterms}}&page={{paginator.next_page_number}}" aria-label="Next page">{%endif%}
+      {% if paginator.has_next %}<a href="#"
+         hx-get="{% url "web:searchbooks" %}?searchtype={{searchtype}}&searchterms={{searchterms}}&page={{paginator.next_page_number}}"
+         hx-target="#list-content"
+         hx-swap="outerHTML"
+         hx-indicator="#page-indicator"
+         aria-label="Next page">{%endif%}
          {% trans "Next page" %}
       {% if paginator.has_next %}</a>{%endif%}
   </li>
 </ul>
 {% endif %}
+</div><!-- #list-content -->
 
 {% endblock %}  {# body #}

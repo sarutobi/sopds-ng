@@ -3,6 +3,10 @@
 {% load i18n %}
 
 {% block body %}
+<div id="list-content"
+     hx-target="this"
+     hx-select="#list-content"
+     hx-swap="outerHTML">
 {%  for b in items %}
 <div class="cell sopdsitem">
 
@@ -33,9 +37,21 @@
 <!--/div-->
 
 {% if paginator.num_pages > 1 %}
+<div class="grid-x">
+  <div class="cell">
+    <div id="page-indicator" class="htmx-indicator text-center">
+      <span class="label secondary">{% trans "Loading..." %}</span>
+    </div>
+  </div>
+</div>
 <ul class="pagination" role="navigation" aria-label="Pagination">
   <li class="pagination-previous {% if not paginator.has_previous %}disabled{%endif%}">
-      {% if paginator.has_previous %}<a href="{% url "web:catalog" %}?{% if cat_id %}cat={{cat_id}}&{% endif %}page={{paginator.previous_page_number}}" aria-label="Previous page"> {%endif%}
+      {% if paginator.has_previous %}<a href="#"
+         hx-get="{% url "web:catalog" %}?{% if cat_id %}cat={{cat_id}}&{% endif %}page={{paginator.previous_page_number}}"
+         hx-target="#list-content"
+         hx-swap="outerHTML"
+         hx-indicator="#page-indicator"
+         aria-label="Previous page"> {%endif%}
          {% trans "Previous page" %}
       {% if paginator.has_previous %}</a>{%endif%}
   </li>
@@ -44,17 +60,27 @@
      {% if paginator.number == pn %}
         <li class="current">{{pn}}</li>
      {% else %}
-        <li><a href="{% url "web:catalog" %}?{% if cat_id %}cat={{cat_id}}&{% endif %}page={{pn}}" aria-label="Page {{pn}}">{{pn}}</a></li>
+        <li><a href="#"
+           hx-get="{% url "web:catalog" %}?{% if cat_id %}cat={{cat_id}}&{% endif %}page={{pn}}"
+           hx-target="#list-content"
+           hx-swap="outerHTML"
+           hx-indicator="#page-indicator"
+           aria-label="Page {{pn}}">{{pn}}</a></li>
      {% endif %}
-        {# <li class="ellipsis" aria-hidden="true"></li> #}
   {% endfor %}
 
   <li class="pagination-next" {% if not paginator.has_next %}disabled{%endif%}>
-      {% if paginator.has_next %}<a href="{% url "web:catalog" %}?{% if cat_id %}cat={{cat_id}}&{% endif %}page={{paginator.next_page_number}}" aria-label="Next page">{%endif%}
+      {% if paginator.has_next %}<a href="#"
+         hx-get="{% url "web:catalog" %}?{% if cat_id %}cat={{cat_id}}&{% endif %}page={{paginator.next_page_number}}"
+         hx-target="#list-content"
+         hx-swap="outerHTML"
+         hx-indicator="#page-indicator"
+         aria-label="Next page">{%endif%}
          {% trans "Next page" %}
       {% if paginator.has_next %}</a>{%endif%}
   </li>
 </ul>
 {% endif %}
+</div><!-- #list-content -->
 
 {% endblock %}  {# body #}

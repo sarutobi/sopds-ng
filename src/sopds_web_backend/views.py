@@ -1,14 +1,18 @@
+import logging
 from constance import config
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
+from django.views.decorators.http import require_http_methods
 from django.views.decorators.vary import vary_on_headers
 
 from opds_catalog.models import (
+    Author,
     Book,
     Catalog,
     Genre,
@@ -31,6 +35,8 @@ BREADCRUMBS = {
     "m": [_("Books"), _("Search by title")],
     "b": [_("Books"), _("Search by title")],
 }
+
+logger = logging.getLogger(__name__)
 
 
 def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None):
@@ -467,7 +473,39 @@ def GenresView(request):
 
 
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
+# g @sopds_login(url="web:login")
+def SearchSuggestView(request):
+    """Подсказки для строки поиска через htmx."""
+    logger.critical("Suggestion helper")
+    q = request.GET.get("q", "").strip()
+    print(f"Suggestion request '{q}'")
+    search_type = request.GET.get("type", "title")
+    print(f"suggestion type '{search_type}'")
+
+    if len(q) < 2:
+        print("suggestion query too short")
+        return HttpResponse("")
+
+    if search_type == "title":
+        print("Suggest books by title '{q}'")
+        items = Book.objects.filter(search_title__contains=q.upper())[:10]
+    elif search_type == "author":
+        items = Author.objects.filter(search_full_name__contains=q.upper())[:10]
+    elif search_type == "series":
+        items = Series.objects.filter(search_ser__contains=q.upper())[:10]
+    else:
+        items = []
+
+    return render(
+        request,
+        "sopds_search_suggestions.html",
+        {"items": items, "search_type": search_type},
+    )
+
+
+@vary_on_headers("HTTP_ACCEPT_LANGUAGE")
 @sopds_login(url="web:login")
+@require_http_methods(["GET", "DELETE"])
 def BSDelView(request):
     if request.GET:
         book = request.GET.get("book", None)
@@ -477,6 +515,14 @@ def BSDelView(request):
     book = int(book)
 
     bookshelf.objects.filter(user=request.user, book=book).delete()
+
+    if request.headers.get("HX-Request") == "true":
+        return HttpResponse(
+            status=200,
+            headers={
+                "HX-Redirect": "%s?searchtype=u&page=1" % reverse("web:searchbooks")
+            },
+        )
 
     return redirect("%s?searchtype=u" % reverse("web:searchbooks"))
 

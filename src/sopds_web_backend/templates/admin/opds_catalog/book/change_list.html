@@ -1,0 +1,20 @@
+{% extends "admin/change_list.html" %}
+{% load static i18n %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="{% static "js/vendor/alpine.min.js" %}" defer></script>
+<link rel="stylesheet" type="text/css" href="{% static "css/admin-inline-edit.css" %}">
+{% endblock %}
+
+{% block result_list %}
+<div x-data="inlineEdit()">
+  {{ block.super }}
+  <div class="admin-inline-edit-bar" x-show="editingId" style="display:none;">
+    <span>{% trans "Editing:" %} <span x-text="editField"></span></span>
+    <a href="#" @click.prevent="saveEdit()" class="button tiny success">{% trans "Save" %}</a>
+    <a href="#" @click.prevent="cancelEdit()" class="button tiny secondary">{% trans "Cancel" %}</a>
+  </div>
+</div>
+<script src="{% static "js/admin-inline-edit.js" %}"></script>
+{% endblock %}

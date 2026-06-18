@@ -10,7 +10,13 @@
   <form method="get" action="{% url "web:searchbooks" %}" id="searchform" data-abide>
   {% csrf_token %}
     <div class="input-group button-group">
-		<input class="input-group-field" type="search" name="searchterms" placeholder="Search" id="main_searchbox" data-validator="SearchLenghtValidator" required >
+		<input class="input-group-field" type="search" name="searchterms" placeholder="Search" id="main_searchbox" data-validator="SearchLenghtValidator" required
+		       hx-get="{% url "web:suggest" %}"
+		       hx-trigger="keyup changed delay:300ms, search"
+		       hx-target="#search-suggestions"
+		       hx-indicator="#search-spinner"
+		       hx-include="[name='searchtype']"
+		       autocomplete="off">
 
 		<div class="input-group-button">
 		     <button class="button" type="submit" data-close="search-dropdown" name="submit_form" style="margin:1">{% trans "Search" %}</button>
@@ -20,6 +26,10 @@
 		<input type="hidden" name="page" value="0">
 	</div>
     <label class="form-error" data-form-error-for="main_searchbox">{% trans "Please, fill the field" %}</label>
+    <div id="search-suggestions" class="sopds-suggestions"></div>
+    <div id="search-spinner" class="htmx-indicator" style="display:none;">
+        <span class="label secondary">{% trans "Searching..." %}</span>
+    </div>
 
 	<div class="dropdown-pane" data-position="bottom" data-aligement="right" id="search-dropdown" data-dropdown>
 	  <div class="row">

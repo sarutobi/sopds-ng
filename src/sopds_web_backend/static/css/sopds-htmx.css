@@ -1,0 +1,54 @@
+/* Подсказки поиска htmx */
+.sopds-suggestions {
+  position: absolute;
+  z-index: 1000;
+  background: #fefefe;
+  border: 1px solid #cacaca;
+  max-height: 300px;
+  overflow-y: auto;
+  width: 100%;
+}
+.sopds-suggestion-item {
+  display: block;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: #0a0a0a;
+  text-decoration: none;
+}
+.sopds-suggestion-item:hover {
+  background: #e6e6e6;
+}
+.sopds-suggestion-empty {
+  display: block;
+  padding: 6px 12px;
+  color: #8a8a8a;
+}
+
+/* htmx indicator */
+.htmx-indicator {
+  opacity: 1;
+  transition: opacity 200ms ease-in;
+}
+.htmx-request .htmx-indicator {
+  opacity: 1;
+}
+.htmx-indicator.htmx-indicator-hidden {
+  display: none;
+}
+
+/* Mobile improvements */
+@media screen and (max-width: 39.9375em) {
+  .sopds-book-card .card-section .cell.auto {
+    font-size: 85%;
+  }
+  .sopds-suggestions {
+    max-height: 200px;
+    font-size: 90%;
+  }
+  .pagination {
+    font-size: 0.9rem;
+  }
+  .pagination li {
+    display: inline-block;
+  }
+}

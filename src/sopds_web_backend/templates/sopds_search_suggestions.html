@@ -1,0 +1,17 @@
+{% load i18n %}
+<div id="search-suggestions" class="sopds-suggestions">
+{% for item in items %}
+    {% if search_type == "title" %}
+    <a href="{% url "web:searchbooks" %}?searchtype=m&searchterms={{ item.title|urlencode }}"
+       class="sopds-suggestion-item">{{ item.title }}</a>
+    {% elif search_type == "author" %}
+    <a href="{% url "web:searchauthors" %}?searchtype=e&searchterms={{ item.full_name|urlencode }}"
+       class="sopds-suggestion-item">{{ item.full_name }}</a>
+    {% elif search_type == "series" %}
+    <a href="{% url "web:searchseries" %}?searchtype=e&searchterms={{ item.ser|urlencode }}"
+       class="sopds-suggestion-item">{{ item.ser }}</a>
+    {% endif %}
+{% empty %}
+    <span class="sopds-suggestion-empty">{% trans "No results" %}</span>
+{% endfor %}
+</div>

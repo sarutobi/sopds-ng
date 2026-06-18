@@ -1,0 +1,24 @@
+/* Inline editing in admin */
+.admin-inline-edit-bar {
+    padding: 5px 10px;
+    background: #f0f0f0;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 10px;
+}
+.inline-edit-trigger {
+    cursor: pointer;
+    border-bottom: 1px dashed #999;
+}
+.inline-edit-trigger:hover {
+    background: #ffffcc;
+}
+.inline-edit-input {
+    width: 80%;
+    padding: 2px 4px;
+    font-size: 12px;
+}
+.inline-edit-actions {
+    display: inline-block;
+    margin-left: 4px;
+    white-space: nowrap;
+}

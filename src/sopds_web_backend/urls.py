@@ -6,6 +6,7 @@ from sopds_web_backend import views
 app_name = "opds_web_backend"
 
 urlpatterns = [
+    re_path(r"^search/suggest/$", views.SearchSuggestView, name="suggest"),
     re_path(r"^search/books/$", views.SearchBooksView, name="searchbooks"),
     re_path(r"^search/authors/$", views.SearchAuthorsView, name="searchauthors"),
     re_path(r"^search/series/$", views.SearchSeriesView, name="searchseries"),
