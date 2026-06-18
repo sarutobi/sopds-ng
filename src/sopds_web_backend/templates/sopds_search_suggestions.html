@@ -1,5 +1,4 @@
 {% load i18n %}
-<div id="search-suggestions" class="sopds-suggestions">
 {% for item in items %}
     {% if search_type == "title" %}
     <a href="{% url "web:searchbooks" %}?searchtype=m&searchterms={{ item.title|urlencode }}"
@@ -14,4 +13,3 @@
 {% empty %}
     <span class="sopds-suggestion-empty">{% trans "No results" %}</span>
 {% endfor %}
-</div>

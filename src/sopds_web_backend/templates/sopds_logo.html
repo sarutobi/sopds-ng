@@ -11,12 +11,13 @@
   {% csrf_token %}
     <div class="input-group button-group">
 		<input class="input-group-field" type="search" name="searchterms" placeholder="Search" id="main_searchbox" data-validator="SearchLenghtValidator" required
-		       hx-get="{% url "web:suggest" %}"
+		       hx-post="{% url "web:suggest" %}"
 		       hx-trigger="keyup changed delay:300ms, search"
 		       hx-target="#search-suggestions"
 		       hx-indicator="#search-spinner"
-		       hx-include="[name='searchtype']"
+		       hx-include="#searchtype-hidden"
 		       autocomplete="off">
+		<input type="hidden" name="type" id="searchtype-hidden" value="title">
 
 		<div class="input-group-button">
 		     <button class="button" type="submit" data-close="search-dropdown" name="submit_form" style="margin:1">{% trans "Search" %}</button>
@@ -49,9 +50,20 @@ function SetSearch() {
     var searchtype = $("input[name='searchtype']:radio:checked").attr("id");
     var placeholder = $("input[name='searchtype']:radio:checked").attr("data-text");
     $('#main_searchbox').attr( "placeholder", placeholder);
-    if (searchtype == "title") $('#searchform').attr( "action","{% url "web:searchbooks" %}");
-    if (searchtype == "author") $('#searchform').attr( "action","{% url "web:searchauthors" %}");
-    if (searchtype == "series") $('#searchform').attr( "action","{% url "web:searchseries" %}");
+
+    // Обновляем hidden input для htmx-suggest
+    if (searchtype == "title") {
+        $('#searchtype-hidden').val("title");
+        $('#searchform').attr( "action","{% url "web:searchbooks" %}");
+    }
+    if (searchtype == "author") {
+        $('#searchtype-hidden').val("author");
+        $('#searchform').attr( "action","{% url "web:searchauthors" %}");
+    }
+    if (searchtype == "series") {
+        $('#searchtype-hidden').val("series");
+        $('#searchform').attr( "action","{% url "web:searchseries" %}");
+    }
 
     $('#search_selector')[0].click();
 }

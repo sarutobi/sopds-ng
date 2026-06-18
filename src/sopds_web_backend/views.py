@@ -2,7 +2,7 @@ import logging
 from constance import config
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import redirect, render
 from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
@@ -477,17 +477,24 @@ def GenresView(request):
 def SearchSuggestView(request):
     """Подсказки для строки поиска через htmx."""
     logger.critical("Suggestion helper")
-    q = request.GET.get("q", "").strip()
-    print(f"Suggestion request '{q}'")
-    search_type = request.GET.get("type", "title")
-    print(f"suggestion type '{search_type}'")
+
+    if request.method == "POST":
+        q = request.POST.get("searchterms", "").strip()
+        search_type = request.POST.get("type", "title")
+    elif request.method == "GET":
+        q = request.GET.get("searchterms", "").strip()
+        search_type = request.GET.get("type", "title")
+    else:
+        return HttpResponseNotAllowed(["GET", "POST"])
+
+    logger.info(f"Suggestion request '{q}' type '{search_type}'")
 
     if len(q) < 2:
-        print("suggestion query too short")
+        logger.info("suggestion query too short")
         return HttpResponse("")
 
     if search_type == "title":
-        print("Suggest books by title '{q}'")
+        logger.info("Suggest books by title '{q}'")
         items = Book.objects.filter(search_title__contains=q.upper())[:10]
     elif search_type == "author":
         items = Author.objects.filter(search_full_name__contains=q.upper())[:10]

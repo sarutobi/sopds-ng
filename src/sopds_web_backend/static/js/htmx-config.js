@@ -8,10 +8,7 @@ document.body.addEventListener('htmx:configRequest', function(evt) {
 
 // Reinitialize Foundation plugins after htmx content swap
 document.body.addEventListener('htmx:afterSwap', function(evt) {
-    if (typeof Foundation !== 'undefined' && Foundation.reInit) {
-        Foundation.reInit(evt.detail.target);
-    } else if (typeof Foundation !== 'undefined') {
-        // Fallback: try to re-init common plugins
-        jQuery(document).foundation();
+    if (typeof jQuery !== 'undefined' && typeof jQuery().foundation === 'function') {
+        jQuery(evt.detail.target).foundation();
     }
 });

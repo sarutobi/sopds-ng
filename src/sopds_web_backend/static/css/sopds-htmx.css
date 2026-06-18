@@ -7,6 +7,13 @@
   max-height: 300px;
   overflow-y: auto;
   width: 100%;
+  box-sizing: border-box;
+}
+.sopds-suggestions:empty {
+  display: none;
+}
+#searchform {
+  position: relative;
 }
 .sopds-suggestion-item {
   display: block;

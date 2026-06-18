@@ -12,22 +12,26 @@ class TestSearchSuggestView:
     def test_suggest_short_query(self, client, django_user, update_counters) -> None:
         """Короткий запрос (< 2 символов) возвращает пустой ответ."""
         client.force_login(django_user)
-        response = client.get(reverse("web:suggest"), {"q": "a", "type": "title"})
+        response = client.post(
+            reverse("web:suggest"), {"searchterms": "a", "type": "title"}
+        )
         assert response.status_code == 200
         assert response.content == b""
 
     def test_suggest_no_query(self, client, django_user, update_counters) -> None:
         """Пустой запрос возвращает пустой ответ."""
         client.force_login(django_user)
-        response = client.get(reverse("web:suggest"), {"q": "", "type": "title"})
+        response = client.post(
+            reverse("web:suggest"), {"searchterms": "", "type": "title"}
+        )
         assert response.status_code == 200
         assert response.content == b""
 
     def test_suggest_no_results(self, client, django_user, update_counters) -> None:
         """Запрос без совпадений возвращает HTML с 'No results'."""
         client.force_login(django_user)
-        response = client.get(
-            reverse("web:suggest"), {"q": "ZZZZZXXXXX", "type": "title"}
+        response = client.post(
+            reverse("web:suggest"), {"searchterms": "ZZZZZXXXXX", "type": "title"}
         )
         assert response.status_code == 200
         assert b"No results" in response.content
@@ -37,8 +41,8 @@ class TestSearchSuggestView:
     ) -> None:
         """Поиск по title находит книгу."""
         client.force_login(django_user)
-        response = client.get(
-            reverse("web:suggest"), {"q": book.title[:3], "type": "title"}
+        response = client.post(
+            reverse("web:suggest"), {"searchterms": book.title[:3], "type": "title"}
         )
         assert response.status_code == 200
         assert response.content != b""
@@ -49,9 +53,9 @@ class TestSearchSuggestView:
     ) -> None:
         """Поиск по author находит автора."""
         client.force_login(django_user)
-        response = client.get(
+        response = client.post(
             reverse("web:suggest"),
-            {"q": author.full_name[:3], "type": "author"},
+            {"searchterms": author.full_name[:3], "type": "author"},
         )
         assert response.status_code == 200
         assert b"sopds-suggestion-item" in response.content
@@ -59,7 +63,9 @@ class TestSearchSuggestView:
     def test_suggest_invalid_type(self, client, django_user, update_counters) -> None:
         """Неизвестный search_type возвращает пустой результат."""
         client.force_login(django_user)
-        response = client.get(reverse("web:suggest"), {"q": "test", "type": "invalid"})
+        response = client.post(
+            reverse("web:suggest"), {"searchterms": "test", "type": "invalid"}
+        )
         assert response.status_code == 200
         assert b"No results" in response.content or response.content == b""
 
