@@ -8,9 +8,8 @@ from constance import config
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator
-from django.db.models import CharField, Count, Prefetch, QuerySet, Value
+from django.db.models import Count, IntegerField, Prefetch, QuerySet, Value
 from django.db.models.functions import Substr
-from django.db.models.query import RawQuerySet
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 
@@ -372,40 +371,28 @@ def book_description(item) -> str:
 
 def find_books_by_template(
     chars: str, length: int, lang_code: int | None = None
-) -> RawQuerySet:
-    """Поиск книг по шаблону."""
+) -> QuerySet:
+    """Поиск книг по шаблону.
+
+    :param chars: Шаблон начала названия книги.
+    :param length: Длина шаблона.
+    :param lang_code: Опциональный код языка для фильтрации.
+    :returns: Запрос для поиска книг по шаблону.
+    """
     books = (
         Book.objects.filter(search_title__startswith=chars)
         .annotate(
-            l=Value(length, output_field=CharField()),
-            cid=Substr("search_title", 1, length),
+            l=Value(length, output_field=IntegerField()),
+            sid=Substr("search_title", 1, length),
         )
-        .values("l", "cid")
-        .annotate(cnt=Count("cid"))
-        .order_by("cid")
+        .values("l", "sid")
+        .annotate(cnt=Count("sid"))
+        .order_by("sid")
     )
     if lang_code:
-        books.filter(lang_code=lang_code)
+        books = books.filter(lang_code=lang_code)
 
-        sql = """select %(length)s as l, substring(search_title,1,%(length)s) as id, count(*) as cnt
-                from opds_catalog_book
-                where lang_code=%(lang_code)s and search_title like '%(chars)s%%%%'
-                group by substring(search_title,1,%(length)s)
-                order by id""" % {
-            "length": length,
-            "lang_code": lang_code,
-            "chars": chars,
-        }
-
-    else:
-        sql = """select %(length)s as l, substring(search_title,1,%(length)s) as id, count(*) as cnt
-                from opds_catalog_book
-                where search_title like '%(chars)s%%%%'
-                group by substring(search_title,1,%(length)s)
-                order by id""" % {"length": length, "chars": chars}
-
-    dataset = Book.objects.raw(sql)
-    return dataset
+    return books
 
 
 def author_books_count(author: Author | int) -> int:

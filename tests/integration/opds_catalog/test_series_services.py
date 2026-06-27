@@ -33,15 +33,15 @@ class TestSeriesServices:
         # После создания книги с серией, get_series должен вернуть как минимум одну серию
         results = series_services.get_series("", 1, lang_code=0)
         assert len(results) > 0
-        assert results[0].id == "M"  # первая буква (заглавная)
-        assert results[0].cnt > 0
+        assert results[0]["sid"] == "M"  # первая буква (заглавная)
+        assert results[0]["cnt"] > 0
 
     def test_get_series_longer(self, book_with_relations):
         """Продвинутый поиск серий с большей длиной."""
         results = series_services.get_series("MYWO", 5, lang_code=0)
         assert len(results) == 1
-        assert results[0].id == "MYWOR"  # первые 5 символов
-        assert results[0].cnt == 1
+        assert results[0]["sid"] == "MYWOR"  # первые 5 символов
+        assert results[0]["cnt"] == 1
 
     def test_get_series_with_lang_code(self, book_with_relations):
         """Поиск серий с фильтром по коду языка."""

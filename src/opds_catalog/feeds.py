@@ -1129,19 +1129,19 @@ class BooksFeed(SOPDSBaseFeed):
 
     def item_title(self, item):
         """Шаблон названия книги."""
-        return f"{item.id}"
+        return f"{item['sid']}"
 
     def item_description(self, item):
         """Количество найденных по шаблону книг."""
-        return _("Found: %s books") % item.cnt
+        return _("Found: %s books") % item["cnt"]
 
     def item_link(self, item):
         """Построение ссылок на дальнейшую навигацию."""
-        title_full = len(item.id) < item.l
-        if item.cnt >= config.SOPDS_SPLITITEMS and not title_full:
+        title_full = len(item["sid"]) < item["l"]
+        if item["cnt"] >= config.SOPDS_SPLITITEMS and not title_full:
             return reverse(
                 "opds_catalog:chars_books",
-                kwargs={"lang_code": self.lang_code, "chars": item.id},
+                kwargs={"lang_code": self.lang_code, "chars": item["sid"]},
             )
         else:
             return reverse(
@@ -1150,7 +1150,7 @@ class BooksFeed(SOPDSBaseFeed):
                     "searchtype": SearchType.BY_START_WITH
                     if not title_full
                     else SearchType.BY_EXACT_MATCH,
-                    "searchterms": item.id,
+                    "searchterms": item["sid"],
                 },
             )
 
@@ -1251,11 +1251,11 @@ class SeriesFeed(SOPDSBaseFeed):
 
     def item_title(self, item):
         """Идентификатор серии."""
-        return f"{item.id}"
+        return f"{item['sid']}"
 
     def item_description(self, item):
         """Количество книг в серии."""
-        return _("Found: %s series") % item.cnt
+        return _("Found: %s series") % item["cnt"]
 
     def item_link(self, item) -> str:
         """Ссылка для получения списка серий.
@@ -1272,11 +1272,11 @@ class SeriesFeed(SOPDSBaseFeed):
         :returns: сссылка на продолжение поиска по серии
         :rtype: str
         """
-        series_full = len(item.id) < item.l
-        if item.cnt >= config.SOPDS_SPLITITEMS and not series_full:
+        series_full = len(item["sid"]) < item["l"]
+        if item["cnt"] >= config.SOPDS_SPLITITEMS and not series_full:
             return reverse(
                 "opds_catalog:chars_series",
-                kwargs={"lang_code": self.lang_code, "chars": item.id},
+                kwargs={"lang_code": self.lang_code, "chars": item["sid"]},
             )
         else:
             return reverse(
@@ -1285,7 +1285,7 @@ class SeriesFeed(SOPDSBaseFeed):
                     "searchtype": SearchType.BY_START_WITH
                     if not series_full
                     else SearchType.BY_EXACT_MATCH,
-                    "searchterms": item.id,
+                    "searchterms": item["sid"],
                 },
             )
 

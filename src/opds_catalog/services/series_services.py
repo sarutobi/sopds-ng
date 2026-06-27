@@ -2,48 +2,36 @@
 
 from typing import Any
 
-from django.db.models import Count
-from django.db.models.query import RawQuerySet
+from django.db.models import Count, IntegerField, QuerySet, Value
+from django.db.models.functions import Substr
 from django.utils.translation import gettext as _
 
 from opds_catalog.models import Series
 from opds_catalog.utils import to_int
 
 
-def get_series(chars: str, length: int, lang_code: int | None = None) -> RawQuerySet:
-    """Запрос перечня серий, начинающихся с определенного набора символов.
+def get_series(chars: str, length: int, lang_code: int | None = None) -> QuerySet:
+    """Запрос перечня серий, начинающихся с определённого набора символов.
 
     :param chars: Набор символов, с которого должна начинаться серия.
-    :type chars: str
-    :param length: длина набора символов, который надо найти.
-    :type length: int
-    :param lang_code: Опциональный параметр языка для серии.
-    :type lang_code: int|None
-
-    :returns: "Сырой" запрос данных.
-    :rtype: RawQuerySet
+    :param length: Длина набора символов для группировки.
+    :param lang_code: Опциональный код языка для фильтрации.
+    :returns: Запрос для поиска серий по шаблону.
     """
+    series = (
+        Series.objects.filter(search_ser__startswith=chars)
+        .annotate(
+            l=Value(length, output_field=IntegerField()),
+            sid=Substr("search_ser", 1, length),
+        )
+        .values("l", "sid")
+        .annotate(cnt=Count("sid"))
+        .order_by("sid")
+    )
     if lang_code:
-        sql = """select %(length)s as l, substring(search_ser,1,%(length)s) as id,
-        count(*) as cnt
-                from opds_catalog_series
-                where lang_code=%(lang_code)s and search_ser like '%(chars)s%%%%'
-                group by substring(search_ser,1,%(length)s)
-                order by id""" % {
-            "length": length,
-            "lang_code": lang_code,
-            "chars": chars,
-        }
-    else:
-        sql = """select %(length)s as l, substring(search_ser,1,%(length)s) as id,
-        count(*) as cnt
-                from opds_catalog_series
-                where search_ser like '%(chars)s%%%%'
-                group by substring(search_ser,1,%(length)s)
-                order by id""" % {"length": length, "chars": chars}
+        series = series.filter(lang_code=lang_code)
 
-    dataset = Series.objects.raw(sql)
-    return dataset
+    return series
 
 
 def search_series(searchtype: str, searchterms: str, author_id: int | None = None):
