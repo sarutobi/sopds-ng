@@ -220,6 +220,9 @@ def getFileDataConv(book, convert_type):
     else:
         fo.close()
         return None
+    if not converter_path:
+        fo.close()
+        return None
 
     tmp_fb2_path = os.path.join(config.SOPDS_TEMP_DIR, book.filename)
     tmp_conv_path = os.path.join(config.SOPDS_TEMP_DIR, dlfilename)
@@ -228,12 +231,10 @@ def getFileDataConv(book, convert_type):
     fw.close()
     fo.close()
 
-    popen_args = '"%s" "%s" "%s"' % (
-        converter_path,
-        tmp_fb2_path,
-        tmp_conv_path,
+    proc = subprocess.Popen(
+        [converter_path, tmp_fb2_path, tmp_conv_path],
+        stdout=subprocess.PIPE,
     )
-    proc = subprocess.Popen(popen_args, shell=True, stdout=subprocess.PIPE)
     # У следующий строки 2 функции 1-получение информации по конвертации и 2- ожидание конца конвертации
     # В силу 2й функции ее удаление приведет к ошибке выдачи сконвертированного файла
     out = proc.stdout.readlines()  # noqa: F841

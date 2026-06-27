@@ -186,6 +186,10 @@ def ConvertFB2(request, book_id, convert_type):
         converter_path = config.SOPDS_FB2TOEPUB
     elif convert_type == "mobi":
         converter_path = config.SOPDS_FB2TOMOBI
+    else:
+        raise Http404
+    if not converter_path:
+        raise Http404
     content_type = mime_detector.fmt(convert_type)
 
     if book.cat_type == opdsdb.CAT_NORMAL:
@@ -203,9 +207,10 @@ def ConvertFB2(request, book_id, convert_type):
         file_path = tmp_fb2_path
 
     tmp_conv_path = os.path.join(config.SOPDS_TEMP_DIR, dlfilename)
-    popen_args = '"%s" "%s" "%s"' % (converter_path, file_path, tmp_conv_path)
-    proc = subprocess.Popen(popen_args, shell=True, stdout=subprocess.PIPE)
-    # proc = subprocess.Popen((converter_path.encode('utf8'),file_path.encode('utf8'),tmp_conv_path.encode('utf8')), shell=True, stdout=subprocess.PIPE)
+    proc = subprocess.Popen(
+        [converter_path, file_path, tmp_conv_path],
+        stdout=subprocess.PIPE,
+    )
     out = proc.stdout.readlines()  # noqa: F841
 
     if os.path.isfile(tmp_conv_path):
