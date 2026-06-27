@@ -7,6 +7,7 @@ from django.shortcuts import redirect, render
 from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
 from django.utils.html import strip_tags
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.vary import vary_on_headers
@@ -558,6 +559,15 @@ def LoginView(request):
         return render(request, "sopds_login.html", args)
 
     next_url = request.GET.get("next", reverse("web:main"))
+
+    # Валидация next_url для предотвращения open redirect
+    allowed_hosts = {request.get_host()}
+    if not url_has_allowed_host_and_scheme(
+        url=next_url,
+        allowed_hosts=allowed_hosts,
+        require_https=False,
+    ):
+        next_url = reverse("web:main")
 
     user = authenticate(username=username, password=password)
     if user is not None:
