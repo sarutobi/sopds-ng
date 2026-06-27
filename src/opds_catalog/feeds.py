@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from constance import config
 from django.contrib.syndication.views import Feed
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import HttpRequest
 from django.shortcuts import render
 from django.urls import reverse
@@ -18,7 +19,6 @@ from django.utils.feedgenerator import Atom1Feed, Enclosure, rfc3339_date
 from django.utils.translation import gettext as _
 
 from book_tools.format.mimetype import Mimetype
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from opds_catalog import settings
 from opds_catalog.services import (
     SearchType,

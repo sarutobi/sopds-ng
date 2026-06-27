@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import pytest
-
 from django.core.paginator import Paginator
 from django.db import connection
 from django.test.utils import CaptureQueriesContext

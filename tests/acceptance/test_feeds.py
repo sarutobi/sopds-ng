@@ -1,8 +1,12 @@
 from io import BytesIO
 
+import pytest
 from constance import config
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from lxml import etree
+
+from opds_catalog import opdsdb, settings
 from tests.helpers import (
     opds_acquisition_links,
     opds_acquisition_or_navigation_feed,
@@ -16,10 +20,6 @@ from tests.helpers import (
     opds_search_rel,
     opds_summary_is_plain_text,
 )
-from lxml import etree
-import pytest
-
-from opds_catalog import opdsdb, settings
 
 pytestmark = [
     pytest.mark.django_db,

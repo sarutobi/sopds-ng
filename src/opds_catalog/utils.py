@@ -4,12 +4,12 @@
 #
 # import unicodedata
 import codecs
-from io import BytesIO
 import logging
 import os
 import subprocess
-from typing import Any
 import zipfile
+from io import BytesIO
+from typing import Any
 from zipfile import ZipInfo
 
 import chardet

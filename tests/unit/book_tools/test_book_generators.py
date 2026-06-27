@@ -1,7 +1,6 @@
 import io
 
 from book_tools.format.fb2 import FB2
-
 from tests.book_tools.format.helpers import Author, fb2_book_fabric
 
 

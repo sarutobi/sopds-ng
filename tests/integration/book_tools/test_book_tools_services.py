@@ -5,14 +5,14 @@ import pytest
 from book_tools.format.fb2 import (
     FB2,
 )
-from book_tools.services import (
-    create_bookfile_service,
-)
 from book_tools.mime_detector import (
     EPUBContentValidator,
     FB2ContentValidator,
     FB2ZipContentValidator,
     MobiContentValidator,
+)
+from book_tools.services import (
+    create_bookfile_service,
 )
 
 

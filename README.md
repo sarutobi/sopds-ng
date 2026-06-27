@@ -1,32 +1,34 @@
-#### SimpleOPDS Catalog NG (new generation)
+#### SimpleOPDS Catalog NG (new generation) — Простой OPDS Каталог НП (новое поколение)
 #### Based on SimpleOPDS Catalog by Dmitry V.Shelepnev
 #### Author: Valery A. Ilychev
-#### Version 0.47-devel
+#### Version 1.0.0RC1
 
-[Инструкция на русском языке: README_RUS.md](README_RUS.md)
+[Russian README: README_RUS.md](README_RUS.md)
+[Deploy documentation](docs/deploy.md) |
+[Migration documentation](docs/migration.md)
 
-Based on source code [SimpleOPDS Catalog](https://github.com/mitshel/sopds) by Dmitry V.Shelepnev.
-![Example 1](images/sopds-ng-1.jpg)
+This is a fork of the [SimpleOPDS Catalog](https://github.com/mitshel/sopds) project by Dmitry Shelepnev. The original project has been inactive since April 2019.
+![Example](images/sopds-ng-1.jpg)
 
-Notable changes:
+The following changes are planned relative to the original project:
 
-1. Database engine is postgresql only. Django supports other DB engines and probably sqlite or mysql can be used, but compatibility is not tested.
+1. PostgreSQL-only database support. Django supports other database engines and SOPDS-NG will likely work with mysql and sqlite as well, but this requires additional testing.
 
-2. Base page layouts has been changed (work in progress).
+2. Base page layout redesign (work in progress).
 
-3. Can be run in docker/podman containers.
+3. Ability to run SOPDS-NG in a docker/podman container (work in progress).
 
-Currently applied next changes:
+The following changes have been applied so far:
 
-1. Bug fixes, apply pathes to origianl project by contributors.
+1. Identified bugs have been fixed; changes from third-party contributors' pull requests for the original project have been applied.
 
-2. Now project works under wsgi-server gunicorn. Embedded in Django development server is out of work.
+2. The application now uses the gunicorn wsgi server. The built-in django server is not used.
 
-3. Project files layout has been modified.
+3. Source code structure has been reorganized for easier management.
 
-4. Project management tools has been changed to actual (uv, mypy etc.)
+4. Modern tooling is used (uv, mypy, etc.)
 
-All changes are present in dev branch in current repository
+All changes are being made in the dev branch of this repository.
 
 #### Technical stack
 

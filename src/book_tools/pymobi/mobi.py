@@ -1,12 +1,12 @@
 import array
-
-# try:
-from collections import OrderedDict
 import datetime
 import os.path
 import re
 import struct
 import sys
+
+# try:
+from collections import OrderedDict
 
 from book_tools.pymobi import compression
 

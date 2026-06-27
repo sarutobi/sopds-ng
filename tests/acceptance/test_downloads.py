@@ -1,14 +1,14 @@
 """Тесты скачивания книг через HTTP — acceptance, с клиентом и БД."""
 
 import base64
-from io import BytesIO
 import os
-from pathlib import Path
 import zipfile
+from io import BytesIO
+from pathlib import Path
 
+import pytest
 from constance import config
 from django.urls import reverse
-import pytest
 
 from opds_catalog.models import Book
 from opds_catalog.utils import getFileDataConv

@@ -50,6 +50,12 @@ lang_menu = {
 
 
 class Book(models.Model):
+    """Модель книги.
+
+    Основная сущность каталога. Содержит метаданные о книге:
+    название, авторы, жанры, формат, путь к файлу и пр.
+    """
+
     filename = models.CharField(max_length=SIZE_BOOK_FILENAME, db_index=True)
     path = models.CharField(max_length=SIZE_BOOK_PATH, db_index=True)
     filesize = models.IntegerField(null=False, default=0)
@@ -76,6 +82,12 @@ class Book(models.Model):
 
 
 class Catalog(models.Model):
+    """Модель каталога/директории.
+
+    Представляет директорию на диске, содержащую книги или
+    вложенные подкаталоги. Строит иерархическую структуру.
+    """
+
     parent = models.ForeignKey(
         "self", null=True, db_index=True, on_delete=models.CASCADE
     )
@@ -86,6 +98,12 @@ class Catalog(models.Model):
 
 
 class Author(models.Model):
+    """Модель автора книги.
+
+    Содержит полное имя автора и его поисковый вариант,
+    а также код языка для алфавитной сортировки.
+    """
+
     full_name = models.CharField(
         max_length=SIZE_AUTHOR_NAME, default=None, db_index=True
     )
@@ -96,6 +114,8 @@ class Author(models.Model):
 
 
 class bauthor(models.Model):
+    """Промежуточная таблица связи Book <-> Author (M2M)."""
+
     book = models.ForeignKey("Book", db_index=True, on_delete=models.CASCADE)
     author = models.ForeignKey("Author", db_index=True, on_delete=models.CASCADE)
 
@@ -107,23 +127,42 @@ class bauthor(models.Model):
 
 
 class Genre(models.Model):
+    """Модель жанра книги.
+
+    Содержит код жанра, раздел и подраздел для иерархической
+    классификации книг (FB2-жанры).
+    """
+
     genre = models.CharField(max_length=SIZE_GENRE, db_index=True)
     section = models.CharField(max_length=SIZE_GENRE_SECTION, db_index=True)
     subsection = models.CharField(max_length=SIZE_GENRE_SUBSECTION, db_index=True)
 
 
 class bgenre(models.Model):
+    """Промежуточная таблица связи Book <-> Genre (M2M)."""
+
     book = models.ForeignKey("Book", db_index=True, on_delete=models.CASCADE)
     genre = models.ForeignKey("Genre", db_index=True, on_delete=models.CASCADE)
 
 
 class Series(models.Model):
+    """Модель серии книг.
+
+    Объединяет книги в серии/циклы. Содержит название серии,
+    поисковый вариант и код языка.
+    """
+
     ser = models.CharField(max_length=SIZE_SERIES, db_index=True)
     search_ser = models.CharField(max_length=SIZE_SERIES, default=None, db_index=True)
     lang_code = models.IntegerField(null=False, default=9, db_index=True)
 
 
 class bseries(models.Model):
+    """Промежуточная таблица связи Book <-> Series (M2M).
+
+    Содержит номер книги в серии (ser_no) для упорядочивания.
+    """
+
     book = models.ForeignKey("Book", db_index=True, on_delete=models.CASCADE)
     ser = models.ForeignKey("Series", db_index=True, on_delete=models.CASCADE)
     ser_no = models.IntegerField(null=False, default=0)
@@ -136,12 +175,24 @@ class bseries(models.Model):
 
 
 class bookshelf(models.Model):
+    """Модель книжной полки (промежуточная таблица Book <-> Catalog).
+
+    Хранит информацию о том, какой пользователь какую книгу
+    читал и когда (время последнего чтения).
+    """
+
     user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
     book = models.ForeignKey(Book, db_index=True, on_delete=models.CASCADE)
     readtime = models.DateTimeField(null=False, default=timezone.now, db_index=True)
 
 
 class CounterManager(models.Manager):
+    """Менеджер для модели Counter.
+
+    Предоставляет методы для обновления счётчиков,
+    получения их значений и времени последнего сканирования.
+    """
+
     def update(self, counter_name, counter_value):
         self.update_or_create(
             name=counter_name,
@@ -173,6 +224,12 @@ class CounterManager(models.Manager):
 
 
 class Counter(models.Model):
+    """Модель счётчиков (статистика).
+
+    Хранит именованные счётчики (общее количество книг,
+    каталогов, авторов, жанров, серий) и время их обновления.
+    """
+
     name = models.CharField(primary_key=True, null=False, blank=False, max_length=16)
     value = models.IntegerField(null=False, default=0)
     update_time = models.DateTimeField(null=False, default=timezone.now)

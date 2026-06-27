@@ -1,7 +1,7 @@
 """Helper functions for testing purpose."""
 
-from io import BytesIO
 import zipfile
+from io import BytesIO
 
 from lxml import etree
 from lxml.etree import _ElementTree

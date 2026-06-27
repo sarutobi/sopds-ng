@@ -2,8 +2,8 @@
 
 import os
 
-from lxml import etree
 import pytest
+from lxml import etree
 
 from opds_catalog.feeds import GenresFeed, MainFeed
 

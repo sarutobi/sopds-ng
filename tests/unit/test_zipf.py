@@ -1,7 +1,6 @@
 import os
 import zipfile
 
-
 ROOT_LIB = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "data")
 TEST_ZIP = "books.zip"
 TEST_BAD_ZIP = "badfile.zip"

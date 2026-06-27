@@ -8,6 +8,7 @@ from constance import config
 from django.conf import settings as main_settings
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import connection, connections
 from django.db.models import Q
 from django.utils import translation
@@ -24,7 +25,6 @@ from telegram.ext import (
     Updater,
 )
 
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from opds_catalog import dl, settings
 from opds_catalog.models import Book
 

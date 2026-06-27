@@ -7,10 +7,9 @@ from opds_catalog.models import (
     Counter,
     bauthor,
     bgenre,
-    bseries,
     bookshelf,
+    bseries,
 )
-
 
 pytestmark = pytest.mark.django_db
 

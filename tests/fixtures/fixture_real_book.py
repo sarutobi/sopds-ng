@@ -1,9 +1,9 @@
 """Фикстуры для книг, размещенных в файловой системе."""
 
-from io import BytesIO
 import os
-from typing import Callable
 import zipfile
+from io import BytesIO
+from typing import Callable
 
 import pytest
 

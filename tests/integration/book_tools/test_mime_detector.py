@@ -1,22 +1,21 @@
 """Тесты mimetype-детектора и сервиса парсинга (задача 1.9.6)."""
 
-from io import BytesIO
 import os
+from io import BytesIO
 
 import pytest
 
-from book_tools.exceptions import UnsupportedFormatException, UnsupportedFileType
+from book_tools.exceptions import UnsupportedFileType, UnsupportedFormatException
 from book_tools.format import create_bookfile
 from book_tools.format.mimetype import Mimetype
 from book_tools.mime_detector import (
-    detect_mime_service,
     detect_by_suffix,
+    detect_mime_service,
 )
 from book_tools.services import (
     create_bookfile_service,
     get_parser,
 )
-
 
 # ---------------------------------------------------------------------------
 # detect_mime_service — все поддерживаемые типы

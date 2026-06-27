@@ -1,9 +1,9 @@
 """Тесты getFileData, getFileDataZip, get_fs_book_path — integration."""
 
-from io import BytesIO
 import os
-from pathlib import Path
 import zipfile
+from io import BytesIO
+from pathlib import Path
 
 import pytest
 

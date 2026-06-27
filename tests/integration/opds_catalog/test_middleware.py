@@ -8,7 +8,6 @@
 import pytest
 from django.http import HttpRequest
 
-
 pytestmark = pytest.mark.django_db
 
 

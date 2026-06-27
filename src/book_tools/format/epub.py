@@ -1,8 +1,8 @@
 import os
 import shutil
-from tempfile import mktemp
 import urllib
 import zipfile
+from tempfile import mktemp
 
 from lxml import etree
 

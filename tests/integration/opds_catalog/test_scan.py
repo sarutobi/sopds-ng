@@ -1,7 +1,7 @@
 import os
 
-from constance import config
 import pytest
+from constance import config
 
 from opds_catalog import opdsdb
 from opds_catalog.dl import getFileData

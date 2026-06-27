@@ -24,18 +24,6 @@ from .fixture_django import (
     load_db_data,
     unexisted_book,
 )
-from .fixture_opds_feeds import opds_1_2
-from .fixture_real_book import (
-    book_from_fs,
-    epub_book,
-    fb2_book_from_fs,
-    get_file_content,
-    mobi_book,
-    simple_fb2,
-    zipped_fb2,
-    zipped_fb2_book_from_fs,
-)
-from .fixture_settings import fake_sopds_root_lib, test_rootlib
 from .fixture_models import (
     author,
     book,
@@ -51,3 +39,15 @@ from .fixture_models import (
     update_counters,
     user,
 )
+from .fixture_opds_feeds import opds_1_2
+from .fixture_real_book import (
+    book_from_fs,
+    epub_book,
+    fb2_book_from_fs,
+    get_file_content,
+    mobi_book,
+    simple_fb2,
+    zipped_fb2,
+    zipped_fb2_book_from_fs,
+)
+from .fixture_settings import fake_sopds_root_lib, test_rootlib

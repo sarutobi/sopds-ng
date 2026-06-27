@@ -1,8 +1,8 @@
 # Фикстуры для Django
 
+import pytest
 from django.core.management import call_command
 from django.test import RequestFactory
-import pytest
 
 from opds_catalog import opdsdb
 from opds_catalog.models import Book

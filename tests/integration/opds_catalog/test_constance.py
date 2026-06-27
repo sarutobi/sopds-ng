@@ -1,8 +1,8 @@
 from io import StringIO
 
+import pytest
 from constance import config
 from django.core.management import call_command
-import pytest
 
 pytestmark = pytest.mark.django_db
 

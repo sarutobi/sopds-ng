@@ -1,7 +1,9 @@
 import logging
+
 from constance import config
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import redirect, render
 from django.template.context_processors import csrf
@@ -21,7 +23,6 @@ from opds_catalog.models import (
     bookshelf,
     lang_menu,
 )
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from opds_catalog.services import (
     authors_services,
     book_services,

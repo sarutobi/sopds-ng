@@ -1,5 +1,5 @@
-from abc import ABCMeta, abstractmethod
 import os
+from abc import ABCMeta, abstractmethod
 
 from book_tools.format.util import minify_cover, normalize_string
 

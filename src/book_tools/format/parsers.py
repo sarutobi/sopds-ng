@@ -1,12 +1,12 @@
 # Парсеры для разных форматов электронных книг
-from abc import ABC, abstractmethod
 import base64
-from dataclasses import dataclass
-from io import BytesIO
 import logging
 import os
-from typing import Any
 import zipfile
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from io import BytesIO
+from typing import Any
 
 from lxml import etree
 from lxml.etree import _Element

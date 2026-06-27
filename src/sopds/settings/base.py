@@ -1,9 +1,9 @@
-from collections import OrderedDict
 import os
+from collections import OrderedDict
 from pathlib import Path
 
-from django.utils.translation import gettext_lazy as _
 import environ
+from django.utils.translation import gettext_lazy as _
 
 # Инициализация для чтения переменных окружения из файла
 # https://django-environ.readthedocs.io/en/latest/quickstart.html

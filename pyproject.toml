@@ -1,6 +1,6 @@
 [project]
 name = "sopds-ng"
-version = "0.48.0"
+version = "1.0.0RC1"
 description = "New generation of Simple OPDS catalog"
 readme = "README.md"
 requires-python = "==3.13.*"
@@ -53,7 +53,15 @@ markers = [
 
 [tool.coverage.run]
 relative_files = true
-omit = ["manage.py", "*/migrations/*", "*/sopds/*", "src/inpx/*", "*/zipf*", "*/fb2parse*", "*/pymobi*"]
+omit = [
+    "manage.py",
+    "*/migrations/*",
+    "*/sopds/*",
+    "src/inpx/*",
+    "*/zipf*",
+    "*/fb2parse*",
+    "*/pymobi*",
+]
 source = ["src"]
 
 [tool.coverage.report]
@@ -93,7 +101,7 @@ docstring-code-format = true
 quote-style = "double"
 
 [tool.ruff.lint]
-select = ["F", "E"]
+select = ["F", "E", "I"]
 ignore = [
     "E722",
     "E501",

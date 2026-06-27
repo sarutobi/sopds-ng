@@ -1,16 +1,18 @@
 #### SimpleOPDS Catalog NG (new generation) - Простой OPDS Каталог НП (новое поколение)
 #### Based on SimpleOPDS Catalog by Dmitry V.Shelepnev
 #### Author: Valery A. Ilychev
-#### Версия 0.48-devel
+#### Версия 1.0.0RC1
 
 [English README.md](README.md)
+[Документация по развёртыванию](docs/deploy.md) |
+[Документация по миграции](docs/migration.md)
 
 Это форк проекта [SimpleOPDS Catalog](https://github.com/mitshel/sopds) Дмитрия Шелепнева. Исходный проект неактивен с апреля 2019 года.
-![Example](images/sopds-ng-1.jpg)
+![Пример](images/sopds-ng-1.jpg)
 
 Относительно исходного проекта планируются следующие изменения:
 
-1. Работа только с БД postgresql. Django поддерживает работу с другими БД и скорее всего SOPDS-NG сможет работать и с mysql и с sqlite, но это требует дополнительного тестирования.
+1. Работа только с БД postgresql. Django поддерживает работу с другими БД и скорее всего SOPDS-NG сможет работать и с mysql, и с sqlite, но это требует дополнительного тестирования.
 
 2. Изменение базовой верстки (в процессе).
 
@@ -30,9 +32,9 @@
 
 #### Технический стэк
 
-- Python 3.19
+- Python 3.13
 
-- Django 5.1
+- Django 5.2
 
 - PostgreSQL 17
 

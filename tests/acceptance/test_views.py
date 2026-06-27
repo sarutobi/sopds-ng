@@ -2,14 +2,13 @@
 
 from datetime import datetime
 
+import pytest
+from constance.test import override_config
 from django.contrib.auth.models import AnonymousUser
 from django.urls import reverse
 from django.utils import timezone
 
-from constance.test import override_config
-import pytest
-
-from opds_catalog.models import Book, Counter, bookshelf, Genre
+from opds_catalog.models import Book, Counter, Genre, bookshelf
 
 
 @pytest.fixture

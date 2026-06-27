@@ -1,8 +1,7 @@
 """Тесты для htmx-ориентированных views (Задача 1.10)."""
 
-from django.urls import reverse
-
 import pytest
+from django.urls import reverse
 
 
 @pytest.mark.django_db

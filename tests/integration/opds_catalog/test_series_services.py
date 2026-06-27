@@ -5,7 +5,6 @@ import pytest
 from opds_catalog.models import Series
 from opds_catalog.services import series_services
 
-
 pytestmark = pytest.mark.django_db
 
 

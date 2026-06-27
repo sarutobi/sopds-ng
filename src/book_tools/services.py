@@ -1,22 +1,22 @@
 # Сервисы для работы с электронными книгами
+import logging
+import zipfile
 from datetime import date
 from io import BytesIO
-import logging
 from typing import Callable, Optional
-import zipfile
 
 from .exceptions import (
-    UnsupportedFormatException,
-    UnsupportedFileType,
-    FB2StructureException,
-    EpubStructureException,
     EbookParserException,
+    EpubStructureException,
+    FB2StructureException,
+    UnsupportedFileType,
+    UnsupportedFormatException,
 )
 from .format.bookfile import BookFile
 from .format.ebook_parsers.dto import Author, BookMetadata, Cover, Series
+from .format.epub import EPub as EPubOld
 from .format.mimetype import Mimetype
 from .format.parsers import FB2, EpubParser
-from .format.epub import EPub as EPubOld
 from .mime_detector import detect_mime_service
 from .pymobi.mobi import BookMobi
 

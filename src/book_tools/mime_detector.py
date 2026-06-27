@@ -9,10 +9,10 @@
 
 import logging
 import os
+import zipfile
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from io import BytesIO
-import zipfile
 from xml.parsers.expat import ParserCreate
 
 from .format.mimetype import Mimetype

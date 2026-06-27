@@ -2,11 +2,10 @@
 
 import datetime
 
+import pytest
 from django.conf import settings as main_settings
 from django.contrib.auth.models import User
 from django.utils import timezone
-
-import pytest
 
 from opds_catalog.models import (
     Author,
@@ -17,8 +16,8 @@ from opds_catalog.models import (
     Series,
     bauthor,
     bgenre,
-    bseries,
     bookshelf,
+    bseries,
 )
 
 

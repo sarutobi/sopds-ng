@@ -599,7 +599,7 @@ wheels = [
 
 [[package]]
 name = "sopds-ng"
-version = "0.48.0"
+version = "1.0.0RC1"
 source = { virtual = "." }
 dependencies = [
     { name = "apscheduler" },
