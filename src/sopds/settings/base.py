@@ -3,6 +3,7 @@ from collections import OrderedDict
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
 # Читаем DATA_ROOT из окружения (не из .env — проблема курицы и яйца)
@@ -87,8 +88,9 @@ WSGI_APPLICATION = "sopds.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-ENGINE = env("SOPDS_DB_ENGINE")
-if "postgres" == ENGINE:
+ENGINE = env("SOPDS_DB_ENGINE", default="postgres")
+
+if ENGINE == "postgres":
     default_database = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": env("SOPDS_DB_NAME"),
@@ -97,6 +99,34 @@ if "postgres" == ENGINE:
         "HOST": env("SOPDS_DB_HOST"),
         "PORT": env("SOPDS_DB_PORT"),
     }
+elif ENGINE == "mysql":
+    default_database = {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": env("SOPDS_DB_NAME"),
+        "USER": env("SOPDS_DB_USER"),
+        "PASSWORD": env("SOPDS_DB_PASSWORD"),
+        "HOST": env("SOPDS_DB_HOST"),
+        "PORT": env("SOPDS_DB_PORT", default="3306"),
+        "OPTIONS": {
+            "charset": "utf8mb4",
+        },
+    }
+elif ENGINE == "sqlite":
+    default_database = {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": os.path.join(DATA_ROOT, "db.sqlite3"),
+        "OPTIONS": {
+            "init_command": (
+                "PRAGMA journal_mode=WAL;"
+                "PRAGMA synchronous=NORMAL;"
+                "PRAGMA busy_timeout=5000;"
+                "PRAGMA foreign_keys=ON;"
+            ),
+        },
+    }
+else:
+    raise ImproperlyConfigured(f"Unsupported DB engine: {ENGINE}")
+
 DATABASES = {"default": default_database}
 
 # Memcached

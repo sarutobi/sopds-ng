@@ -47,3 +47,38 @@ All changes are being made in the dev branch of this repository.
 #### Развёртывание
 
 See [Deploy documentation](docs/deploy.md), including `DATA_ROOT` configuration for unified paths.
+
+---
+
+### Bare-metal install (systemd)
+
+1. Создайте системного пользователя:
+   ```bash
+   sudo useradd -r sopds
+   ```
+
+2. Распакуйте релизный архив:
+   ```bash
+   sudo tar -xzf release_*.tar.gz -C /opt/sopds-ng
+   sudo chown -R sopds:sopds /opt/sopds-ng
+   ```
+
+3. Подготовьте директорию данных:
+   ```bash
+   sudo mkdir -p /data && sudo chown sopds:sopds /data
+   sudo cp base.env /data/.env   # затем отредактируйте .env
+   ```
+
+4. Установите и запустите systemd-сервис:
+   ```bash
+   sudo cp etc/systemd/system/sopds.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now sopds
+   ```
+
+5. Проверьте установку:
+   ```bash
+   /opt/sopds-ng/check-systemd.sh
+   ```
+
+Подробная инструкция — в [docs/deploy.md](docs/deploy.md).
