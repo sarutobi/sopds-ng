@@ -49,6 +49,12 @@ cd sopds-ng
 cp base.env .env
 ```
 
+**Подготовка директории данных:**
+
+```bash
+mkdir -p data
+```
+
 Отредактируйте `.env`. Минимально необходимые параметры:
 
 ```env
@@ -60,6 +66,11 @@ SOPDS_DB_PASSWORD=<пароль>
 SOPDS_DB_HOST=db
 SOPDS_DB_PORT=5432
 ```
+
+> **DATA_ROOT** — единая корневая директория для всех файлов конфигурации и персистентных данных (дефолт: `/data` внутри контейнера).
+> - `.env` — конфигурация django-environ
+> - `secret_key.txt` — секретный ключ Django
+> - В будущем: `db.sqlite3` — SQLite база данных
 
 **Генерация SECRET_KEY:**
 
@@ -80,7 +91,7 @@ docker compose up -d --build
 При первом запуске автоматически выполняются:
 - Миграции БД (`migrate`)
 - Сборка статики (`collectstatic`)
-- Генерация `secret_key.txt` (если отсутствует)
+- Генерация `secret_key.txt` в `/data/` (если отсутствует)
 
 ### 4. Проверка
 
@@ -140,7 +151,16 @@ cd /opt/sopds-ng
 
 # Настройка окружения
 cp base.env .env
+
+# Подготовка директории данных
+DATA_ROOT=/data
+mkdir -p "$DATA_ROOT"
 ```
+
+> **DATA_ROOT=/data** — единая корневая директория для всех файлов конфигурации и персистентных данных в bare-metal.
+> - `.env` — конфигурация django-environ
+> - `secret_key.txt` — секретный ключ Django
+> - В будущем: `db.sqlite3` — SQLite база данных, `log/` — файлы логирования
 
 Отредактируйте `.env`. Для SQLite (без PostgreSQL):
 
@@ -294,7 +314,7 @@ docker compose up -d --build
 ```
 
 Контейнер автоматически запускает gunicorn через `scripts/docker_entrypoint.sh`:
-1. Создаёт `secret_key.txt` (если отсутствует)
+1. Создаёт `secret_key.txt` в `/data/` (если отсутствует)
 2. Выполняет `collectstatic`
 3. Выполняет `migrate`
 4. Запускает gunicorn

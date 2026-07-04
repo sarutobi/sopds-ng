@@ -5,6 +5,9 @@ from pathlib import Path
 import environ
 from django.utils.translation import gettext_lazy as _
 
+# Читаем DATA_ROOT из окружения (не из .env — проблема курицы и яйца)
+DATA_ROOT = os.getenv("DATA_ROOT", "/data")
+
 # Инициализация для чтения переменных окружения из файла
 # https://django-environ.readthedocs.io/en/latest/quickstart.html
 env = environ.FileAwareEnv(DEBUG=(bool, False))
@@ -12,7 +15,7 @@ env = environ.FileAwareEnv(DEBUG=(bool, False))
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+environ.Env.read_env(os.path.join(DATA_ROOT, ".env"))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -464,12 +467,12 @@ LOGGING = {
             "when": "midnight",
             "interval": 1,
             "backupCount": 7,
-            "filename": "log/sopds-ng.log",
+            "filename": os.path.join(DATA_ROOT, "log/sopds-ng.log"),
         },
         "scanner": {
             "formatter": "verbose",
             "class": "logging.FileHandler",
-            "filename": "log/sopds-scaner.log",
+            "filename": os.path.join(DATA_ROOT, "log/sopds-scaner.log"),
         },
     },
     "loggers": {

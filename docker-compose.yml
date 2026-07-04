@@ -10,11 +10,11 @@ services:
     ports:
       - "8008:8008"
     volumes:
-      - ./secret_key.txt:/app/src/secret_key.txt
-      - ./.env:/app/src/.env
+      - ./data:/data                      # единый volume
       - ${SOPDS_BOOK_PATH:-./books}:/books:ro
     environment:
       DJANGO_SETTINGS_MODULE: "sopds.settings.base"
+      DATA_ROOT: "/data"                  # явно
       PYTHONDONTWRITEBYTECODE: "true"
     depends_on:
       - db

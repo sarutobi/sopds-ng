@@ -31,7 +31,7 @@ The following changes have been applied so far:
 All changes are being made in the dev branch of this repository.
 
 #### Technical stack
-
+#### Technical stack
 - Python 3.13
 
 - Django 5.2
@@ -41,3 +41,9 @@ All changes are being made in the dev branch of this repository.
 - gunicorn
 
 - docker
+
+---
+
+#### Развёртывание
+
+See [Deploy documentation](docs/deploy.md), including `DATA_ROOT` configuration for unified paths.
