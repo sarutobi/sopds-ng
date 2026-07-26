@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 export DJANGO_SETTINGS_MODULE='sopds.settings.base'
 
@@ -12,21 +13,13 @@ if [ -z "${SOPDS_DB_PASSWORD}" ]; then
     exit 1
 fi
 
+# Подготовка директорий
 mkdir -p "$DATA_ROOT/log"
 
-# Sync packages
-uv sync --no-dev
-
-# Create key
+# Создание secret_key если нет
 if [ ! -f "$SECRET_KEY_FILE" ]; then
-    uv run --no-dev python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())' >"$SECRET_KEY_FILE"
+    .venv/bin/python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())' >"$SECRET_KEY_FILE"
 fi
 
-# Collect statics files
-uv run --no-dev manage.py collectstatic --skip-checks --no-input
-
-# Run DB migrations
-uv run --no-dev manage.py migrate --skip-checks --no-input
-
-# Run server
-uv run --no-dev --env-file="$DATA_ROOT/.env" gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
+# Запуск gunicorn с exec для правильного сигналинга в systemd
+exec .venv/bin/gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi

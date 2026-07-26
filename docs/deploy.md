@@ -140,9 +140,9 @@ VERSION=v1.0.0
 wget "https://github.com/sarutobi/sopds-ng/releases/download/${VERSION}/release_${VERSION#v}.tar.gz"
 
 # Распакуйте в целевой каталог
-mkdir -p /opt/sopds-ng
-tar -xzf "release_${VERSION#v}.tar.gz" -C /opt/sopds-ng
-cd /opt/sopds-ng
+mkdir -p /opt/sopds-ng/{app,data}
+tar -xzf "release_${VERSION#v}.tar.gz" -C /opt/sopds-ng/app
+cd /opt/sopds-ng/app
 ```
 
 ### 3. Настройка окружения
@@ -150,8 +150,7 @@ cd /opt/sopds-ng
 Задайте `DATA_ROOT` — единый каталог для конфигурации и данных приложения:
 
 ```bash
-export DATA_ROOT=/data
-mkdir -p "$DATA_ROOT"
+export DATA_ROOT=/opt/sopds-ng/data
 ```
 
 Скопируйте и отредактируйте `.env`:
@@ -160,6 +159,10 @@ mkdir -p "$DATA_ROOT"
 cp base.env "$DATA_ROOT/.env"
 nano "$DATA_ROOT/.env"
 ```
+
+> **deploy.sh автоматизирует этот шаг:** скопирует base.env и подставит параметры
+> (DATA_ROOT, DB_ENGINE, DB_NAME, ALLOWED_HOSTS и др.) из переданных опций.
+> См. шаг 4.
 
 **Для SQLite** (без отдельного сервера БД):
 
@@ -191,35 +194,84 @@ SOPDS_DB_PORT=3306
 
 > Для MySQL требуется дополнительная зависимость: `uv pip install mysqlclient>=2.2`. На Debian/Ubuntu: `apt install default-libmysqlclient-dev`.
 
-### 4. Установка зависимостей
+### 4. Deploy (prepare environment)
+
+Одноразовый скрипт установки: зависимости, миграции, статика, secret_key.
+
+**Основной вариант (PostgreSQL с дефолтными путями):**
 
 ```bash
-# Production-зависимости (gunicorn, django, psycopg и др.)
-uv sync --frozen --no-group dev
-
-# Для разработки (включает тесты, линтеры)
-uv sync --frozen --group dev
+sudo -u sopds bash deploy.sh
 ```
 
-### 5. Применение миграций
+**С параметрами (пример — SQLite, кастомный DATA_ROOT):**
+
+```bash
+sudo -u sopds bash deploy.sh \
+  -i /opt/sopds-ng \
+  --db-engine sqlite \
+  --time-zone Europe/Moscow \
+  --server-log-level INFO
+```
+
+**Все опции deploy.sh:**
+
+| Параметр | По умолчанию | Описание |
+|----------|-------------|----------|
+| `-i, --install-dir DIR` | `/opt/sopds-ng` | Корень установки (там же `.venv`) |
+| `-d, --data-root DIR` | `data` (→ `$INSTALL_DIR/data`) | DATA_ROOT. Абсолютный — как есть, относительный — от INSTALL_DIR |
+| `--db-engine ENGINE` | `postgres` | `postgres`, `sqlite`, `mysql` |
+| `--db-name NAME` | (из .env) | Имя БД |
+| `--db-user USER` | (из .env) | Пользователь БД |
+| `--db-host HOST` | (из .env) | Хост БД |
+| `--db-port PORT` | (из .env) | Порт БД |
+| `--time-zone TZ` | `Europe/Moscow` | Часовой пояс |
+| `--allowed-hosts H` | (закомментирован) | Разрешённые хосты через запятую |
+| `--server-log-level LVL` | `WARNING` | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
+| `--debug` | — | Включить `DEBUG=True` |
+| `-DS, --django-settings MODULE` | `sopds.settings.base` | `DJANGO_SETTINGS_MODULE` |
+| `-n, --dry-run` | — | Показать что будет сделано без выполнения |
+
+**Что делает deploy.sh:**
+
+1. Создаёт `$DATA_ROOT/log/` и `$DATA_ROOT/static/`
+2. Копирует `base.env` → `.env` в DATA_ROOT (если .env не существует)
+3. Подставляет в .env переданные параметры (DB, ALLOWED_HOSTS, DEBUG и др.)
+4. `uv sync --frozen --no-group dev` — установка production-зависимостей
+5. Генерирует `secret_key.txt` в DATA_ROOT (если отсутствует)
+6. `collectstatic --skip-checks --no-input`
+7. `migrate --skip-checks --no-input`
+
+> После deploy.sh в `.env` остаётся пустой `SOPDS_DB_PASSWORD=''` — укажите пароль вручную.
+
+### 5. Dev-зависимости (опционально)
+
+Если нужны инструменты разработки (тесты, линтеры):
+
+```bash
+cd /opt/sopds-ng/app
+sudo -u sopds uv sync --frozen --group dev
+```
+
+### 6. Применение миграций (если deploy.sh не используется)
 
 ```bash
 uv run python src/manage.py migrate --skip-checks --no-input
 ```
 
-### 6. Сборка статики
+### 7. Сборка статики (если deploy.sh не используется)
 
 ```bash
 uv run python src/manage.py collectstatic --skip-checks --no-input
 ```
 
-### 7. Создание суперпользователя
+### 8. Создание суперпользователя
 
 ```bash
 uv run python src/manage.py createsuperuser
 ```
 
-### 8. Запуск dev-сервера (для тестирования)
+### 9. Запуск dev-сервера (для тестирования)
 
 ```bash
 uv run python src/manage.py runserver 0.0.0.0:8000
@@ -332,12 +384,12 @@ EnvironmentFile=-/data/.env
 Environment=DATA_ROOT=/data
 Environment=PYTHONDONTWRITEBYTECODE=1
 
-ExecStartPre=/usr/bin/mkdir -p /data/log
-ExecStartPre=/bin/sh -c 'test -f /data/secret_key.txt || python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())" > /data/secret_key.txt'
+# Startup — через scripts/start_server.sh
+# Создает /data/log, генерирует secret_key.txt, запускает gunicorn
+# ВНИМАНИЕ: migrate/collectstatic выполняются в deploy.sh (one-time)
+ExecStart=/opt/sopds-ng/scripts/start_server.sh
 
-ExecStart=/opt/sopds-ng/.venv/bin/gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
-
-Restart=always
+Restart=on-failure
 RestartSec=5s
 
 NoNewPrivileges=yes
@@ -364,28 +416,23 @@ WantedBy=multi-user.target
 sudo useradd -r sopds -d /opt/sopds-ng -s /usr/sbin/nologin
 
 # 2. Распакуйте релиз
-sudo mkdir -p /opt/sopds-ng
-sudo tar -xzf "release_${VERSION#v}.tar.gz" -C /opt/sopds-ng
+sudo mkdir -p /opt/sopds-ng/{app,data}
+sudo tar -xzf "release_${VERSION#v}.tar.gz" -C /opt/sopds-ng/app
 sudo chown -R sopds:sopds /opt/sopds-ng
 
-# 3. Подготовьте DATA_ROOT
-sudo mkdir -p /data
-sudo chown sopds:sopds /data
+# 3. Deploy (prepare environment) — зависимости, .env, secret_key, migrate, collectstatic
+sudo -u sopds bash /opt/sopds-ng/app/deploy.sh
 
-# 4. Скопируйте .env
-sudo cp base.env /data/.env
-sudo nano /data/.env          # отредактируйте конфигурацию
+# 4. Установите systemd unit
+sudo cp /opt/sopds-ng/app/etc/systemd/system/sopds.service /etc/systemd/system/sopds.service
+# или вручную создайте /etc/systemd/system/sopds.service из шаблона ниже
 
-# 5. Установите systemd unit
-sudo cp deploy/sopds.service /etc/systemd/system/sopds.service
-# или вручную создайте /etc/systemd/system/sopds.service из шаблона выше
-
-# 6. Активируйте и запустите
+# 5. Активируйте и запустите
 sudo systemctl daemon-reload
 sudo systemctl enable sopds.service
 sudo systemctl start sopds.service
 
-# 7. Проверьте статус
+# 6. Проверьте статус
 sudo systemctl status sopds.service
 journalctl -u sopds -n 20 --no-pager
 ```
@@ -465,23 +512,16 @@ mkdir -p /opt/sopds-ng
 tar -xzf "release_${VERSION#v}.tar.gz" -C /opt/sopds-ng
 cd /opt/sopds-ng
 
-# Настройка DATA_ROOT
-export DATA_ROOT=/data
-mkdir -p "$DATA_ROOT"
-cp base.env "$DATA_ROOT/.env"
-# Отредактируйте .env:
-#   SOPDS_DB_ENGINE=sqlite (экономит RAM)
-
-# Установка зависимостей
-uv sync --frozen --no-group dev
-
-# Миграции и статика
-uv run python src/manage.py migrate --skip-checks --no-input
-uv run python src/manage.py collectstatic --skip-checks --no-input
+# Deploy (prepare environment) — всё в одном шаге:
+# создание DATA_ROOT, .env из base.env, uv sync, secret_key, migrate, collectstatic
+sudo bash deploy.sh \
+  --db-engine sqlite \
+  --time-zone Europe/Moscow \
+  --server-log-level INFO
 
 # Запуск (с уменьшенным числом worker'ов)
 WEB_CONCURRENCY=2 PYTHON_MAX_THREADS=4 \
-  uv run gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
+  .venv/bin/gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
 ```
 
 **Рекомендации для Raspberry Pi:**

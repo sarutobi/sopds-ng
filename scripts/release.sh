@@ -14,6 +14,7 @@ cp pyproject.toml build/release
 cp base.env build/release
 cp version.txt build/release
 cp scripts/start_server.sh build/release
+cp scripts/deploy.sh build/release
 
 echo "Очистка"
 rm -rf build/release/inpx
@@ -26,6 +27,7 @@ mkdir -p build/release/etc/systemd/system
 cp scripts/sopds.service build/release/etc/systemd/system/
 cp scripts/check-systemd.sh build/release/
 chmod +x build/release/check-systemd.sh
+chmod +x build/release/deploy.sh
 
 echo "Подготовка пакета"
 cwd=$(pwd)

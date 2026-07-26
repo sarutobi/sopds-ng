@@ -14,6 +14,9 @@ EnvironmentFile=-/data/.env
 Environment=DATA_ROOT=/data
 Environment=PYTHONDONTWRITEBYTECODE=1
 
+# Startup — через scripts/start_server.sh
+# Создает /data/log, генерирует secret_key.txt, запускает gunicorn
+# ВНИМАНИЕ: migrate/collectstatic выполняются в deploy.sh (one-time)
 ExecStart=/opt/sopds-ng/scripts/start_server.sh
 
 Restart=on-failure
