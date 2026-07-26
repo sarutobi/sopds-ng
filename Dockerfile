@@ -59,7 +59,7 @@ COPY --from=builder /app/version.txt /app/src/
 # Copy entrypoint script
 COPY scripts/docker_entrypoint.sh /app/src/
 
-EXPOSE 8008
+EXPOSE 8080
 
 CMD ["./docker_entrypoint.sh"]
 
@@ -83,6 +83,6 @@ COPY --from=builder /app/version.txt /app/src/
 # Copy entrypoint script
 COPY scripts/docker_entrypoint.sh /app/src/
 
-EXPOSE 8008
+EXPOSE 8080
 
 CMD ["./docker_entrypoint.sh"]

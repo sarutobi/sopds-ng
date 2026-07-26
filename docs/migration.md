@@ -138,7 +138,7 @@ uv run gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
 
 ```bash
 # 1. Настройте SOPDS_ROOT_LIB в админке:
-#    http://your-host:8008/admin/constance/config/
+#    http://your-host:8080/admin/constance/config/
 #    Укажите абсолютный путь к директории с книгами.
 
 # 2. Запустите сканирование:
@@ -226,10 +226,10 @@ SOPDS_BOOK_PATH=/mnt/media/books  # для Docker
 
 ### 1. Проверка веб-интерфейса
 
-- Откройте `http://your-host:8008/` — должна отобразиться страница каталога.
+- Откройте `http://your-host:8080/` — должна отобразиться страница каталога.
 - Проверьте поиск книг.
 - Проверьте алфавитный указатель.
-- Проверьте OPDS-ленту: `http://your-host:8008/opds/`.
+- Проверьте OPDS-ленту: `http://your-host:8080/opds/`.
 
 ### 2. Проверка сканирования
 
@@ -254,7 +254,7 @@ tail -f /opt/sopds-ng/src/log/sopds-scaner.log
 
 ### 4. Проверка административной панели
 
-- Откройте `http://your-host:8008/admin/`.
+- Откройте `http://your-host:8080/admin/`.
 - Войдите под учётной записью суперпользователя.
 - Проверьте настройки в разделе `Constance` → `Config`.
 - Проверьте, что все книги отображаются в списке в разделе `OPDS_Catalog`.
@@ -303,7 +303,7 @@ cp /backup/sopds-backup-YYYYMMDD.sqlite3 sopds/db.sqlite3
 ### Проверка работоспособности старой версии
 
 ```bash
-curl http://localhost:8008/
+curl http://localhost:8080/
 # Если всё работает — миграция отменена.
 ```
 

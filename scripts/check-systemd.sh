@@ -7,7 +7,7 @@
 set -e
 
 SERVICE="sopds"
-PORT="8008"
+PORT="8080"
 
 echo "=== Проверка systemd-сервиса SOPDS NG ==="
 echo ""
@@ -41,7 +41,7 @@ else
     echo "OK (ошибок не найдено)"
 fi
 
-# 4. Проверка: порт 8008 слушается
+# Проверка: порт 8080 слушается
 echo -n "[4/4] Проверка порта $PORT ... "
 if ss -tlnp 2>/dev/null | grep -q ":$PORT "; then
     echo "OK (порт $PORT открыт)"

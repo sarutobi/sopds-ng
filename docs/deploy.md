@@ -78,7 +78,7 @@ docker compose up -d --build
 ```
 
 Сервисы:
-- **web** — gunicorn на порту `8008`
+- **web** — gunicorn на порту `8080`
 - **db** — PostgreSQL 17
 
 **Что происходит при старте контейнера** (`scripts/docker_entrypoint.sh`):
@@ -97,7 +97,7 @@ docker compose up -d --build
 docker compose logs -f web
 
 # Проверка работоспособности
-curl http://localhost:8008/
+curl http://localhost:8080/
 ```
 
 ### 5. Создание суперпользователя
@@ -117,7 +117,7 @@ docker compose up -d
 
 После запуска настройте `SOPDS_ROOT_LIB` в админке Django:
 
-- Откройте `http://localhost:8008/admin/constance/config/`
+- Откройте `http://localhost:8080/admin/constance/config/`
 - Укажите абсолютный путь к директории с книгами (**внутри контейнера** — `/books/` для смонтированной директории)
 - Запустите сканирование: `docker compose exec web python manage.py sopds_scanner`
 
@@ -265,7 +265,7 @@ uv run python src/manage.py runserver 0.0.0.0:8000
 
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
-| `PORT` | `8008` | Порт для gunicorn |
+| `PORT` | `8080` | Порт для gunicorn |
 | `WEB_CONCURRENCY` | `cpu_count * 2 + 1` | Количество worker-процессов gunicorn |
 | `PYTHON_MAX_THREADS` | `2` | Количество потоков на worker (gthread) |
 | `WEB_TIMEOUT` | `120` | Таймаут worker'а (сек) |
@@ -305,7 +305,7 @@ uv run gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
 
 | Параметр | Значение | Источник |
 |----------|----------|----------|
-| **bind** | `0.0.0.0:8008` | `PORT` (env) |
+| **bind** | `0.0.0.0:8080` | `PORT` (env) |
 | **workers** | `cpu_count * 2 + 1` | `WEB_CONCURRENCY` (env) |
 | **worker_type** | `gthread` | — |
 | **threads** | `2` | `PYTHON_MAX_THREADS` (env) |
@@ -406,7 +406,7 @@ server {
     }
 
     location / {
-        proxy_pass http://127.0.0.1:8008;
+        proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -496,7 +496,7 @@ WEB_CONCURRENCY=2 PYTHON_MAX_THREADS=4 \
 
 ## Telegram Bot
 
-После запуска настройте в админке Django (`http://your-host:8008/admin/constance/config/`):
+После запуска настройте в админке Django (`http://your-host:8080/admin/constance/config/`):
 
 | Параметр | Описание |
 |----------|----------|

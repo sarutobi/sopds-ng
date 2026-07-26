@@ -89,7 +89,7 @@ docker compose up -d --build
 docker compose logs -f web
 
 # HTTP-ответ
-curl -I http://localhost:8008/
+curl -I http://localhost:8080/
 ```
 
 ---
@@ -184,16 +184,16 @@ journalctl -u sopds -n 20 --no-pager
 
 ```bash
 # HTTP-доступность
-curl -I http://localhost:8008/
+curl -I http://localhost:8080/
 
 # Логи приложения
 journalctl -u sopds -n 20 --no-pager
 
 # Статика (должна отдаваться без ошибок 404)
-curl -I http://localhost:8008/static/css/sopds.css
+curl -I http://localhost:8080/static/css/sopds.css
 
 # Админка (проверить в браузере)
-echo "Откройте http://localhost:8008/admin/constance/config/"
+echo "Откройте http://localhost:8080/admin/constance/config/"
 ```
 
 **Что проверить:**
