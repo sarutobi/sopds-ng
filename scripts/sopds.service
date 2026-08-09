@@ -10,13 +10,11 @@ User=sopds
 Group=sopds
 WorkingDirectory=/opt/sopds-ng
 
-EnvironmentFile=-/data/.env
-Environment=DATA_ROOT=/data
+EnvironmentFile=-/opt/sopds-ng/data/.env
+Environment=SOPDS_ROOT=/opt/sopds-ng
+Environment=DATA_ROOT=/opt/sopds-ng/data
 Environment=PYTHONDONTWRITEBYTECODE=1
 
-# Startup — через scripts/start_server.sh
-# Создает /data/log, генерирует secret_key.txt, запускает gunicorn
-# ВНИМАНИЕ: migrate/collectstatic выполняются в deploy.sh (one-time)
 ExecStart=/opt/sopds-ng/scripts/start_server.sh
 
 Restart=on-failure
@@ -26,7 +24,7 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/data
+ReadWritePaths=/opt/sopds-ng/data
 
 LimitNOFILE=65535
 LimitNPROC=4096

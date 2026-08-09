@@ -46,7 +46,7 @@ All changes are being made in the dev branch of this repository.
 
 #### Развёртывание
 
-See [Deploy documentation](docs/deploy.md), including `DATA_ROOT` configuration for unified paths.
+See [Deploy documentation](docs/deploy.md), including `SOPDS_ROOT` configuration for unified paths.
 
 ---
 
@@ -65,8 +65,8 @@ See [Deploy documentation](docs/deploy.md), including `DATA_ROOT` configuration 
 
 3. Подготовьте директорию данных:
    ```bash
-   sudo mkdir -p /data && sudo chown sopds:sopds /data
-   sudo cp base.env /data/.env   # затем отредактируйте .env
+   sudo mkdir -p /opt/sopds-ng/data && sudo chown sopds:sopds /opt/sopds-ng/data
+   sudo cp base.env /opt/sopds-ng/data/.env   # затем отредактируйте .env
    ```
 
 4. Установите и запустите systemd-сервис:

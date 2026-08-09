@@ -29,8 +29,9 @@ RUN if [ "$BUILD_TARGET" = "dev" ]; then \
     uv sync --frozen --no-install-project; \
     fi
 
-# Copy source code
-COPY src/ ./src/
+# Copy source code to app/
+COPY src/ ./app/
+COPY manage.py ./
 
 # Copy version file
 COPY version.txt ./
@@ -49,19 +50,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:$PATH"
 
-WORKDIR /app/src
+WORKDIR /app
 
 # Copy virtual environment and source from builder
 COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/src /app/src
-COPY --from=builder /app/version.txt /app/src/
+COPY --from=builder /app/app /app/app
+COPY --from=builder /app/manage.py /app/
+COPY --from=builder /app/version.txt /app/
 
-# Copy entrypoint script
-COPY scripts/docker_entrypoint.sh /app/src/
+# Copy scripts
+COPY scripts/ /app/scripts/
 
-EXPOSE 8080
+EXPOSE 8008
 
-CMD ["./docker_entrypoint.sh"]
+CMD ["./scripts/docker_entrypoint.sh"]
 
 # ============================================================
 # Stage 3: development image (default target)
@@ -74,15 +76,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:$PATH"
 
-WORKDIR /app/src
+WORKDIR /app
 
 # Copy virtual environment and source from builder
 COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/src /app/src
-COPY --from=builder /app/version.txt /app/src/
-# Copy entrypoint script
-COPY scripts/docker_entrypoint.sh /app/src/
+COPY --from=builder /app/app /app/app
+COPY --from=builder /app/manage.py /app/
+COPY --from=builder /app/version.txt /app/
 
-EXPOSE 8080
+# Copy scripts
+COPY scripts/ /app/scripts/
 
-CMD ["./docker_entrypoint.sh"]
+EXPOSE 8008
+
+CMD ["./scripts/docker_entrypoint.sh"]

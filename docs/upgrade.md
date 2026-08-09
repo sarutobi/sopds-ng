@@ -40,15 +40,15 @@ docker compose start web
 ### SQLite
 
 ```bash
-cp /data/db.sqlite3 /data/db.sqlite3.$(date +%Y%m%d)
+cp /opt/sopds-ng/data/db.sqlite3 /opt/sopds-ng/data/db.sqlite3.$(date +%Y%m%d)
 ```
 
 ### Конфигурация
 
 ```bash
 # Сохраните .env и ключи
-cp /data/.env /data/.env.$(date +%Y%m%d)
-cp /data/secret_key.txt /data/secret_key.txt.$(date +%Y%m%d)
+cp /opt/sopds-ng/data/.env /opt/sopds-ng/data/.env.$(date +%Y%m%d)
+cp /opt/sopds-ng/data/secret_key.txt /opt/sopds-ng/data/secret_key.txt.$(date +%Y%m%d)
 ```
 
 ---
@@ -129,7 +129,8 @@ sudo systemctl stop sopds
 ### 4. Примените миграции БД
 
 ```bash
-export DATA_ROOT=/data
+export SOPDS_ROOT=/opt/sopds-ng
+export DATA_ROOT=/opt/sopds-ng/data
 uv run python src/manage.py migrate --skip-checks --no-input
 ```
 
@@ -232,7 +233,7 @@ docker compose up -d --build
 ```bash
 # 1. Восстановите БД из резервной копии
 # SQLite:
-cp /data/db.sqlite3.<дата> /data/db.sqlite3
+cp /opt/sopds-ng/data/db.sqlite3.<дата> /opt/sopds-ng/data/db.sqlite3
 
 # PostgreSQL:
 psql -U sopds -h localhost sopds < sopds-ng-db-<дата>.sql

@@ -6,8 +6,12 @@ import environ
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
-# Читаем DATA_ROOT из окружения (не из .env — проблема курицы и яйца)
-DATA_ROOT = os.getenv("DATA_ROOT", "/data")
+# Читаем SOPDS_ROOT из окружения (не из .env — проблема курицы и яйца)
+SOPDS_ROOT = os.getenv("SOPDS_ROOT", "/opt/sopds-ng")
+
+# DATA_ROOT — поддиректория данных
+# (SECRET_KEY_FILE по умолчанию $DATA_ROOT/secret_key.txt — задаётся в скриптах старта)
+DATA_ROOT = os.getenv("DATA_ROOT", os.path.join(SOPDS_ROOT, "data"))
 
 # Инициализация для чтения переменных окружения из файла
 # https://django-environ.readthedocs.io/en/latest/quickstart.html

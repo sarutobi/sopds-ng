@@ -8,13 +8,14 @@ services:
         BUILD_TARGET: prod
     image: ${DOCKER_IMAGE_TAG:-sopds-ng:prod}
     ports:
-      - "8080:8080"
+      - "8008:8008"
     volumes:
-      - ./data:/data                      # единый volume
+      - ./data:/app/data                      # конфиг и данные
       - ${SOPDS_BOOK_PATH:-./books}:/books:ro
     environment:
       DJANGO_SETTINGS_MODULE: "sopds.settings.base"
-      DATA_ROOT: "/data"                  # явно
+      SOPDS_ROOT: "/app"
+      DATA_ROOT: "/app/data"
       PYTHONDONTWRITEBYTECODE: "true"
     depends_on:
       - db

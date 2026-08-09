@@ -21,6 +21,23 @@
 | PostgreSQL | 17 | основная БД (также возможна SQLite) |
 | Docker | ≥ 24 (опционально) | для контейнерного развёртывания |
 
+**Структура деплоя (SOPDS_ROOT):**
+
+Проект использует `SOPDS_ROOT` — настраиваемый корневой каталог установки (по умолчанию `/opt/sopds-ng`).
+Все данные приложения (`.env`, `secret_key.txt`, `db.sqlite3`, `log/`) находятся в поддиректории `$SOPDS_ROOT/data/`.
+
+```
+SOPDS_ROOT=/opt/sopds-ng (настраиваемый)
+├── app/              ← код (src/*)
+├── data/             ← .env, secret_key.txt, db.sqlite3, log/
+├── scripts/          ← start_server.sh, check-systemd.sh
+├── .venv/
+├── pyproject.toml
+├── manage.py
+├── base.env
+└── etc/systemd/system/sopds.service
+```
+
 **Опционально:**
 
 - Docker Compose (входит в состав Docker Desktop или устанавливается отдельно)
@@ -64,9 +81,9 @@ SOPDS_DB_PORT=5432
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-О структуре `DATA_ROOT`:
+О структуре `SOPDS_ROOT`:
 
-- `data/.env` — конфигурация django-environ (читается приложением из `/data/.env`)
+- `data/.env` — конфигурация django-environ (читается приложением из `$SOPDS_ROOT/data/.env`, в Docker — `/app/data/.env`)
 - `data/secret_key.txt` — секретный ключ Django (генерируется автоматически при запуске)
 - `data/db.sqlite3` — SQLite база данных (при `SOPDS_DB_ENGINE=sqlite`)
 - `data/log/` — файлы логирования
@@ -78,13 +95,13 @@ docker compose up -d --build
 ```
 
 Сервисы:
-- **web** — gunicorn на порту `8080`
+- **web** — gunicorn на порту `8008`
 - **db** — PostgreSQL 17
 
 **Что происходит при старте контейнера** (`scripts/docker_entrypoint.sh`):
 
 1. Проверка: задан ли `SOPDS_DB_PASSWORD` (без него — `FATAL` и останов)
-2. Создание `$DATA_ROOT/log/`
+2. Создание `$DATA_ROOT/log/` (в Docker `$DATA_ROOT=/app/data`)
 3. Генерация `secret_key.txt` в `$DATA_ROOT/`, если файл отсутствует
 4. `collectstatic --skip-checks --no-input`
 5. `migrate --skip-checks --no-input`
@@ -97,7 +114,7 @@ docker compose up -d --build
 docker compose logs -f web
 
 # Проверка работоспособности
-curl http://localhost:8080/
+curl http://localhost:8008/
 ```
 
 ### 5. Создание суперпользователя
@@ -117,7 +134,7 @@ docker compose up -d
 
 После запуска настройте `SOPDS_ROOT_LIB` в админке Django:
 
-- Откройте `http://localhost:8080/admin/constance/config/`
+- Откройте `http://localhost:8008/admin/constance/config/`
 - Укажите абсолютный путь к директории с книгами (**внутри контейнера** — `/books/` для смонтированной директории)
 - Запустите сканирование: `docker compose exec web python manage.py sopds_scanner`
 
@@ -147,21 +164,22 @@ cd /opt/sopds-ng/app
 
 ### 3. Настройка окружения
 
-Задайте `DATA_ROOT` — единый каталог для конфигурации и данных приложения:
+Задайте `SOPDS_ROOT` — корневой каталог установки (данные будут в `$SOPDS_ROOT/data/`):
 
 ```bash
-export DATA_ROOT=/opt/sopds-ng/data
+export SOPDS_ROOT=/opt/sopds-ng
+mkdir -p "$SOPDS_ROOT/data"
 ```
 
 Скопируйте и отредактируйте `.env`:
 
 ```bash
-cp base.env "$DATA_ROOT/.env"
-nano "$DATA_ROOT/.env"
+cp base.env "$SOPDS_ROOT/data/.env"
+nano "$SOPDS_ROOT/data/.env"
 ```
 
 > **deploy.sh автоматизирует этот шаг:** скопирует base.env и подставит параметры
-> (DATA_ROOT, DB_ENGINE, DB_NAME, ALLOWED_HOSTS и др.) из переданных опций.
+> (SOPDS_ROOT, DB_ENGINE, DB_NAME, ALLOWED_HOSTS и др.) из переданных опций.
 > См. шаг 4.
 
 **Для SQLite** (без отдельного сервера БД):
@@ -204,7 +222,7 @@ SOPDS_DB_PORT=3306
 sudo -u sopds bash deploy.sh
 ```
 
-**С параметрами (пример — SQLite, кастомный DATA_ROOT):**
+**С параметрами (пример — SQLite, кастомный SOPDS_ROOT):**
 
 ```bash
 sudo -u sopds bash deploy.sh \
@@ -219,7 +237,7 @@ sudo -u sopds bash deploy.sh \
 | Параметр | По умолчанию | Описание |
 |----------|-------------|----------|
 | `-i, --install-dir DIR` | `/opt/sopds-ng` | Корень установки (там же `.venv`) |
-| `-d, --data-root DIR` | `data` (→ `$INSTALL_DIR/data`) | DATA_ROOT. Абсолютный — как есть, относительный — от INSTALL_DIR |
+| `-d, --data-root DIR` | `data` (→ `$INSTALL_DIR/data`) | Поддиректория данных относительно SOPDS_ROOT. Абсолютный — как есть, относительный — от INSTALL_DIR |
 | `--db-engine ENGINE` | `postgres` | `postgres`, `sqlite`, `mysql` |
 | `--db-name NAME` | (из .env) | Имя БД |
 | `--db-user USER` | (из .env) | Пользователь БД |
@@ -283,7 +301,7 @@ uv run python src/manage.py runserver 0.0.0.0:8000
 
 ## Конфигурация через .env
 
-Файл `.env` располагается в `$DATA_ROOT/.env` (в Docker — `/data/.env`, на bare-metal — путь, заданный через `export DATA_ROOT`).
+Файл `.env` располагается в `$SOPDS_ROOT/data/.env` (в Docker — `/app/data/.env`, на bare-metal — путь, заданный через `export SOPDS_ROOT`).
 
 Поддерживаются следующие переменные:
 
@@ -292,11 +310,12 @@ uv run python src/manage.py runserver 0.0.0.0:8000
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
 | `SECRET_KEY` | — | Секретный ключ Django (обязательно). Сгенерировать: `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"` |
-| `SECRET_KEY_FILE` | `$DATA_ROOT/secret_key.txt` | Путь к файлу с секретным ключом (используется FileAwareEnv) |
+| `SECRET_KEY_FILE` | `$DATA_ROOT/secret_key.txt` | Путь к файлу с секретным ключом (используется FileAwareEnv). `$DATA_ROOT` = `$SOPDS_ROOT/data` |
 | `DEBUG` | `False` | Режим отладки. В production всегда `False` |
 | `ALLOWED_HOSTS` | `.localhost, 127.0.0.1` | Список разрешённых доменов (через запятую) |
 | `DJANGO_SETTINGS_MODULE` | `sopds.settings.base` | Модуль настроек Django |
-| `DATA_ROOT` | `/data` | Единый каталог для .env, secret_key.txt, db.sqlite3, log/ |
+| `SOPDS_ROOT` | `/opt/sopds-ng` | Корневой каталог установки. `data/`, `scripts/`, `.venv/` — внутри |
+| `DATA_ROOT` | `$SOPDS_ROOT/data` | Каталог данных (.env, secret_key.txt, db.sqlite3, log/). По умолчанию — поддиректория `data` внутри SOPDS_ROOT |
 | `TIME_ZONE` | `Europe/Moscow` | Часовой пояс |
 | `SOPDS_VERSION` | — | Версия проекта. Указать вручную: `SOPDS_VERSION=1.0.0RC1` |
 
@@ -311,13 +330,13 @@ uv run python src/manage.py runserver 0.0.0.0:8000
 | `SOPDS_DB_HOST` | — | Хост БД (только для postgres/mysql) |
 | `SOPDS_DB_PORT` | — | Порт БД (только для postgres/mysql) |
 
-> Для SQLite путь БД всегда `$DATA_ROOT/db.sqlite3`. Переменная `SOPDS_DB_NAME` для SQLite игнорируется.
+> Для SQLite путь БД всегда `$DATA_ROOT/db.sqlite3` (по умолчанию `$SOPDS_ROOT/data/db.sqlite3`). Переменная `SOPDS_DB_NAME` для SQLite игнорируется.
 
 ### Сервер
 
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
-| `PORT` | `8080` | Порт для gunicorn |
+| `PORT` | `8008` | Порт для gunicorn |
 | `WEB_CONCURRENCY` | `cpu_count * 2 + 1` | Количество worker-процессов gunicorn |
 | `PYTHON_MAX_THREADS` | `2` | Количество потоков на worker (gthread) |
 | `WEB_TIMEOUT` | `120` | Таймаут worker'а (сек) |
@@ -357,7 +376,7 @@ uv run gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
 
 | Параметр | Значение | Источник |
 |----------|----------|----------|
-| **bind** | `0.0.0.0:8080` | `PORT` (env) |
+| **bind** | `0.0.0.0:8008` | `PORT` (env) |
 | **workers** | `cpu_count * 2 + 1` | `WEB_CONCURRENCY` (env) |
 | **worker_type** | `gthread` | — |
 | **threads** | `2` | `PYTHON_MAX_THREADS` (env) |
@@ -380,12 +399,12 @@ User=sopds
 Group=sopds
 WorkingDirectory=/opt/sopds-ng
 
-EnvironmentFile=-/data/.env
-Environment=DATA_ROOT=/data
+EnvironmentFile=-/opt/sopds-ng/data/.env
+Environment=SOPDS_ROOT=/opt/sopds-ng
 Environment=PYTHONDONTWRITEBYTECODE=1
 
 # Startup — через scripts/start_server.sh
-# Создает /data/log, генерирует secret_key.txt, запускает gunicorn
+# Создает $SOPDS_ROOT/data/log, генерирует secret_key.txt, запускает gunicorn
 # ВНИМАНИЕ: migrate/collectstatic выполняются в deploy.sh (one-time)
 ExecStart=/opt/sopds-ng/scripts/start_server.sh
 
@@ -396,7 +415,7 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/data
+ReadWritePaths=/opt/sopds-ng/data
 
 LimitNOFILE=65535
 LimitNPROC=4096
@@ -437,7 +456,7 @@ sudo systemctl status sopds.service
 journalctl -u sopds -n 20 --no-pager
 ```
 
-> **DATA_ROOT** в systemd unit обязателен — без него приложение будет искать `.env` в `/data/`.
+> **SOPDS_ROOT** в systemd unit обязателен — без него приложение будет искать `.env` в `/data/` (старое значение по умолчанию).
 > Логи приложения пишутся в journald — используйте `journalctl -u sopds -f` для просмотра.
 
 ### Nginx reverse proxy (рекомендуется)
@@ -453,7 +472,7 @@ server {
     }
 
     location / {
-        proxy_pass http://127.0.0.1:8080;
+        proxy_pass http://127.0.0.1:8008;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -513,7 +532,7 @@ tar -xzf "release_${VERSION#v}.tar.gz" -C /opt/sopds-ng
 cd /opt/sopds-ng
 
 # Deploy (prepare environment) — всё в одном шаге:
-# создание DATA_ROOT, .env из base.env, uv sync, secret_key, migrate, collectstatic
+# создание DATA_ROOT (→ $SOPDS_ROOT/data), .env из base.env, uv sync, secret_key, migrate, collectstatic
 sudo bash deploy.sh \
   --db-engine sqlite \
   --time-zone Europe/Moscow \
@@ -536,7 +555,7 @@ WEB_CONCURRENCY=2 PYTHON_MAX_THREADS=4 \
 
 ## Telegram Bot
 
-После запуска настройте в админке Django (`http://your-host:8080/admin/constance/config/`):
+После запуска настройте в админке Django (`http://your-host:8008/admin/constance/config/`):
 
 | Параметр | Описание |
 |----------|----------|

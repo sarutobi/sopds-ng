@@ -7,9 +7,8 @@ set -euo pipefail
 # ==============================================================
 
 # --- Значения по умолчанию ---
-INSTALL_DIR="/opt/sopds-ng"
-APP_DIR="$INSTALL_DIR/app"
-DATA_ROOT_DEFAULT="data"             # относительный — резолвится от INSTALL_DIR
+SOPDS_ROOT="/opt/sopds-ng"
+DATA_ROOT_DEFAULT="data"             # относительный — резолвится от SOPDS_ROOT
 DB_ENGINE="postgres"
 DB_NAME=""
 DB_USER=""
@@ -42,10 +41,10 @@ usage() {
 окружения, генерация secret key, сбор статических файлов и  запуск миграций.
 
 Опции:
-  -i, --install-dir DIR   Корневая директория установки проекта
-                            (по умолчанию: $INSTALL_DIR)
+  -i, --sopds-root DIR    Корневая директория SOPDS_ROOT
+                            (по умолчанию: $SOPDS_ROOT)
   -d, --data-root DIR     DATA_ROOT. Абсолютный путь — как есть,
-                            относительный — от INSTALL_DIR
+                            относительный — от SOPDS_ROOT
                             (по умолчанию: ${DATA_ROOT_DEFAULT})
       --db-engine ENGINE  Движок БД: postgres, sqlite, mysql
                             (по умолчанию: $DB_ENGINE)
@@ -69,8 +68,8 @@ usage() {
   $(basename "$0") -i /opt/sopds-ng --db-engine sqlite
 
   # PostgreSQL с полной конфигурацией:
-  $(basename "$0") --db-engine postgres --db-name sopds --db-user sopds \
-      --db-host localhost --db-port 5432 \
+  $(basename "$0") --db-engine postgres --db-name sopds --db-user sopds \\
+      --db-host localhost --db-port 5432 \\
       --allowed-hosts 'sopds.example.com,localhost'
 
   # MySQL:
@@ -86,14 +85,14 @@ EOF
 }
 
 # --- Разбор аргументов ---
-PARSED=$(getopt -o hi:d:DS:n --long help,install-dir:,data-root:,db-engine:,db-name:,db-user:,db-host:,db-port:,time-zone:,allowed-hosts:,server-log-level:,debug,django-settings:,dry-run -n "$(basename "$0")" -- "$@")
+PARSED=$(getopt -o hi:d:DS:n --long help,sopds-root:,data-root:,db-engine:,db-name:,db-user:,db-host:,db-port:,time-zone:,allowed-hosts:,server-log-level:,debug,django-settings:,dry-run -n "$(basename "$0")" -- "$@")
 eval set -- "$PARSED"
 
 while true; do
     case "$1" in
     -h | --help) usage ;;
-    -i | --install-dir)
-        INSTALL_DIR="$2"
+    -i | --sopds-root)
+        SOPDS_ROOT="$2"
         shift 2
         ;;
     -d | --data-root)
@@ -159,24 +158,25 @@ done
 if [[ "$DATA_ROOT_DEFAULT" == /* ]]; then
     DATA_ROOT="$DATA_ROOT_DEFAULT"
 else
-    DATA_ROOT="$INSTALL_DIR/$DATA_ROOT_DEFAULT"
+    DATA_ROOT="$SOPDS_ROOT/$DATA_ROOT_DEFAULT"
 fi
 
 SECRET_KEY_FILE="$DATA_ROOT/secret_key.txt"
+APP_DIR="$SOPDS_ROOT/app"
 
 # --- Экспорт переменных окружения ---
 export DJANGO_SETTINGS_MODULE="$DJANGO_SETTINGS"
+export SOPDS_ROOT
 export DATA_ROOT
-# SECRET_KEY_FILE не экспортируем — используется только скриптом для генерации
 
-# --- Переход в корень установки (.venv здесь) ---
-if [ -d "$INSTALL_DIR" ]; then
-    cd "$INSTALL_DIR"
+# --- Переход в корень SOPDS_ROOT (.venv здесь) ---
+if [ -d "$SOPDS_ROOT" ]; then
+    cd "$SOPDS_ROOT"
 else
-    echo ">>> Директория $INSTALL_DIR не существует (будет создана при реальном запуске)"
+    echo ">>> Директория $SOPDS_ROOT не существует (будет создана при реальном запуске)"
 fi
-echo ">>> Директория установки: $INSTALL_DIR"
-echo ">>> Директория приложения: $APP_DIR"
+echo ">>> SOPDS_ROOT: $SOPDS_ROOT"
+echo ">>> APP_DIR: $APP_DIR"
 echo ">>> DATA_ROOT: $DATA_ROOT"
 echo ">>> Движок БД: $DB_ENGINE"
 echo ">>> DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE"
@@ -189,12 +189,13 @@ run "mkdir -p $DATA_ROOT/static" mkdir -p "$DATA_ROOT/static"
 # --- Настройка .env ---
 ENV_FILE="$DATA_ROOT/.env"
 if [ ! -f "$ENV_FILE" ]; then
-    if [ -f "$APP_DIR/base.env" ]; then
-        run "cp $APP_DIR/base.env $ENV_FILE" cp "$APP_DIR/base.env" "$ENV_FILE"
+    if [ -f "$SOPDS_ROOT/base.env" ]; then
+        run "cp $SOPDS_ROOT/base.env $ENV_FILE" cp "$SOPDS_ROOT/base.env" "$ENV_FILE"
         echo ">>> Создан $ENV_FILE из base.env"
 
         # Подстановка параметров в .env (только не dry-run — sed -i реально меняет файл)
         if [ -z "$DRY_RUN" ]; then
+            sed -i "s|^SOPDS_ROOT=.*|SOPDS_ROOT='$SOPDS_ROOT'|" "$ENV_FILE"
             sed -i "s|^DATA_ROOT=.*|DATA_ROOT='$DATA_ROOT'|" "$ENV_FILE"
             sed -i "s|^SOPDS_DB_ENGINE=.*|SOPDS_DB_ENGINE='$DB_ENGINE'|" "$ENV_FILE"
             sed -i "s|^TIME_ZONE=.*|TIME_ZONE='$TIME_ZONE'|" "$ENV_FILE"
@@ -214,6 +215,7 @@ if [ ! -f "$ENV_FILE" ]; then
             [ -n "$DEBUG" ] && sed -i "s|^DEBUG=.*|DEBUG=True|" "$ENV_FILE"
         else
             echo "[DRY-RUN] Подстановка параметров в $ENV_FILE:"
+            echo "  SOPDS_ROOT=$SOPDS_ROOT"
             echo "  DATA_ROOT=$DATA_ROOT"
             echo "  SOPDS_DB_ENGINE=$DB_ENGINE"
             echo "  TIME_ZONE=$TIME_ZONE"
@@ -228,6 +230,7 @@ if [ ! -f "$ENV_FILE" ]; then
         fi
 
         echo ">>> Параметры .env настроены:"
+        echo "    SOPDS_ROOT=$SOPDS_ROOT"
         echo "    DATA_ROOT=$DATA_ROOT"
         echo "    SOPDS_DB_ENGINE=$DB_ENGINE"
         echo "    TIME_ZONE=$TIME_ZONE"
@@ -240,7 +243,7 @@ if [ ! -f "$ENV_FILE" ]; then
         [ -n "$DEBUG" ] && echo "    DEBUG=True"
         echo ">>> ВАЖНО: укажите SOPDS_DB_PASSWORD в $ENV_FILE вручную!"
     else
-        echo "WARN: base.env не найден в $APP_DIR" >&2
+        echo "WARN: base.env не найден в $SOPDS_ROOT" >&2
         echo "WARN: создайте $ENV_FILE вручную из base.env" >&2
     fi
 else
@@ -249,7 +252,7 @@ else
 fi
 
 # --- Установка зависимостей ---
-run "uv sync --project $APP_DIR --frozen --no-group dev" uv sync --project "$APP_DIR" --frozen --no-group dev
+run "uv sync --frozen --no-group dev" uv sync --frozen --no-group dev
 
 # --- Генерация secret_key ---
 if [ ! -f "$SECRET_KEY_FILE" ]; then
@@ -266,12 +269,12 @@ else
 fi
 
 # --- Сборка статики ---
-run ".venv/bin/python $APP_DIR/manage.py collectstatic" \
-    .venv/bin/python "$APP_DIR/manage.py" collectstatic --skip-checks --no-input
+run ".venv/bin/python manage.py collectstatic" \
+    .venv/bin/python manage.py collectstatic --skip-checks --no-input
 
 # --- Миграции ---
-run ".venv/bin/python $APP_DIR/manage.py migrate" \
-    .venv/bin/python "$APP_DIR/manage.py" migrate --skip-checks --no-input
+run ".venv/bin/python manage.py migrate" \
+    .venv/bin/python manage.py migrate --skip-checks --no-input
 
 if [ -n "$DRY_RUN" ]; then
     echo ">>> *** DRY-RUN завершён. Никаких изменений не внесено ***"

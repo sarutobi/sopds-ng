@@ -5,29 +5,33 @@ echo "Создание релиза $version"
 
 echo "Подготовка"
 rm -rf build/*
-mkdir -p build/release
+mkdir -p build/release/app
+mkdir -p build/release/scripts
 
 echo "Копирование"
-cp -r ./src/* build/release
-cp LICENSE build/release
-cp pyproject.toml build/release
-cp base.env build/release
-cp version.txt build/release
-cp scripts/start_server.sh build/release
-cp scripts/deploy.sh build/release
+# Код в app/
+cp -r ./src/* build/release/app/
+
+# Корневые файлы
+cp LICENSE build/release/
+cp pyproject.toml build/release/
+cp src/manage.py build/release/
+cp base.env build/release/
+cp version.txt build/release/
+
+# Скрипты
+cp scripts/start_server.sh build/release/scripts/
 
 echo "Очистка"
-rm -rf build/release/inpx
-rm -rf build/release/static/*
-find build -type f -name "*.pyc" -delete
-find build -type d -name "__pycache__" -delete
+rm -rf build/release/app/inpx
+find build/release/app -type f -name "*.pyc" -delete
+find build/release/app -type d -name "__pycache__" -delete
 
 echo "Копирование systemd unit"
 mkdir -p build/release/etc/systemd/system
 cp scripts/sopds.service build/release/etc/systemd/system/
-cp scripts/check-systemd.sh build/release/
-chmod +x build/release/check-systemd.sh
-chmod +x build/release/deploy.sh
+cp scripts/check-systemd.sh build/release/scripts/
+chmod +x build/release/scripts/check-systemd.sh
 
 echo "Подготовка пакета"
 cwd=$(pwd)
