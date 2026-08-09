@@ -31,7 +31,7 @@ RUN if [ "$BUILD_TARGET" = "dev" ]; then \
 
 # Copy source code to app/
 COPY src/ ./app/
-COPY manage.py ./
+COPY src/manage.py ./
 
 # Copy version file
 COPY version.txt ./
