@@ -50,6 +50,30 @@ See [Deploy documentation](docs/deploy.md), including `SOPDS_ROOT` configuration
 
 ---
 
+## Быстрый старт (готовый образ)
+
+Готовые multi-arch образы (amd64/arm64) публикуются в [ghcr.io/sarutobi/sopds-ng](https://github.com/sarutobi/sopds-ng/pkgs/container/sopds-ng):
+
+- `ghcr.io/sarutobi/sopds-ng:latest` — последняя версия из master
+- `ghcr.io/sarutobi/sopds-ng:master` — ветка master
+- `ghcr.io/sarutobi/sopds-ng:sha-xxxxx` — конкретный коммит
+
+```bash
+# 1. Скачайте docker-compose.yml и base.env
+wget https://raw.githubusercontent.com/sarutobi/sopds-ng/master/docker-compose.yml
+wget https://raw.githubusercontent.com/sarutobi/sopds-ng/master/base.env
+cp base.env data/.env
+# Настройте SECRET_KEY в data/.env
+
+# 2. Измените docker-compose.yml: замените build: на image:
+#   image: ghcr.io/sarutobi/sopds-ng:latest
+
+# 3. Запустите
+docker compose up -d
+```
+
+---
+
 ### Bare-metal install (systemd)
 
 1. Создайте системного пользователя:

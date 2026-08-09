@@ -88,7 +88,32 @@ python -c "from django.core.management.utils import get_random_secret_key; print
 - `data/db.sqlite3` — SQLite база данных (при `SOPDS_DB_ENGINE=sqlite`)
 - `data/log/` — файлы логирования
 
-### 3. Сборка и запуск
+### 3. Использование готового образа (рекомендуется)
+
+Образы собираются автоматически из master и публикуются в [ghcr.io/sarutobi/sopds-ng](https://github.com/sarutobi/sopds-ng/pkgs/container/sopds-ng).
+Поддерживаются архитектуры amd64 и arm64 (единый multi-arch манифест).
+
+1. Скачайте `docker-compose.yml`, если ещё не сделали этого
+2. Замените секцию `build:` на `image: ghcr.io/sarutobi/sopds-ng:latest`:
+
+```yaml
+    image: ghcr.io/sarutobi/sopds-ng:latest
+    # build:  ← закомментируйте или удалите
+```
+
+3. Запустите:
+
+```bash
+docker compose up -d
+```
+
+Доступные теги:
+- `latest` или `master` — последняя версия из master
+- `sha-xxxxx` — конкретный коммит
+
+### 4. Сборка и запуск (кастомная сборка)
+
+Если нужна собственная сборка из исходников:
 
 ```bash
 docker compose up -d --build
@@ -107,7 +132,7 @@ docker compose up -d --build
 5. `migrate --skip-checks --no-input`
 6. Запуск gunicorn
 
-### 4. Проверка
+### 5. Проверка
 
 ```bash
 # Просмотр логов
@@ -117,13 +142,13 @@ docker compose logs -f web
 curl http://localhost:8008/
 ```
 
-### 5. Создание суперпользователя
+### 6. Создание суперпользователя
 
 ```bash
 docker compose exec web python manage.py createsuperuser
 ```
 
-### 6. Настройка пути к книгам
+### 7. Настройка пути к книгам
 
 По умолчанию книги монтируются из директории `./books` относительно корня проекта. Изменить можно через переменную `SOPDS_BOOK_PATH`:
 

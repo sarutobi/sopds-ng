@@ -1,5 +1,7 @@
 services:
   web:
+    # Для готового образа замените build: на:
+    # image: ghcr.io/sarutobi/sopds-ng:latest
     build:
       context: .
       dockerfile: Dockerfile
