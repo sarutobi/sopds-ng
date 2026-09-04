@@ -181,24 +181,37 @@ class FB2(EbookMetaParser):
                 "/fb:FictionBook/fb:description/fb:title-info/fb:coverpage/fb:image"
             )
 
-            if len(res) == 0:
+            if not res:
                 logger.info("В заголовке книги ссылка на обложку не найдена.")
-                res = self._find_elements_with_namespaces(
-                    "/fb:FictionBook/fb:body//fb:image"
-                )
+                return None
 
-            logger.info(f"Найдено {len(res)} кандидатов для обложки")
-            cover_id: str = res[0].get("{" + FB2Namespace.XLINK + "}href")[1:]
+            # Безопасное извлечение href
+            node = res[0]
+            href = node.get("{" + FB2Namespace.XLINK + "}href")
+            if not href:
+                logger.warning("Элемент обложки не содержит атрибут href")
+                return None
+
+            cover_id = href[1:] if href.startswith("#") else href
             logger.info(f"идентификатор обложки {cover_id}")
             res = self._find_elements_with_namespaces(
                 '/fb:FictionBook/fb:binary[@id="%s"]' % cover_id
             )
-            logger.info(f"Найдено {len(res)} элементов")
-            content = base64.b64decode(res[0].text)
+
+            if not res:
+                logger.info("Бинарные данные обложки не найдены.")
+                return None
+
+            # Безопасное извлечение текста
+            binary_node = res[0]
+            if binary_node.text is None:
+                logger.warning("Бинарный узел обложки пуст")
+                return None
+
+            content = base64.b64decode(binary_node.text)
             return content
         except Exception as err:
             logger.error(f"Ошибка при извлечении обложки: {err}")
-            print("exception Extract %s" % err)
             return None
 
     def _find_elements(self, xpath: str) -> Any:
@@ -432,8 +445,11 @@ class EpubParser(EbookMetaParser):
     @property
     def title(self) -> str:
         """Извлекает название книги."""
-        title = self._xpath("/opf:package/opf:metadata/dc:title")[0]
-        return title.text if title is not None else ""
+        res = self._xpath("/opf:package/opf:metadata/dc:title")
+        if res:
+            title = res[0]
+            return title.text if title is not None else ""
+        return ""
 
     @property
     def authors(self) -> list[str]:
@@ -441,19 +457,24 @@ class EpubParser(EbookMetaParser):
         creators = self._xpath(
             '/opf:package/opf:metadata/dc:creator[@role="aut"] | /opf:package/opf:metadata/dc:creator[not(@role)]'
         )
-        return [creator.text for creator in creators]
+        return [
+            creator.text if creator.text is not None else "" for creator in creators
+        ]
 
     @property
     def tags(self) -> list[str]:
         """Извлекает список жанров (тем)."""
         tags = self._xpath("/opf:package/opf:metadata/dc:subject")
-        return [tag.text for tag in tags]
+        return [tag.text if tag.text is not None else "" for tag in tags]
 
     @property
     def language_code(self) -> str:
         """Извлекает язык книги."""
-        lang = self._xpath("/opf:package/opf:metadata/dc:language")[0]
-        return lang.text
+        res = self._xpath("/opf:package/opf:metadata/dc:language")
+        if res:
+            lang = res[0]
+            return lang.text if lang is not None else ""
+        return ""
 
     @property
     def series_info(self) -> tuple[str, int] | None:
@@ -494,13 +515,16 @@ class EpubParser(EbookMetaParser):
             '/opf:package/opf:metadata/dc:date[@event="modification"] | /opf:package/opf:metadata/dc:date'
         )
         # Возвращаем первую подходящую дату или пустую строку
-        return res[0].text if res is not None else ""
+        return res[0].text if res else ""
 
     @property
     def description(self) -> str:
         """Извлекает описание книги (аннотацию)."""
-        desc = self._xpath("/opf:package/opf:metadata/dc:description")[0]
-        return desc.text.strip() if desc is not None else ""
+        res = self._xpath("/opf:package/opf:metadata/dc:description")
+        if res:
+            desc = res[0]
+            return desc.text.strip() if desc is not None else ""
+        return ""
 
     def extract_cover(self) -> bytes | None:
         """Извлекает обложку книги из файла EPUB.

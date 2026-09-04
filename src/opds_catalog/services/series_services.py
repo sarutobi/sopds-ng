@@ -36,6 +36,7 @@ def get_series(chars: str, length: int, lang_code: int | None = None) -> QuerySe
 
 def search_series(searchtype: str, searchterms: str, author_id: int | None = None):
     """Поиск по сериям."""
+    series = None
     if searchtype == "m":
         series = Series.objects.filter(search_ser__contains=searchterms.upper())
     elif searchtype == "b":
@@ -44,6 +45,14 @@ def search_series(searchtype: str, searchterms: str, author_id: int | None = Non
         series = Series.objects.filter(search_ser=searchterms.upper())
     elif searchtype == "a":
         series = Series.objects.filter(book__authors=author_id)
+
+    if series is None:
+        return (
+            Series.objects.none()
+            .annotate(count_book=Count("book"))
+            .distinct()
+            .order_by("search_ser")
+        )
 
     return series.annotate(count_book=Count("book")).distinct().order_by("search_ser")
 

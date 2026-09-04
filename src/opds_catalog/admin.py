@@ -27,7 +27,6 @@ class BookAdmin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
-    @csrf_exempt
     def inline_save_view(self, request, pk):
         """Inline-редактирование поля книги из списка админки."""
         if request.method != "POST":

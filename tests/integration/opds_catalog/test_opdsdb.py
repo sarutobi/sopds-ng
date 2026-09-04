@@ -131,13 +131,13 @@ class TestOpdsDb:  # integration
 
     def test_findauthor(self) -> None:
         """Тестирование findauthor"""
-        authors = opdsdb.findauthor("Test Author")
-        assert len(authors) == 1
+        author = opdsdb.findauthor("Test Author")
+        assert author is not None
 
     def test_findauthor_not_found(self) -> None:
         """Тестирование findauthor для несуществующего автора"""
-        authors = opdsdb.findauthor("Nonexistent Author")
-        assert len(authors) == 0
+        author = opdsdb.findauthor("Nonexistent Author")
+        assert author is None
 
     def test_getlangcode(self) -> None:
         """Тестирование getlangcode"""

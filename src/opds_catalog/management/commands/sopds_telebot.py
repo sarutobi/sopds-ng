@@ -337,7 +337,7 @@ class Command(BaseCommand):
             return
         try:
             page_num = int(page_num)
-        except:
+        except (ValueError, TypeError):
             page_num = 1
 
         books = self.BookFilter(query)
@@ -359,7 +359,7 @@ class Command(BaseCommand):
             try:
                 book_id = int(book_id_set[0])
                 book = Book.objects.get(id=book_id)
-            except:
+            except (ValueError, TypeError, Book.DoesNotExist):
                 book_id = None
                 book = None
         else:
@@ -424,7 +424,7 @@ class Command(BaseCommand):
             try:
                 book_id = int(book_id_set[0])
                 book = Book.objects.get(id=book_id)
-            except:
+            except (ValueError, TypeError, Book.DoesNotExist):
                 book = None
         else:
             book_id = None

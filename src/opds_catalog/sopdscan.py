@@ -124,7 +124,7 @@ class opdsScanner:
                         self.logger.info(f"Process zip file {file}")
                         self.processzip(name, full_path, file)
                 else:
-                    self.logger.info("Process regular file {file}")
+                    self.logger.info(f"Process regular file {file}")
                     file_size = os.path.getsize(file)
                     self.processfile(name, full_path, file, None, 0, file_size)
 

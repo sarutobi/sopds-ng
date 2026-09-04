@@ -39,24 +39,23 @@ class BookFile(object):
     def extract_cover_memory(self):
         return None
 
-    @staticmethod
-    def __is_text(text):
+    def _is_text(text):
         return isinstance(text, str)
 
-    def __set_title__(self, title):
-        if title and BookFile.__is_text(title):
+    def _set_title(self, title):
+        if title and BookFile._is_text(title):
             title = title.strip()
             if title:
                 self.title = title
 
-    def __set_docdate__(self, docdate):
-        if docdate and BookFile.__is_text(docdate):
+    def _set_docdate(self, docdate):
+        if docdate and BookFile._is_text(docdate):
             docdate = docdate.strip()
             if docdate:
                 self.docdate = docdate
 
-    def __add_author__(self, name, sortkey=None):
-        if not name or not BookFile.__is_text(name):
+    def _add_author(self, name, sortkey=None):
+        if not name or not BookFile._is_text(name):
             return
         name = normalize_string(name)
         if not name:
@@ -68,8 +67,8 @@ class BookFile(object):
         sortkey = normalize_string(sortkey).lower()
         self.authors.append({"name": name, "sortkey": sortkey})
 
-    def __add_tag__(self, text):
-        if text and BookFile.__is_text(text):
+    def _add_tag(self, text):
+        if text and BookFile._is_text(text):
             text = text.strip()
             if text:
                 self.tags.append(text)

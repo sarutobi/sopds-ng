@@ -61,11 +61,17 @@ class FB2Base(BookFile):
                 "/fb:FictionBook/fb:description/fb:title-info/fb:coverpage/fb:image",
                 namespaces=self.__namespaces,
             )
+            if len(res) == 0:
+                return (None, False)
+
             cover_id: str = res[0].get("{" + Namespace.XLINK + "}href")[1:]
-            res: str = tree.xpath(
+            res: list[etree.node] = tree.xpath(
                 '/fb:FictionBook/fb:binary[@id="%s"]' % cover_id,
                 namespaces=self.__namespaces,
             )
+            if len(res) == 0:
+                return (None, False)
+
             content = base64.b64decode(res[0].text)
             with open(os.path.join(working_dir, "cover.jpeg"), "wb") as cover_file:
                 cover_file.write(content)
@@ -84,16 +90,26 @@ class FB2Base(BookFile):
                 res = tree.xpath(
                     "/fb:FictionBook/fb:body//fb:image", namespaces=self.__namespaces
                 )
+
+            if len(res) == 0:
+                return None
+
             cover_id = res[0].get("{" + Namespace.XLINK + "}href")[1:]
 
             res = tree.xpath(
                 '/fb:FictionBook/fb:binary[@id="%s"]' % cover_id,
                 namespaces=self.__namespaces,
             )
+
+            if len(res) == 0:
+                return None
+
             content = base64.b64decode(res[0].text)
             return content
         except Exception as err:
-            print("exception Extract %s" % err)
+            import logging
+
+            logging.getLogger(__name__).error(f"exception Extract {err}")
             return None
 
     def __detect_namespaces(self, tree: etree._ElementTree) -> None:
@@ -110,7 +126,7 @@ class FB2Base(BookFile):
                 '/*[local-name() = "FictionBook"]/*[local-name() = "description"]/*[local-name() = "title-info"]/*[local-name() = "book-title"]'
             )
         if len(res) > 0:
-            self.__set_title__(res[0].text)
+            self._set_title(res[0].text)
 
     def __detect_docdate(self, tree: etree._ElementTree) -> None:
         is_attrib = 1
@@ -130,7 +146,7 @@ class FB2Base(BookFile):
             is_attrib = 0
             res = tree.xpath("/FictionBook/description/document-info/date")
         if len(res) > 0:
-            self.__set_docdate__(res[0] if is_attrib else res[0].text)
+            self._set_docdate(res[0] if is_attrib else res[0].text)
 
     def __detect_authors(self, tree: etree._ElementTree) -> None:
         use_namespaces: bool = True
@@ -147,7 +163,7 @@ class FB2Base(BookFile):
             first_name = subnode_text(node, "first-name")
             # middle_name = subnode_text(node, 'middle-name')
             last_name = subnode_text(node, "last-name")
-            self.__add_author__(" ".join([first_name, last_name]), last_name)
+            self._add_author(" ".join([first_name, last_name]), last_name)
 
         res = tree.xpath(
             "/fb:FictionBook/fb:description/fb:title-info/fb:author",
@@ -180,7 +196,7 @@ class FB2Base(BookFile):
             # use_namespaces = False
             res = tree.xpath("/FictionBook/description/title-info/genre")
         for node in res:
-            self.__add_tag__(node.text)
+            self._add_tag(node.text)
 
     def __detect_series_info(self, tree: _ElementTree) -> None:
         res = tree.xpath(
