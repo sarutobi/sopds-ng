@@ -33,7 +33,9 @@ def find_by_bookshelf(
         raise ImproperlyConfigured(
             f"Attempt to read {user} bookshelf from catalog without authorization"
         )
-    return Book.objects.filter(bookshelf__user=user).order_by("-bookshelf_readtime")
+    if user is None:
+        return Book.objects.none()
+    return Book.objects.filter(bookshelf__user=user).order_by("-bookshelf__readtime")
 
 
 def find_by_author_and_series(

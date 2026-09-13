@@ -87,7 +87,7 @@ def SearchBooksView(request):
         args.update(_extract_input_parameters(request))
 
         books = book_services.search_book(
-            args["searchtype"], args["searchterms"], args["searchterms0"], args["user"]
+            args["searchtype"], args["searchterms"], args["searchterms0"], request.user
         )
         if args["searchtype"] in ("m", "b"):
             args["breadcrumbs"] = [
@@ -478,7 +478,7 @@ def GenresView(request):
 # g @sopds_login(url="web:login")
 def SearchSuggestView(request):
     """Подсказки для строки поиска через htmx."""
-    logger.critical("Suggestion helper")
+    logger.info("Suggestion helper")
 
     if request.method == "POST":
         q = request.POST.get("searchterms", "").strip()
@@ -496,7 +496,7 @@ def SearchSuggestView(request):
         return HttpResponse("")
 
     if search_type == "title":
-        logger.info("Suggest books by title '{q}'")
+        logger.info(f"Suggest books by title '{q}'")
         items = Book.objects.filter(search_title__contains=q.upper())[:10]
     elif search_type == "author":
         items = Author.objects.filter(search_full_name__contains=q.upper())[:10]
