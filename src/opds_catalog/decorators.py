@@ -7,6 +7,8 @@ from constance import config
 from django.contrib import auth
 from django.http import HttpResponse
 
+from sopds_web_backend.services import auth_services
+
 
 def sopds_auth_validate(view_function):
     """Декоратор для проверки и аутентификации пользователей."""
@@ -50,12 +52,23 @@ def sopds_auth_validate(view_function):
         auth_data = base64.b64decode(auth_data.strip()).decode("utf-8")
         username, password = auth_data.split(":", 1)
 
+        # Rate limiting
+        ip = request.META.get("REMOTE_ADDR", "unknown")
+        if auth_services.is_rate_limited(ip):
+            return HttpResponse(
+                "Too many login attempts. Please try again later.",
+                status=429,
+                content_type="text/plain",
+            )
+
         user = auth.authenticate(username=username, password=password)
         if user and user.is_active:
+            auth_services.reset_attempts(ip)
             request.user = user
             auth.login(request, user)
             return view_function(*args, **kwargs)
-
-        return _unauthed()
+        else:
+            auth_services.record_failed_attempt(ip)
+            return _unauthed()
 
     return wrap

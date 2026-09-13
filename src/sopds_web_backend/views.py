@@ -3,8 +3,9 @@ import logging
 from constance import config
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
+from django.core.cache import cache
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.http import HttpResponse, HttpResponseNotAllowed
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotAllowed
 from django.shortcuts import redirect, render
 from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
@@ -32,6 +33,7 @@ from opds_catalog.services import (
 )
 from opds_catalog.services.catalog_services import DUMMY_CATALOG
 from opds_catalog.utils import get_lang_name, to_int
+from sopds_web_backend.services import auth_services
 
 BREADCRUMBS = {
     "m": [_("Books"), _("Search by title")],
@@ -79,94 +81,31 @@ def search_book_by_title_match(args):
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
 @sopds_login(url="web:login")
 def SearchBooksView(request):
-    """Диспетчер для обработки параемтров запроса книг."""
+    """Диспетчер для обработки параметров запроса книг."""
     SOPDS_AUTH = config.SOPDS_AUTH
     args = {}
     args.update(csrf(request))
     if request.GET:
         args.update(_extract_input_parameters(request))
 
-        books = book_services.search_book(
-            args["searchtype"], args["searchterms"], args["searchterms0"], request.user
-        )
-        if args["searchtype"] in ("m", "b"):
-            args["breadcrumbs"] = [
-                _("Books"),
-                _("Search by title"),
+        try:
+            search_res = book_services.search_book_with_metadata(
+                args["searchtype"],
                 args["searchterms"],
-            ]
-            args["searchobject"] = "title"
-
-        elif args["searchtype"] == "a":
-            aname = authors_services.get_author_name(id=args["searchterms"])
-            args["breadcrumbs"] = [_("Books"), _("Search by author"), aname]
-            args["searchobject"] = "author"
-
-        # Поиск книг по серии
-        elif args["searchtype"] == "s":
-            ser = series_services.get_series_name(args["searchterms"])
-            # books = Book.objects.filter(series=ser_id).order_by('search_title','-docdate')
-            args["breadcrumbs"] = [_("Books"), _("Search by series"), ser]
-            args["searchobject"] = "series"
-
-        # Поиск книг по жанру
-        elif args["searchtype"] == "g":
-            try:
-                genre = Genre.objects.get(id=args["searchterms"])
-                section = genre.section
-                subsection = genre.subsection
-                args["breadcrumbs"] = [
-                    _("Books"),
-                    _("Search by genre"),
-                    section,
-                    subsection,
-                ]
-            except:
-                args["breadcrumbs"] = [_("Books"), _("Search by genre")]
-
-            args["searchobject"] = "genre"
-
-        # Поиск книг на книжной полке
-        elif args["searchtype"] == "u":
-            # if config.SOPDS_AUTH:
-            if SOPDS_AUTH:
-                books = Book.objects.filter(bookshelf__user=request.user).order_by(
-                    "-bookshelf__readtime"
-                )
-                args["breadcrumbs"] = [
-                    _("Books"),
-                    _("Bookshelf"),
-                    args["user"],
-                ]
-                # books = bookshelf.objects.filter(user=request.user).select_related('book')
-            else:
-                books = Book.objects.filter(id=0)
-                args["breadcrumbs"] = [_("Books"), _("Bookshelf")]
-            args["searchobject"] = "title"
-            args["isbookshelf"] = 1
-
-        # Поиск дубликатов для книги
-        elif args["searchtype"] == "d":
-            book_id = int(args["searchterms"])  # type: ignore[call-overload]
-            mbook = Book.objects.get(id=book_id)
-            books = (
-                Book.objects.filter(title=mbook.title, authors__in=mbook.authors.all())
-                .exclude(id=book_id)
-                .distinct()
-                .order_by("-docdate")
+                args["searchterms0"],
+                request.user,
             )
-            args["breadcrumbs"] = [_("Books"), _("Doubles for book"), mbook.title]
-            args["searchobject"] = "title"
+        except ValueError:
+            search_res = book_services.SearchResult(
+                queryset=Book.objects.none(),
+                breadcrumbs=[_("Books")],
+                search_object="title",
+            )
 
-        # Поиск книги по ID
-        elif args["searchtype"] == "i":
-            book_id = to_int(args["searchterms"], 0)
-            books = Book.objects.filter(id=book_id)
-            try:
-                args["breadcrumbs"] = [_("Books"), books[0].title]
-            except IndexError:
-                args["breadcrumbs"] = [_("Books")]
-            args["searchobject"] = "title"
+        books = search_res.queryset
+        args["breadcrumbs"] = search_res.breadcrumbs
+        args["searchobject"] = search_res.search_object
+        args["isbookshelf"] = 1 if search_res.is_bookshelf else 0
 
         page_num = to_int(args.get("page_num"), 1)
         items, op = book_services.paginated_book_content(
@@ -188,10 +127,7 @@ def SearchBooksView(request):
             op["number"],
         )
 
-        if args["searchtype"] == "u":
-            args["cache_t"] = 0
-        else:
-            args["cache_t"] = config.SOPDS_CACHE_TIME
+        args["cache_t"] = 0 if search_res.is_bookshelf else config.SOPDS_CACHE_TIME
 
     return render(request, "sopds_books.html", args)
 
@@ -199,54 +135,52 @@ def SearchBooksView(request):
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
 @sopds_login(url="web:login")
 def SearchSeriesView(request):
-    # Read searchtype, searchterms, searchterms0, page from form
     args = {}
     args.update(csrf(request))
 
     if request.GET:
         searchtype = request.GET.get("searchtype", "m")
         searchterms = request.GET.get("searchterms", "")
-        # searchterms0 = int(request.POST.get('searchterms0', ''))
-        page_num = int(request.GET.get("page", "1"))
-        page_num = page_num if page_num > 0 else 1
+        page_num = to_int(request.GET.get("page"), 1)
 
-        series = series_services.search_series(searchtype, searchterms)
+        try:
+            res = book_services.search_entities("series", searchtype, searchterms)
+        except ValueError:
+            res = book_services.EntitySearchResult(
+                queryset=Series.objects.none(),
+                breadcrumbs=[_("Series")],
+                search_object="series",
+                current_view="series",
+            )
 
-        # Создаем результирующее множество
-        paginator = Paginator(series, config.SOPDS_MAXITEMS)
+        series_qs = res.queryset
+        paginator = Paginator(series_qs, config.SOPDS_MAXITEMS)
         try:
             page = paginator.page(page_num)
         except (EmptyPage, PageNotAnInteger):
             page = paginator.page(paginator.num_pages)
-        items = []
-        for row in page.object_list:
-            p = {
+
+        items = [
+            {
                 "id": row.id,
                 "ser": row.ser,
                 "lang_code": row.lang_code,
-                "book_count": row.count_book,
+                "book_count": row.count_book
+                if hasattr(row, "count_book")
+                else Book.objects.filter(series=row).count(),
             }
-            items.append(p)
+            for row in page.object_list
+        ]
 
-        args["paginator"] = {
-            "num_pages": paginator.num_pages,
-            "has_previous": page.has_previous(),
-            "has_next": page.has_next(),
-            "previous_page_number": page.previous_page_number()
-            if page.has_previous()
-            else 1,
-            "next_page_number": page.next_page_number()
-            if page.has_next()
-            else paginator.num_pages,
-            "number": page.number,
-            "page_range": list(paginator.page_range),
-        }
+        from opds_catalog.services.book_services import _paginator_to_dict
+
+        args["paginator"] = _paginator_to_dict(page)
         args["searchterms"] = searchterms
         args["searchtype"] = searchtype
         args["series"] = items
-        args["searchobject"] = "series"
+        args["searchobject"] = res.search_object
         args["current"] = "search"
-        args["breadcrumbs"] = [_("Series"), _("Search"), searchterms]
+        args["breadcrumbs"] = res.breadcrumbs
         args["cache_id"] = "%s:%s:%s" % (searchterms, searchtype, page.number)
         args["cache_t"] = config.SOPDS_CACHE_TIME
 
@@ -256,65 +190,52 @@ def SearchSeriesView(request):
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
 @sopds_login(url="web:login")
 def SearchAuthorsView(request):
-    # Read searchtype, searchterms, searchterms0, page from form
     args = {}
     args.update(csrf(request))
 
     if request.GET:
         searchtype = request.GET.get("searchtype", "m")
         searchterms = request.GET.get("searchterms", "")
-        # searchterms0 = int(request.POST.get('searchterms0', ''))
-        page_num = int(request.GET.get("page", "1"))
-        page_num = page_num if page_num > 0 else 1
+        page_num = to_int(request.GET.get("page"), 1)
 
-        # if searchtype == "m":
-        #     authors = Author.objects.filter(
-        #         search_full_name__contains=searchterms.upper()
-        #     ).order_by("search_full_name")
-        # elif searchtype == "b":
-        #     authors = Author.objects.filter(
-        #         search_full_name__startswith=searchterms.upper()
-        #     ).order_by("search_full_name")
-        # elif searchtype == "e":
-        #     authors = Author.objects.filter(
-        #         search_full_name=searchterms.upper()
-        #     ).order_by("search_full_name")
-        authors = authors_services.search_authors_with_counts(searchtype, searchterms)
-        paginator = Paginator(authors, config.SOPDS_MAXITEMS)
+        try:
+            res = book_services.search_entities("author", searchtype, searchterms)
+        except ValueError:
+            res = book_services.EntitySearchResult(
+                queryset=Author.objects.none(),
+                breadcrumbs=[_("Authors")],
+                search_object="author",
+                current_view="authors",
+            )
+
+        authors_qs = res.queryset
+        paginator = Paginator(authors_qs, config.SOPDS_MAXITEMS)
         try:
             page = paginator.page(page_num)
         except (EmptyPage, PageNotAnInteger):
             page = paginator.page(paginator.num_pages)
-        items = []
 
-        for row in page.object_list:
-            p = {
+        items = [
+            {
                 "id": row.id,
                 "full_name": row.full_name,
                 "lang_code": row.lang_code,
-                "book_count": row.book_count,
+                "book_count": row.book_count
+                if hasattr(row, "book_count")
+                else Book.objects.filter(authors=row).count(),
             }
-            items.append(p)
+            for row in page.object_list
+        ]
 
-        args["paginator"] = {
-            "num_pages": paginator.num_pages,
-            "has_previous": page.has_previous(),
-            "has_next": page.has_next(),
-            "previous_page_number": page.previous_page_number()
-            if page.has_previous()
-            else 1,
-            "next_page_number": page.next_page_number()
-            if page.has_next()
-            else paginator.num_pages,
-            "number": page.number,
-            "page_range": list(paginator.page_range),
-        }
+        from opds_catalog.services.book_services import _paginator_to_dict
+
+        args["paginator"] = _paginator_to_dict(page)
         args["searchterms"] = searchterms
         args["searchtype"] = searchtype
         args["authors"] = items
-        args["searchobject"] = "author"
+        args["searchobject"] = res.search_object
         args["current"] = "search"
-        args["breadcrumbs"] = [_("Authors"), _("Search"), searchterms]
+        args["breadcrumbs"] = res.breadcrumbs
         args["cache_id"] = "%s:%s:%s" % (searchterms, searchtype, page.number)
         args["cache_t"] = config.SOPDS_CACHE_TIME
 
@@ -559,6 +480,13 @@ def LoginView(request):
     except KeyError:
         return render(request, "sopds_login.html", args)
 
+    # Rate limiting
+    ip = request.META.get("REMOTE_ADDR", "unknown")
+    if auth_services.is_rate_limited(ip):
+        return HttpResponse(
+            _("Too many login attempts. Please try again later."), status=429
+        )
+
     next_url = request.GET.get("next", reverse("web:main"))
 
     # Валидация next_url для предотвращения open redirect
@@ -573,6 +501,7 @@ def LoginView(request):
     user = authenticate(username=username, password=password)
     if user is not None:
         if user.is_active:
+            auth_services.reset_attempts(ip)
             login(request, user)
             return redirect(next_url)
         else:
@@ -581,16 +510,13 @@ def LoginView(request):
                 "type": "alert",
             }
             return handler403(request, args)
-            # return render(request, 'sopds_login.html', args)
     else:
+        auth_services.record_failed_attempt(ip)
         args["system_message"] = {
             "text": _("User does not exist or the password is incorrect!"),
             "type": "alert",
         }
         return handler403(request, args)
-        # return render(request, 'sopds_login.html', args)
-
-    return handler403(request, args)
     # return render(request, 'sopds_login.html', args)
 
 

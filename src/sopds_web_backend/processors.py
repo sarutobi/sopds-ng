@@ -1,6 +1,7 @@
 from random import randint
 
 from constance import config
+from django.db.models import Max
 
 from opds_catalog import settings
 from opds_catalog.models import Book, Counter, bookshelf, lang_menu
@@ -27,14 +28,21 @@ def sopds_processor(request):
         user = request.user
         if user.is_authenticated:
             result = []
-            for row in bookshelf.objects.filter(user=user).order_by("-readtime")[:8]:
-                book = Book.objects.get(id=row.book_id)
+            # Оптимизация N+1: используем select_related и prefetch_related
+            shelf_items = (
+                bookshelf.objects.filter(user=user)
+                .select_related("book")
+                .prefetch_related("book__authors")
+                .order_by("-readtime")[:8]
+            )
+            for row in shelf_items:
+                book = row.book
                 p = {
                     "id": row.id,
                     "readtime": row.readtime,
-                    "book_id": row.book_id,
+                    "book_id": book.id,
                     "title": book.title,
-                    "authors": book.authors.values(),
+                    "authors": list(book.authors.values()),
                 }
                 result.append(p)
             args["bookshelf"] = result
@@ -47,16 +55,22 @@ def sopds_processor(request):
     args["stats"] = stats
 
     # Поиск случайной книги
-    books_count = stats["allbooks"]
+    books_count = stats.get("allbooks", 0)
     if books_count:
-        book_num = randint(1, books_count)
         try:
-            book = Book.objects.values("id").all()[book_num - 1 : book_num][0]
-            random_book = Book.objects.values("id", "title", "annotation").get(
-                id=book["id"]
-            )
-
-        except Book.DoesNotExist:
+            # Эффективный поиск случайной записи без OFFSET:
+            # 1. Получаем максимальный ID
+            max_id = Book.objects.aggregate(max_id=Max("id"))["max_id"]
+            if max_id:
+                # 2. Генерируем случайный ID в диапазоне [1, max_id]
+                random_id = randint(1, max_id)
+                # 3. Берем первую запись с id >= random_id (O(log N) индексный поиск)
+                random_book = (
+                    Book.objects.filter(id__gte=random_id)
+                    .values("id", "title", "annotation")
+                    .first()
+                )
+        except Exception:
             random_book = None
     else:
         random_book = None

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, TypeVar
+from typing import Any, Callable, NamedTuple, TypeVar
 
 from constance import config
 from django.contrib.auth.models import User
@@ -18,6 +18,25 @@ from opds_catalog.services import SearchType
 from opds_catalog.utils import get_lang_name, to_int
 
 T = TypeVar("T")
+
+
+class SearchResult(NamedTuple):
+    """Результат поиска книг с метаданными."""
+
+    queryset: QuerySet[Book]
+    breadcrumbs: list[str]
+    search_object: str
+    is_bookshelf: bool = False
+
+
+class EntitySearchResult(NamedTuple):
+    """Результат поиска сущностей (авторы, серии) с метаданными."""
+
+    queryset: QuerySet
+    breadcrumbs: list[str]
+    search_object: str
+    current_view: str
+
 
 SearchFunction = Callable[[bool, str, str | None, User | None], QuerySet[Book]]
 
@@ -111,7 +130,7 @@ def find_book_by_id(
     _: bool, book_id: str, __: str | None = None, ___=None
 ) -> QuerySet[Book]:
     """Поиск книги по идентификатору."""
-    return Book.objects.filter(id=book_id)
+    return Book.objects.filter(id=book_id).order_by("id")
 
 
 SEARCH_BOOK_REGISTRY: dict[str, SearchFunction] = {
@@ -130,12 +149,85 @@ SEARCH_BOOK_REGISTRY: dict[str, SearchFunction] = {
 
 def search_book(
     type: str, term: str, second_term: str | None = None, user=None
-) -> QuerySet[Book, Book]:
-    """Формирование запроса на выборку книг."""
+) -> QuerySet[Book]:
+    """Формирование запроса на выборку книг (legacy API)."""
     search_function = SEARCH_BOOK_REGISTRY.get(type)
     if search_function is None:
         raise ValueError(f"Search type '{type}' is not supported")
     return search_function(config.SOPDS_AUTH, term, second_term, user)
+
+
+def search_book_with_metadata(
+    type: str, term: str, second_term: str | None = None, user=None
+) -> SearchResult:
+    """
+    Формирование запроса на выборку книг и связанных с ним метаданных
+    (хлебные крошки, объект поиска).
+    """
+    SOPDS_AUTH = config.SOPDS_AUTH
+
+    # 1. Получаем базовый QuerySet через существующий реестр
+    books = search_book(type, term, second_term, user)
+
+    # 2. Определяем метаданные в зависимости от типа поиска
+    breadcrumbs = [_("Books")]
+    search_object = "title"
+    is_bookshelf = False
+
+    if type in ("m", "b"):
+        breadcrumbs.extend([_("Search by title"), term])
+        search_object = "title"
+    elif type == "a":
+        from opds_catalog.services import authors_services
+
+        aname = authors_services.get_author_name(id=term)
+        breadcrumbs.extend([_("Search by author"), aname])
+        search_object = "author"
+    elif type == "s":
+        from opds_catalog.services import series_services
+
+        ser = series_services.get_series_name(term)
+        breadcrumbs.extend([_("Search by series"), ser])
+        search_object = "series"
+    elif type == "g":
+        try:
+            from opds_catalog.models import Genre
+
+            genre = Genre.objects.get(id=term)
+            breadcrumbs.extend([_("Search by genre"), genre.section, genre.subsection])
+        except (Genre.DoesNotExist, ValueError):
+            breadcrumbs.append(_("Search by genre"))
+        search_object = "genre"
+    elif type == "u":
+        breadcrumbs.extend([_("Bookshelf"), user.username if user else ""])
+        search_object = "title"
+        is_bookshelf = True
+    elif type == "d":
+        try:
+            book_id = to_int(term)
+            mbook = Book.objects.only("title").get(id=book_id)
+            breadcrumbs.extend([_("Doubles for book"), mbook.title])
+        except (Book.DoesNotExist, ValueError):
+            breadcrumbs.append(_("Doubles"))
+        search_object = "title"
+    elif type == "i":
+        try:
+            book_id = to_int(term)
+            book = Book.objects.filter(id=book_id).first()
+            if book:
+                breadcrumbs.append(book.title)
+            else:
+                pass  # Остается просто [_("Books")]
+        except ValueError:
+            pass
+        search_object = "title"
+
+    return SearchResult(
+        queryset=books,
+        breadcrumbs=breadcrumbs,
+        search_object=search_object,
+        is_bookshelf=is_bookshelf,
+    )
 
 
 def _build_book_item(row: Book, user=None, auth_enabled=False) -> dict:
@@ -400,3 +492,57 @@ def find_books_by_template(
 def author_books_count(author: Author | int) -> int:
     """Подсчет числа книг для автора."""
     return Book.objects.filter(authors=author).count()
+
+
+def search_entities(
+    entity_type: str, search_type: str, term: str
+) -> EntitySearchResult:
+    """
+    Универсальный поиск сущностей (авторы, серии).
+
+    :param entity_type: 'author' или 'series'
+    :param search_type: 'm' (contains), 'b' (startswith), 'e' (exact)
+    :param term: поисковый запрос
+    """
+    if entity_type == "author":
+        from opds_catalog.models import Author
+
+        if search_type == "m":
+            queryset = Author.objects.filter(search_full_name__contains=term.upper())
+        elif search_type == "b":
+            queryset = Author.objects.filter(search_full_name__startswith=term.upper())
+        elif search_type == "e":
+            queryset = Author.objects.filter(search_full_name=term.upper())
+        else:
+            queryset = Author.objects.none()
+
+        search_object = "author"
+        breadcrumbs = [_("Authors"), _("Search"), term]
+        current_view = "authors"
+        queryset = queryset.order_by("search_full_name")
+
+    elif entity_type == "series":
+        from opds_catalog.models import Series
+
+        if search_type == "m":
+            queryset = Series.objects.filter(search_ser__contains=term.upper())
+        elif search_type == "b":
+            queryset = Series.objects.filter(search_ser__startswith=term.upper())
+        elif search_type == "e":
+            queryset = Series.objects.filter(search_ser=term.upper())
+        else:
+            queryset = Series.objects.none()
+
+        search_object = "series"
+        breadcrumbs = [_("Series"), _("Search"), term]
+        current_view = "series"
+        queryset = queryset.order_by("search_ser")
+    else:
+        raise ValueError(f"Unsupported entity type: {entity_type}")
+
+    return EntitySearchResult(
+        queryset=queryset,
+        breadcrumbs=breadcrumbs,
+        search_object=search_object,
+        current_view=current_view,
+    )

@@ -31,6 +31,9 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG")
 
+# HTTPS configuration (for self-hosted support)
+SOPDS_USE_HTTPS = env.bool("SOPDS_USE_HTTPS", default=False)
+
 # Project version
 VERSION = env("SOPDS_VERSION")
 
@@ -173,6 +176,24 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+# Security settings
+SECURE_SSL_REDIRECT = SOPDS_USE_HTTPS
+SESSION_COOKIE_SECURE = SOPDS_USE_HTTPS
+CSRF_COOKIE_SECURE = SOPDS_USE_HTTPS
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+
+# HSTS settings (only if HTTPS is enabled)
+SECURE_HSTS_SECONDS = 31536000 if SOPDS_USE_HTTPS else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = SOPDS_USE_HTTPS
+SECURE_HSTS_PRELOAD = SOPDS_USE_HTTPS
+
+# Other security headers
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "SAMEORIGIN"
+SECURE_REFERRER_POLICY = "same-origin"
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
