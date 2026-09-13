@@ -150,6 +150,29 @@ class TestOpdsDb:  # integration
         assert getlangcode("Hello") == 2  # latin
         assert getlangcode("123") == 3  # digits
 
+    def test_langcode_labels(self) -> None:
+        """Тестирование меток LangCode (IntegerChoices)."""
+        from opds_catalog.models import LangCode
+
+        assert LangCode.CYRILLIC.label == "Кириллица"
+        assert LangCode.LATIN.label == "Латиница"
+        assert LangCode.DIGITS.label == "Цифры"
+        assert LangCode.OTHER.label == "Другое"
+
+    def test_langcode_validation(self) -> None:
+        """Тестирование валидации lang_code в моделях."""
+        from django.core.exceptions import ValidationError
+
+        from opds_catalog.models import Book
+
+        # Создаем книгу с некорректным кодом языка
+        book = Book(title="Test", filename="test.fb2", path=".", lang_code=42)
+        with pytest.raises(ValidationError) as excinfo:
+            book.full_clean()
+
+        # Проверяем, что ошибка относится именно к полю lang_code
+        assert "lang_code" in excinfo.value.message_dict
+
     def test_p_function(self) -> None:
         """Тестирование функции p (обрезание 4-байтовых UTF)"""
         from opds_catalog.utils import p

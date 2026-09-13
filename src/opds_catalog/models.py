@@ -30,21 +30,33 @@ SIZE_GENRE_SUBSECTION = 100
 SIZE_SERIES = 150
 
 SOPDS_LANG_CODE_ALL = 0
-SOPDS_LANG_CODE_CYR = 1
-SOPDS_LANG_CODE_LAT = 2
-SOPDS_LANG_CODE_NUM = 3
-SOPDS_LANG_CODE_OTHER = 9
+
+
+class LangCode(models.IntegerChoices):
+    """Коды языков для книг, авторов и серий."""
+
+    CYRILLIC = 1, _lazy("Кириллица")
+    LATIN = 2, _lazy("Латиница")
+    DIGITS = 3, _lazy("Цифры")
+    OTHER = 9, _lazy("Другое")
+
 
 LangCodes = {
-    SOPDS_LANG_CODE_CYR: "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯабвгдеёжзийклмнопрстуфхцчшщьыъэюя",
-    SOPDS_LANG_CODE_LAT: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
-    SOPDS_LANG_CODE_NUM: "0123456789",
+    LangCode.CYRILLIC: "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯабвгдеёжзийклмнопрстуфхцчшщьыъэюя",
+    LangCode.LATIN: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+    LangCode.DIGITS: "0123456789",
 }
+
+SOPDS_LANG_CODE_CYR = LangCode.CYRILLIC
+SOPDS_LANG_CODE_LAT = LangCode.LATIN
+SOPDS_LANG_CODE_NUM = LangCode.DIGITS
+SOPDS_LANG_CODE_OTHER = LangCode.OTHER
+
 lang_menu = {
-    SOPDS_LANG_CODE_CYR: _lazy("Cyrillic"),
-    SOPDS_LANG_CODE_LAT: _lazy("Latin"),
-    SOPDS_LANG_CODE_NUM: _lazy("Digits"),
-    SOPDS_LANG_CODE_OTHER: _lazy("Other symbols"),
+    LangCode.CYRILLIC: _lazy("Cyrillic"),
+    LangCode.LATIN: _lazy("Latin"),
+    LangCode.DIGITS: _lazy("Digits"),
+    LangCode.OTHER: _lazy("Other symbols"),
     SOPDS_LANG_CODE_ALL: _lazy("Show all"),
 }
 
@@ -71,7 +83,9 @@ class Book(models.Model):
         max_length=SIZE_BOOK_TITLE, default=None, db_index=True
     )
     annotation = models.CharField(max_length=SIZE_BOOK_ANNOTATION)
-    lang_code = models.IntegerField(null=False, default=9, db_index=True)
+    lang_code = models.IntegerField(
+        null=False, default=LangCode.OTHER, db_index=True, choices=LangCode.choices
+    )
     avail = models.IntegerField(null=False, default=0, db_index=True)
     authors = models.ManyToManyField("Author", through="bauthor")
     genres = models.ManyToManyField("Genre", through="bgenre")
@@ -110,7 +124,9 @@ class Author(models.Model):
     search_full_name = models.CharField(
         max_length=SIZE_AUTHOR_NAME, default=None, db_index=True
     )
-    lang_code = models.IntegerField(null=False, default=9, db_index=True)
+    lang_code = models.IntegerField(
+        null=False, default=LangCode.OTHER, db_index=True, choices=LangCode.choices
+    )
 
 
 class bauthor(models.Model):
@@ -154,7 +170,9 @@ class Series(models.Model):
 
     ser = models.CharField(max_length=SIZE_SERIES, db_index=True)
     search_ser = models.CharField(max_length=SIZE_SERIES, default=None, db_index=True)
-    lang_code = models.IntegerField(null=False, default=9, db_index=True)
+    lang_code = models.IntegerField(
+        null=False, default=LangCode.OTHER, db_index=True, choices=LangCode.choices
+    )
 
 
 class bseries(models.Model):
