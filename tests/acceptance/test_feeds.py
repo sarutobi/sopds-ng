@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from lxml import etree
 
-from opds_catalog import opdsdb, settings
+from opds_catalog import constants, settings
 from tests.helpers import (
     opds_acquisition_links,
     opds_acquisition_or_navigation_feed,
@@ -165,7 +165,7 @@ class TestFeeds:  # acceptance
         assert response.status_code == 200
         response = client.get(reverse("opds:genres"))
         assert response.status_code == 200
-        assert opdsdb.unknown_genre_en in response.content.decode()
+        assert constants.UNKNOWN_GENRE_EN in response.content.decode()
         response = client.get(reverse("opds:genres", kwargs={"section": 232}))
         assert response.status_code == 200
         assert "prose_contemporary" in response.content.decode()

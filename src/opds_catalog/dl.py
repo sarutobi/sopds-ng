@@ -19,7 +19,7 @@ from PIL import Image
 from book_tools.format import create_bookfile, mime_detector
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2
-from opds_catalog import opdsdb, settings, utils
+from opds_catalog import constants, settings, utils
 from opds_catalog.decorators import sopds_auth_validate
 from opds_catalog.models import Book, bookshelf
 from opds_catalog.utils import getFileData, getFileName
@@ -165,7 +165,7 @@ def ConvertFB2(request, book_id, convert_type):
         bookshelf.objects.get_or_create(user=request.user, book=book)
 
     full_path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
-    if book.cat_type == opdsdb.CAT_INP:
+    if book.cat_type == constants.CAT_INP:
         # Убираем из пути INPX и INP файл
         inp_path, zip_name = os.path.split(full_path)
         inpx_path, inp_name = os.path.split(inp_path)
@@ -192,10 +192,10 @@ def ConvertFB2(request, book_id, convert_type):
         raise Http404
     content_type = mime_detector.fmt(convert_type)
 
-    if book.cat_type == opdsdb.CAT_NORMAL:
+    if book.cat_type == constants.CAT_NORMAL:
         tmp_fb2_path = None
         file_path = os.path.join(full_path, book.filename)
-    elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
+    elif book.cat_type in [constants.CAT_ZIP, constants.CAT_INP]:
         # FIXME: Исправить работу c codecs
         try:
             fz = codecs.open(full_path, "rb")

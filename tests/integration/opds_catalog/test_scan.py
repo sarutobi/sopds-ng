@@ -3,10 +3,11 @@ import os
 import pytest
 from constance import config
 
-from opds_catalog import opdsdb
+from opds_catalog import constants
+from opds_catalog.db_utils import clear_all
 from opds_catalog.dl import getFileData
 from opds_catalog.models import Author, Book, Catalog, Genre, Series
-from opds_catalog.opdsdb import CAT_ZIP
+from opds_catalog.services import scanner
 from opds_catalog.sopdscan import opdsScanner
 
 
@@ -27,7 +28,7 @@ class TestBookScaner(object):
     def test_processfile_fb2(self, fb2sax):
         """Тестирование процедуры processfile (извлекает метаданные из книги FB2 и помещает в БД)"""
         config.SOPDS_FB2SAX = fb2sax
-        opdsdb.clear_all()
+        clear_all()
         scanner = opdsScanner()
         scanner.processfile(
             self.test_fb2,
@@ -63,7 +64,7 @@ class TestBookScaner(object):
         )
 
         assert book.genres.count() == 1
-        assert book.genres.get(genre="antique").section == opdsdb.unknown_genre
+        assert book.genres.get(genre="antique").section == "Unknown genre"
         assert book.genres.get(genre="antique").subsection == "antique"
         assert getFileData(book) is not None
 
@@ -71,7 +72,7 @@ class TestBookScaner(object):
     def test_processfile_fb2zip(self, fb2sax):
         """Тестирование процедуры processfile (извлекает метаданные из книги FB2 и помещает в БД)"""
         config.SOPDS_FB2SAX = fb2sax
-        opdsdb.clear_all()
+        clear_all()
         scanner = opdsScanner()
         scanner.processzip(
             self.test_fb2zip,
@@ -87,7 +88,7 @@ class TestBookScaner(object):
         assert book.filename == self.test_fb2
         assert book.path == self.test_fb2zip
         assert book.format == "fb2"
-        assert book.cat_type == CAT_ZIP
+        assert book.cat_type == constants.CAT_ZIP
         # self.assertGreaterEqual(book.registerdate, )
         assert book.docdate == "30.1.2011"
         assert book.lang == "en"
@@ -97,7 +98,7 @@ class TestBookScaner(object):
         assert book.avail == 2
         assert book.catalog.path == self.test_fb2zip
         assert book.catalog.cat_name == self.test_fb2zip
-        assert book.catalog.cat_type == CAT_ZIP
+        assert book.catalog.cat_type == constants.CAT_ZIP
         assert book.filesize == 495373
 
         assert book.authors.count() == 1
@@ -107,13 +108,13 @@ class TestBookScaner(object):
         )
 
         assert book.genres.count() == 1
-        assert book.genres.get(genre="antique").section == opdsdb.unknown_genre
+        assert book.genres.get(genre="antique").section == "Unknown genre"
         assert book.genres.get(genre="antique").subsection == "antique"
         assert getFileData(book) is not None
 
     def test_processfile_epub(self):
         """Тестирование процедуры processfile (извлекает метаданные из книги EPUB и помещает в БД)"""
-        opdsdb.clear_all()
+        clear_all()
         scanner = opdsScanner()
         scanner.processfile(
             self.test_epub,
@@ -150,12 +151,12 @@ class TestBookScaner(object):
         )
 
         assert book.genres.count() == 1
-        assert book.genres.get(genre="sf").section == opdsdb.unknown_genre
+        assert book.genres.get(genre="sf").section == "Unknown genre"
         assert book.genres.get(genre="sf").subsection == "sf"
 
     def test_processfile_mobi(self):
         """Тестирование процедуры processfile (извлекает метаданные из книги EPUB и помещает в БД)"""
-        opdsdb.clear_all()
+        clear_all()
         scanner = opdsScanner()
         scanner.processfile(
             self.test_mobi,
@@ -189,7 +190,7 @@ class TestBookScaner(object):
 
     def test_processzip(self):
         """Тестирование процедуры processzip (извлекает метаданные из книг, помещенных в архив и помещает их БД)"""
-        opdsdb.clear_all()
+        clear_all()
         scanner = opdsScanner()
         scanner.processzip(
             self.test_zip,
@@ -217,7 +218,7 @@ class TestBookScaner(object):
         )
 
         assert book.genres.count() == 1
-        assert book.genres.get(genre="nonf_criticism").section == opdsdb.unknown_genre
+        assert book.genres.get(genre="nonf_criticism").section == "Unknown genre"
 
         assert book.genres.get(genre="nonf_criticism").subsection == "nonf_criticism"
 
@@ -240,7 +241,7 @@ class TestBookScaner(object):
 
     def test_scanall(self):
         """Тестирование процедуры scanall (извлекает метаданные из книг и помещает в БД)"""
-        opdsdb.clear_all()
+        clear_all()
         scanner = opdsScanner()
         scanner.scan_all()
         assert scanner.books_added == 8

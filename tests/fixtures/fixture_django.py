@@ -4,7 +4,7 @@ import pytest
 from django.core.management import call_command
 from django.test import RequestFactory
 
-from opds_catalog import opdsdb
+from opds_catalog import constants
 from opds_catalog.models import Book
 
 
@@ -73,7 +73,7 @@ def load_db_data(django_db_setup, django_db_blocker):
 def create_regular_book(simple_fb2, catalog):
     """Создаёт книгу (экземпляр ``Book``).
 
-    Создаёт книгу с именем файла ``simple_fb2``, категорией ``opdsdb.CAT_NORMAL`` и путём ``"."``.
+    Создаёт книгу с именем файла ``simple_fb2``, категорией ``constants.CAT_NORMAL`` и путём ``"."``.
     Использует общую фикстуру ``catalog`` вместо создания собственного каталога.
 
     :scope: function
@@ -86,7 +86,7 @@ def create_regular_book(simple_fb2, catalog):
     """
     book = Book(
         filename=simple_fb2,
-        cat_type=opdsdb.CAT_NORMAL,
+        cat_type=constants.CAT_NORMAL,
         path=".",
         format="fb2",
         search_title="1",

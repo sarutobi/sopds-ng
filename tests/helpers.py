@@ -7,7 +7,7 @@ from lxml import etree
 from lxml.etree import _ElementTree
 
 # from codecs import open
-from opds_catalog import opdsdb
+from opds_catalog import constants
 from opds_catalog.models import Book, Catalog
 
 
@@ -46,7 +46,7 @@ def create_book(
     filesize: int = 0,
     format: str = "fb2",
     catalog: str = "test_catalog",
-    cat_type: int = opdsdb.CAT_NORMAL,
+    cat_type: int = constants.CAT_NORMAL,
     doc_date: str = "2025-01-01 00:00:00",
     lang: str = "ru",
     title: str = "Test Book",

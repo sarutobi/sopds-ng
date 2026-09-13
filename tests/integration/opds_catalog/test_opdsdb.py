@@ -1,7 +1,9 @@
 import pytest
 
-from opds_catalog import opdsdb
+from opds_catalog import constants
+from opds_catalog.db_utils import clear_all, clear_genres
 from opds_catalog.models import Catalog, Genre, bseries
+from opds_catalog.services import scanner
 
 pytestmark = pytest.mark.django_db
 
@@ -9,12 +11,12 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture(autouse=True)
 def _opdsdb_setup():
     """Создаёт тестовое дерево каталогов, книгу, автора, жанр, серию."""
-    opdsdb.clear_all()
-    opdsdb.addcattree("root/child/subchild", opdsdb.CAT_NORMAL)
-    book = opdsdb.addbook(
+    clear_all()
+    scanner.addcattree("root/child/subchild", constants.CAT_NORMAL)
+    book = scanner.addbook(
         "testbook.fb2",
         "root/child",
-        opdsdb.findcat("root/child"),
+        scanner.findcat("root/child"),
         ".fb2",
         "Test Book",
         "Annotation",
@@ -23,9 +25,9 @@ def _opdsdb_setup():
         500,
         0,
     )
-    opdsdb.addbauthor(book, opdsdb.addauthor("Test Author"))
-    opdsdb.addbgenre(book, opdsdb.addgenre("fantastic"))
-    opdsdb.addbseries(book, opdsdb.addseries("mywork"), 1)
+    scanner.addbauthor(book, scanner.addauthor("Test Author"))
+    scanner.addbgenre(book, scanner.addgenre("fantastic"))
+    scanner.addbseries(book, scanner.addseries("mywork"), 1)
 
 
 class TestOpdsDb:  # integration
@@ -45,7 +47,7 @@ class TestOpdsDb:  # integration
         cat = Catalog.objects.get(parent=cat)
         assert cat.cat_name == "subchild"
 
-        cat = opdsdb.findcat("root/child")
+        cat = scanner.findcat("root/child")
         assert cat.cat_name == "child"
         assert cat.path == "root/child"
         assert cat.parent.cat_name == "root"
@@ -54,7 +56,7 @@ class TestOpdsDb:  # integration
 
     def test_book_fn(self) -> None:
         """Тестирование функций addbook, findbook"""
-        book = opdsdb.findbook("testbook.fb2", "root/child")
+        book = scanner.findbook("testbook.fb2", "root/child")
         assert book is not None
         assert book.filename == "testbook.fb2"
         assert book.path == "root/child"
@@ -70,7 +72,7 @@ class TestOpdsDb:  # integration
 
     def test_author_fn(self) -> None:
         """Тестирование функций addauthor, addbauthor"""
-        book = opdsdb.findbook("testbook.fb2", "root/child")
+        book = scanner.findbook("testbook.fb2", "root/child")
         assert book.authors.count() == 1
         assert (
             book.authors.get(full_name="Test Author").search_full_name == "TEST AUTHOR"
@@ -78,14 +80,14 @@ class TestOpdsDb:  # integration
 
     def test_genre_fn(self) -> None:
         """Тестирование функций addgenre, addbgenre"""
-        book = opdsdb.findbook("testbook.fb2", "root/child")
+        book = scanner.findbook("testbook.fb2", "root/child")
         assert book.genres.count() == 1
-        assert book.genres.get(genre="fantastic").section == opdsdb.unknown_genre
+        assert book.genres.get(genre="fantastic").section == "Unknown genre"
         assert book.genres.get(genre="fantastic").subsection == "fantastic"
 
     def test_series_fn(self) -> None:
         """Тестирование функций addseries, addbseries"""
-        book = opdsdb.findbook("testbook.fb2", "root/child")
+        book = scanner.findbook("testbook.fb2", "root/child")
         assert book.series.count() == 1
         ser = book.series.all()[0]
         assert ser.ser == "mywork"
@@ -98,108 +100,112 @@ class TestOpdsDb:  # integration
         from opds_catalog.models import bgenre
 
         bgenre.objects.all().delete()
-        opdsdb.clear_genres()
+        clear_genres()
         assert Genre.objects.count() == 0
 
     def test_findbook_with_setavail(self) -> None:
         """Тестирование findbook с параметром setavail"""
-        book = opdsdb.findbook("testbook.fb2", "root/child", setavail=1)
+        book = scanner.findbook("testbook.fb2", "root/child", setavail=1)
         assert book is not None
         assert book.avail == 2
 
     def test_findbook_not_found(self) -> None:
         """Тестирование findbook для несуществующей книги"""
-        book = opdsdb.findbook("nonexist.fb2", "root/child")
+        book = scanner.findbook("nonexist.fb2", "root/child")
         assert book is None
 
     def test_findcat_not_found(self) -> None:
         """Тестирование findcat для несуществующего каталога"""
-        cat = opdsdb.findcat("nonexistent/path")
+        cat = scanner.findcat("nonexistent/path")
         assert cat is None
 
     def test_addcattree_existing(self) -> None:
         """Тестирование addcattree для уже существующего каталога"""
-        cat = opdsdb.addcattree("root/child", opdsdb.CAT_NORMAL)
+        cat = scanner.addcattree("root/child", constants.CAT_NORMAL)
         assert cat is not None
         assert cat.cat_name == "child"
 
     def test_addcattree_root(self) -> None:
         """Тестирование addcattree для корневого каталога"""
-        cat = opdsdb.addcattree(".", 0)
+        cat = scanner.addcattree(".", 0)
         assert cat is not None
         assert cat.cat_name == "."
 
     def test_findauthor(self) -> None:
         """Тестирование findauthor"""
-        authors = opdsdb.findauthor("Test Author")
+        authors = scanner.findauthor("Test Author")
         assert len(authors) == 1
 
     def test_findauthor_not_found(self) -> None:
         """Тестирование findauthor для несуществующего автора"""
-        authors = opdsdb.findauthor("Nonexistent Author")
+        authors = scanner.findauthor("Nonexistent Author")
         assert len(authors) == 0
 
     def test_getlangcode(self) -> None:
         """Тестирование getlangcode"""
-        assert opdsdb.getlangcode("") == 9  # empty
-        assert opdsdb.getlangcode("Привет") == 1  # cyrillic
-        assert opdsdb.getlangcode("Hello") == 2  # latin
-        assert opdsdb.getlangcode("123") == 3  # digits
+        from opds_catalog.utils import getlangcode
+
+        assert getlangcode("") == 9  # empty
+        assert getlangcode("Привет") == 1  # cyrillic
+        assert getlangcode("Hello") == 2  # latin
+        assert getlangcode("123") == 3  # digits
 
     def test_p_function(self) -> None:
         """Тестирование функции p (обрезание 4-байтовых UTF)"""
-        assert opdsdb.p("hello", 3) == "hel"
-        assert opdsdb.p("", 3) == ""
+        from opds_catalog.utils import p
+
+        assert p("hello", 3) == "hel"
+        assert p("", 3) == ""
         # 4-byte unicode char should be stripped
-        assert opdsdb.p("a\U00010000b", 10) == "ab"
+        assert p("a\U00010000b", 10) == "ab"
 
     def test_avail_check_prepare(self) -> None:
         """Тестирование avail_check_prepare"""
-        opdsdb.avail_check_prepare()
-        book = opdsdb.findbook("testbook.fb2", "root/child")
+        scanner.avail_check_prepare()
+        book = scanner.findbook("testbook.fb2", "root/child")
         assert book.avail == 1
 
     def test_arc_skip_unchanged(self) -> None:
         """Тестирование arc_skip с неизменённым архивом"""
-        cat = opdsdb.findcat("root/child")
+        cat = scanner.findcat("root/child")
         cat.cat_size = 100
         cat.save()
-        result = opdsdb.arc_skip("root/child", 100)
+        result = scanner.archive_skip("root/child", 100, depth=0)
         assert result == 1
 
     def test_arc_skip_nonexistent(self) -> None:
         """Тестирование arc_skip с несуществующим каталогом"""
-        result = opdsdb.arc_skip("nonexistent", 100)
+        result = scanner.archive_skip("nonexistent", 100, depth=0)
         assert result == 0
 
     def test_arc_skip_changed(self) -> None:
         """Тестирование arc_skip с изменённым архивом"""
-        cat = opdsdb.findcat("root/child")
+        cat = scanner.findcat("root/child")
         cat.cat_size = 100
         cat.save()
-        result = opdsdb.arc_skip("root/child", 200)
+        result = scanner.archive_skip("root/child", 200, depth=0)
         assert result == 0
 
     def test_inp_skip_unchanged(self) -> None:
         """Тестирование inp_skip — возвращает 0, если нет дочерних книг."""
-        subchild_cat = opdsdb.findcat("root/child/subchild")
-        subchild_cat.cat_type = opdsdb.CAT_INP
+        subchild_cat = scanner.findcat("root/child/subchild")
+        subchild_cat.cat_type = constants.CAT_INP
         subchild_cat.cat_size = 100
         subchild_cat.save()
-        result = opdsdb.inp_skip("root/child/subchild", 100)
+        result = scanner.archive_skip("root/child/subchild", 100, depth=1)
         assert result == 0
 
     def test_inp_skip_nonexistent(self) -> None:
         """Тестирование inp_skip с несуществующим каталогом"""
-        result = opdsdb.inp_skip("nonexistent", 100)
+        result = scanner.archive_skip("nonexistent", 100, depth=1)
         assert result == 0
 
     def test_inpx_skip_unchanged(self) -> None:
         """Тестирование inpx_skip с неизменённым файлом"""
-        result = opdsdb.inpx_skip("root/child/subchild", 100)
+        result = scanner.archive_skip("root/child/subchild", 100, depth=2)
         assert result == 0
 
     def test_inpx_skip_nonexistent(self) -> None:
         """Тестирование inpx_skip с несуществующим каталогом"""
-        result = opdsdb.inpx_skip("nonexistent", 100)
+        result = scanner.archive_skip("nonexistent", 100, depth=2)
         assert result == 0

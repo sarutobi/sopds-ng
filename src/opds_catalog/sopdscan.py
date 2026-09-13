@@ -14,7 +14,9 @@ from django.utils.translation import gettext as _
 
 from book_tools.format import create_bookfile
 from book_tools.format.util import strip_symbols
-from opds_catalog import fb2parse, inpx_parser, opdsdb
+from opds_catalog import fb2parse, inpx_parser
+from opds_catalog.constants import CAT_INP, CAT_INPX, CAT_NORMAL, CAT_ZIP
+from opds_catalog.services import scanner
 
 
 class opdsScanner:
@@ -101,7 +103,7 @@ class opdsScanner:
         self.zip_file = None
         self.rel_path = None
 
-        opdsdb.avail_check_prepare()
+        scanner.avail_check_prepare()
         self.logger.debug(f"ZipScan: {config.SOPDS_ZIPSCAN}")
         for full_path, dirs, files in os.walk(config.SOPDS_ROOT_LIB, followlinks=True):
             # Если разрешена обработка inpx, то при нахождении inpx обрабатываем его и прекращаем обработку текущего каталога
@@ -133,7 +135,7 @@ class opdsScanner:
         # else:
         #    self.books_deleted=opdsdb.books_del_phisical()
 
-        self.books_deleted = opdsdb.books_del_phisical()
+        self.books_deleted = scanner.books_del_phisical()
 
         self.log_stats()
 
@@ -149,13 +151,13 @@ class opdsScanner:
             os.path.join(inpx, inp_file), config.SOPDS_ROOT_LIB
         )
 
-        if config.SOPDS_INPX_SKIP_UNCHANGED and opdsdb.inp_skip(
-            self.rel_path, inp_size
+        if config.SOPDS_INPX_SKIP_UNCHANGED and scanner.archive_skip(
+            self.rel_path, inp_size, depth=1
         ):
             self.logger.info(f"INP metafile {inp_file} not changed, skipping.")
             result = 1
         else:
-            self.inp_cat = opdsdb.addcattree(self.rel_path, opdsdb.CAT_INPX, inp_size)
+            self.inp_cat = scanner.addcattree(self.rel_path, CAT_INPX, inp_size)
             self.logger.info(
                 f"INP metafile {inp_file} stored as catalog {self.inp_cat}"
             )
@@ -177,10 +179,10 @@ class opdsScanner:
 
         rel_path_current = os.path.join(self.rel_path, meta_data[inpx_parser.sFolder])
         self.logger.debug(f"Library book path is {rel_path_current}")
-        if opdsdb.findbook(name, rel_path_current, 1) is None:
+        if scanner.findbook(name, rel_path_current, 1) is None:
             self.logger.info(f"Book {name} is new, store to database")
-            cat = opdsdb.addcattree(rel_path_current, opdsdb.CAT_INP)
-            book = opdsdb.addbook(
+            cat = scanner.addcattree(rel_path_current, CAT_INP)
+            book = scanner.addbook(
                 name,
                 rel_path_current,
                 cat,
@@ -190,22 +192,24 @@ class opdsScanner:
                 docdate,
                 lang,
                 meta_data[inpx_parser.sSize],
-                opdsdb.CAT_INP,
+                CAT_INP,
             )
             self.books_added += 1
             self.books_in_archives += 1
             self.logger.debug("Book " + rel_path_current + "/" + name + " Added ok.")
 
             for a in meta_data[inpx_parser.sAuthor]:
-                author = opdsdb.addauthor(a.replace(",", " "))
-                opdsdb.addbauthor(book, author)
+                author = scanner.addauthor(a.replace(",", " "))
+                scanner.addbauthor(book, author)
 
             for g in meta_data[inpx_parser.sGenre]:
-                opdsdb.addbgenre(book, opdsdb.addgenre(g.lower().strip(strip_symbols)))
+                scanner.addbgenre(
+                    book, scanner.addgenre(g.lower().strip(strip_symbols))
+                )
 
             for s in meta_data[inpx_parser.sSeries]:
-                ser = opdsdb.addseries(s.strip())
-                opdsdb.addbseries(book, ser, 0)
+                ser = scanner.addseries(s.strip())
+                scanner.addbseries(book, ser, 0)
 
     def processinpx(self, name, full_path, file):
         self.logger.info(f"Start processing INPX file {name}")
@@ -213,11 +217,13 @@ class opdsScanner:
 
         rel_file = os.path.relpath(file, config.SOPDS_ROOT_LIB)
         inpx_size = os.path.getsize(file)
-        if config.SOPDS_INPX_SKIP_UNCHANGED and opdsdb.inpx_skip(rel_file, inpx_size):
+        if config.SOPDS_INPX_SKIP_UNCHANGED and scanner.archive_skip(
+            rel_file, inpx_size, depth=2
+        ):
             self.logger.info(f"INPX file {file} is not changed. Skipping")
         else:
             self.logger.info(f"Create catalog for INPX file {file}")
-            opdsdb.addcattree(rel_file, opdsdb.CAT_INPX, inpx_size)
+            scanner.addcattree(rel_file, CAT_INPX, inpx_size)
             inpx = inpx_parser.Inpx(file, self.inpx_callback, self.inpskip_callback)
             # FIXME: Неизвестные атрибуты inpx_parser
             inpx.INPX_TEST_ZIP = config.SOPDS_INPX_TEST_ZIP
@@ -230,7 +236,7 @@ class opdsScanner:
         self.logger.debug(f"Full file path: {file}")
         rel_file = os.path.relpath(file, config.SOPDS_ROOT_LIB)
         zsize = os.path.getsize(file)
-        if opdsdb.arc_skip(rel_file, zsize):
+        if scanner.archive_skip(rel_file, zsize, depth=0):
             self.arch_skipped += 1
             self.logger.info(f"Skip ZIP archive {rel_file}. Already scanned.")
         else:
@@ -240,14 +246,12 @@ class opdsScanner:
             try:
                 z = zipfile.ZipFile(file, "r", allowZip64=True)
                 filelist = z.namelist()
-                cat = opdsdb.addcattree(rel_file, opdsdb.CAT_ZIP, zsize)
+                cat = scanner.addcattree(rel_file, CAT_ZIP, zsize)
                 for n in filelist:
                     try:
                         file_size = z.getinfo(n).file_size
                         bookfile = z.open(n)
-                        self.processfile(
-                            n, file, bookfile, cat, opdsdb.CAT_ZIP, file_size
-                        )
+                        self.processfile(n, file, bookfile, cat, CAT_ZIP, file_size)
                         bookfile.close()
                     except zipfile.BadZipFile as e:
                         self.logger.warning(
@@ -275,11 +279,11 @@ class opdsScanner:
             rel_path = os.path.relpath(full_path, config.SOPDS_ROOT_LIB)
             self.logger.debug(f"Attempt to add book {rel_path}/{name}")
             try:
-                if opdsdb.findbook(name, rel_path, 1) is None:
+                if scanner.findbook(name, rel_path, 1) is None:
                     self.logger.info(f"Book {name} is new")
                     if archive == 0:
                         self.logger.info(f"Add new catalog {rel_path}")
-                        cat = opdsdb.addcattree(rel_path, archive)
+                        cat = scanner.addcattree(rel_path, archive)
 
                     try:
                         self.logger.info(f"Extracting book metadata from {name}")
@@ -312,7 +316,7 @@ class opdsScanner:
                         docdate = book_data.docdate or ""
 
                         self.logger.info(f"Store book '{name}' metainfo in database")
-                        book = opdsdb.addbook(
+                        book = scanner.addbook(
                             name,
                             rel_path,
                             cat,
@@ -350,27 +354,27 @@ class opdsScanner:
                                     ]
                                 )
                             self.logger.debug(f"Author: {author_name}")
-                            author = opdsdb.addauthor(author_name)
+                            author = scanner.addauthor(author_name)
                             self.logger.debug(f"Link {book} to {author}")
-                            opdsdb.addbauthor(book, author)
+                            scanner.addbauthor(book, author)
                         self.logger.info("Authors metadata stored succesfully")
 
                         self.logger.info(
                             f"Store genres metadata for {name} in database"
                         )
                         for genre in book_data.tags:
-                            opdsdb.addbgenre(
+                            scanner.addbgenre(
                                 book,
-                                opdsdb.addgenre(genre.lower().strip(strip_symbols)),
+                                scanner.addgenre(genre.lower().strip(strip_symbols)),
                             )
                         self.logger.info("Genres metadata stored successfully")
 
                         # FIXME: series_info определяется только по наличию названия серии, номер в серии устанавливается в 0 если не указан
                         if book_data.series_info:
-                            ser = opdsdb.addseries(book_data.series_info["title"])
+                            ser = scanner.addseries(book_data.series_info["title"])
                             ser_no = book_data.series_info["index"] or "0"
                             ser_no = int(ser_no) if ser_no.isdigit() else 0
-                            opdsdb.addbseries(book, ser, ser_no)
+                            scanner.addbseries(book, ser, ser_no)
                 else:
                     self.books_skipped += 1
                     self.logger.info(f"Book {rel_path}/{name} already in database.")

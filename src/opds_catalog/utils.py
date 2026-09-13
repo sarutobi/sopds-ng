@@ -6,6 +6,7 @@
 import codecs
 import logging
 import os
+import re
 import subprocess
 import zipfile
 from io import BytesIO
@@ -16,13 +17,32 @@ import chardet
 from constance import config
 from django.conf import settings
 
-from opds_catalog import opdsdb
+from opds_catalog.constants import CAT_INP, CAT_NORMAL, CAT_ZIP
 from opds_catalog.models import Book
 
 logger = logging.getLogger(__name__)
 
 # Logger for scanner
 scan_logger = logging.getLogger("scanner")
+
+
+def getlangcode(s: str) -> int:
+    """Определение кода языка переданной строки."""
+    from opds_catalog.models import SOPDS_LANG_CODE_OTHER, LangCodes
+
+    langcode = SOPDS_LANG_CODE_OTHER
+    if not s:
+        return langcode
+    for k, chars in LangCodes.items():
+        if s[0] in chars:
+            langcode = k
+    return langcode
+
+
+def p(s: str, size: int) -> str:
+    """Очистка строки от символов вне BMP (для совместимости с некоторыми БД)."""
+    utfhigh = re.compile("[\U00010000-\U0010ffff]")
+    return utfhigh.sub("", s[:size])
 
 
 def to_int(val: Any, default: int = 0) -> int:
@@ -98,7 +118,7 @@ def get_fs_book_path(book: Book) -> str:
     """Формирует полный путь в файловой системе библиотеки для файла книги."""
     logger.info(f"Create file path for book {book.id}")
     path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
-    if book.cat_type == opdsdb.CAT_INP:
+    if book.cat_type == CAT_INP:
         logger.info("Book has been placed in INP/INPX catalog")
         # Убираем из пути INPX и INP файл
         inp_path, zip_name = os.path.split(path)
@@ -175,12 +195,12 @@ def getFileData(book: Book) -> BytesIO | None:
     logger.info(f"Reading book file {book.filename} from file system")
     full_path = get_fs_book_path(book)
     logger.info(f"Read file from {full_path}")
-    if book.cat_type == opdsdb.CAT_NORMAL:
+    if book.cat_type == CAT_NORMAL:
         file_path = os.path.join(full_path, book.filename)
         logger.info(f"Reading file {book.filename} as regular file")
         return read_from_regular_file(file_path)
 
-    elif book.cat_type in [opdsdb.CAT_ZIP, opdsdb.CAT_INP]:
+    elif book.cat_type in [CAT_ZIP, CAT_INP]:
         logger.info(f"Reading file {book.filename} from zipped catalog")
         return read_from_zipped_file(full_path, book.filename)
 
