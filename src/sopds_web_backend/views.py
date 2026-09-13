@@ -108,6 +108,8 @@ def SearchBooksView(request):
         args["isbookshelf"] = 1 if search_res.is_bookshelf else 0
 
         page_num = to_int(args.get("page_num"), 1)
+        if page_num < 1:
+            page_num = 1
         items, op = book_services.paginated_book_content(
             books,
             page_num,
