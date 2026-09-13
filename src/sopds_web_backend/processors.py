@@ -47,7 +47,7 @@ def sopds_processor(request):
     args["stats"] = stats
 
     # Поиск случайной книги
-    books_count = Book.objects.count()
+    books_count = stats["allbooks"]
     if books_count:
         book_num = randint(1, books_count)
         try:

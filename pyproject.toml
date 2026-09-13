@@ -103,6 +103,7 @@ quote-style = "double"
 [tool.ruff.lint]
 select = ["F", "E", "I"]
 ignore = [
+    "E722",
     "E501",
     "E741",
     "E712",

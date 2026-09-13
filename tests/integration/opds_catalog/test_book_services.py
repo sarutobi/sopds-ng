@@ -102,8 +102,10 @@ class TestBookServices:
 
     def test_search_book_unsupported_type(self):
         """Поиск с неподдерживаемым типом."""
-        results = book_services.search_book("x", "test", None, None)
-        assert results.count() == 0
+        import pytest
+
+        with pytest.raises(ValueError, match="is not supported"):
+            book_services.search_book("x", "test", None, None)
 
     def test_find_book_doubles(self, book_with_relations, catalog):
         """Поиск дубликатов книги."""

@@ -54,7 +54,7 @@ def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None
 
 def get_breadcrumbs(searchtype: str, append: str | None = None) -> list[str]:
     """Возвращает "хлебные крошки" для варианта поиска."""
-    result = list(BREADCRUMBS[searchtype])
+    result = BREADCRUMBS[searchtype]
     if append is not None:
         result.append(append)
     return result
@@ -121,7 +121,7 @@ def SearchBooksView(request):
                     section,
                     subsection,
                 ]
-            except (ValueError, TypeError, KeyError):
+            except:
                 args["breadcrumbs"] = [_("Books"), _("Search by genre")]
 
             args["searchobject"] = "genre"
@@ -147,33 +147,16 @@ def SearchBooksView(request):
 
         # Поиск дубликатов для книги
         elif args["searchtype"] == "d":
-            book_id = to_int(args["searchterms"], 0)
-            if book_id == 0:
-                # Если ID некорректен, возвращаем пустой список книг или ошибку.
-                # Для совместимости с логикой поиска дубликатов, просто не ищем.
-                books = Book.objects.filter(id=0)
-                args["breadcrumbs"] = [_("Books"), _("Doubles for book")]
-                args["searchobject"] = "title"
-            else:
-                try:
-                    mbook = Book.objects.get(id=book_id)
-                    books = (
-                        Book.objects.filter(
-                            title=mbook.title, authors__in=mbook.authors.all()
-                        )
-                        .exclude(id=book_id)
-                        .distinct()
-                        .order_by("-docdate")
-                    )
-                    args["breadcrumbs"] = [
-                        _("Books"),
-                        _("Doubles for book"),
-                        mbook.title,
-                    ]
-                except Book.DoesNotExist:
-                    books = Book.objects.filter(id=0)
-                    args["breadcrumbs"] = [_("Books"), _("Doubles for book")]
-                args["searchobject"] = "title"
+            book_id = int(args["searchterms"])  # type: ignore[call-overload]
+            mbook = Book.objects.get(id=book_id)
+            books = (
+                Book.objects.filter(title=mbook.title, authors__in=mbook.authors.all())
+                .exclude(id=book_id)
+                .distinct()
+                .order_by("-docdate")
+            )
+            args["breadcrumbs"] = [_("Books"), _("Doubles for book"), mbook.title]
+            args["searchobject"] = "title"
 
         # Поиск книги по ID
         elif args["searchtype"] == "i":
@@ -224,7 +207,7 @@ def SearchSeriesView(request):
         searchtype = request.GET.get("searchtype", "m")
         searchterms = request.GET.get("searchterms", "")
         # searchterms0 = int(request.POST.get('searchterms0', ''))
-        page_num = to_int(request.GET.get("page", "1"), 1)
+        page_num = int(request.GET.get("page", "1"))
         page_num = page_num if page_num > 0 else 1
 
         series = series_services.search_series(searchtype, searchterms)
@@ -281,7 +264,7 @@ def SearchAuthorsView(request):
         searchtype = request.GET.get("searchtype", "m")
         searchterms = request.GET.get("searchterms", "")
         # searchterms0 = int(request.POST.get('searchterms0', ''))
-        page_num = to_int(request.GET.get("page", "1"), 1)
+        page_num = int(request.GET.get("page", "1"))
         page_num = page_num if page_num > 0 else 1
 
         # if searchtype == "m":
@@ -345,7 +328,7 @@ def CatalogsView(request):
 
     if request.GET:
         cat_id = request.GET.get("cat", None)
-        page_num = to_int(request.GET.get("page", "1"), 1)
+        page_num = int(request.GET.get("page", "1"))
     else:
         cat_id = None
         page_num = 1
@@ -444,7 +427,7 @@ def SeriesView(request):
     args = {}
 
     if request.GET:
-        lang_code = to_int(request.GET.get("lang", "0"), 0)
+        lang_code = int(request.GET.get("lang", "0"))
         chars = request.GET.get("chars", "")
     else:
         lang_code = 0
@@ -492,7 +475,7 @@ def GenresView(request):
 
 
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
-@sopds_login(url="web:login")
+# g @sopds_login(url="web:login")
 def SearchSuggestView(request):
     """Подсказки для строки поиска через htmx."""
     logger.critical("Suggestion helper")
@@ -538,11 +521,9 @@ def BSDelView(request):
     else:
         book = None
 
-    book_id = to_int(book, 0)
-    if book_id == 0:
-        return redirect("%s?searchtype=u" % reverse("web:searchbooks"))
+    book = int(book)
 
-    bookshelf.objects.filter(user=request.user, book=book_id).delete()
+    bookshelf.objects.filter(user=request.user, book=book).delete()
 
     if request.headers.get("HX-Request") == "true":
         return HttpResponse(

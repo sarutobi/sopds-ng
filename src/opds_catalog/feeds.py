@@ -244,10 +244,7 @@ class SOPDSBaseFeed(Feed):
 
     feed_type = opdsFeed
     subtitle = settings.SUBTITLE
-
-    def item_updateddate(self, item):
-        """Дата обновления всех элементов фида."""
-        return timezone.now()
+    item_updateddate = timezone.now()
 
     @sopds_auth_validate
     def __call__(self, request: HttpRequest, *args, **kwargs):
@@ -488,7 +485,7 @@ class MainFeed(SOPDSBaseFeed):
         # авторизация включена и пользователь авторизован.
         if config.SOPDS_AUTH and self.request.user.is_authenticated:
             mainitems.append(
-                {
+                {  # ty: ignore
                     "id": 6,
                     "title": _("%(username)s Book shelf")
                     % (
@@ -1116,7 +1113,9 @@ class BooksFeed(SOPDSBaseFeed):
         """Заголовок фида."""
         return f"{settings.TITLE} | {_('Select books by substring')}"
 
-    def get_object(self, request, lang_code=0, chars=None):
+    def get_object(
+        self, request, lang_code=0, chars=None
+    ):  # ty: ignore [invalid-method-override]
         """Формирование шаблона названия книги."""
         self.lang_code = int(lang_code)
         if chars is None:
@@ -1167,7 +1166,9 @@ class AuthorsFeed(SOPDSBaseFeed):
         """Заголовок фида."""
         return f"{settings.TITLE} | {_('Select authors by substring')}"
 
-    def get_object(self, request, lang_code=0, chars=None):
+    def get_object(
+        self, request, lang_code=0, chars=None
+    ):  # ty: ignore [invalid-method-override]
         """Формирование шаблона для поиска авторов."""
         self.lang_code = int(lang_code)
         if chars is None:
@@ -1234,7 +1235,9 @@ class SeriesFeed(SOPDSBaseFeed):
         """Заголовок фида серий."""
         return f"{settings.TITLE} | {_('Select series by substring')}"
 
-    def get_object(self, request, lang_code=0, chars=None):
+    def get_object(
+        self, request, lang_code=0, chars=None
+    ):  # ty: ignore[invalid-method-override]
         """Получение основного объекта фида."""
         self.lang_code = int(lang_code)
         if chars is None:

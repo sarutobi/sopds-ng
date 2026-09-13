@@ -14,7 +14,6 @@ from django.http import (
     HttpResponseNotFound,
     HttpResponseRedirect,
 )
-from django.shortcuts import get_object_or_404
 from PIL import Image
 
 from book_tools.format import create_bookfile, mime_detector
@@ -26,7 +25,7 @@ from opds_catalog.models import Book, bookshelf
 from opds_catalog.utils import getFileData, getFileName
 
 logger = logging.getLogger(__name__)
-SOPDS_DEFAULT_COVER = "/static/images/nocover.jpg"
+SOPDS_DEFAULT_COVER = "/static/images/sopds-ng-nocover.png"
 
 
 @sopds_auth_validate
@@ -38,7 +37,7 @@ def Download(request, book_id, zip_flag):
     logger.debug(f"Download {book_id}")
     logger.debug(f"Zip flag: {zip_flag}")
     logger.info(f"Reading book {book_id} metadata from database")
-    book = get_object_or_404(Book, id=book_id)
+    book = Book.objects.get(id=book_id)
 
     logger.info("Processing user bookshelf ")
     if config.SOPDS_AUTH:
@@ -89,7 +88,6 @@ def Download(request, book_id, zip_flag):
 
 # Новая версия (0.42) процедуры извлечения обложек из файлов книг fb2, epub, mobi
 # @cache_page(config.SOPDS_CACHE_TIME)
-@sopds_auth_validate
 def Cover(
     request: HttpRequest, book_id: int, thumbnail=False
 ) -> HttpResponse | HttpResponseRedirect:
@@ -109,7 +107,7 @@ def Cover(
        HttpResponseRedirect: ссылка на стандартную обложку, если обложка не бла найдена в книге
     """
     logger.info(f"Reading book cover for book_id {book_id}")
-    book = get_object_or_404(Book, id=book_id)
+    book = Book.objects.get(id=book_id)
     logger.info("Book meta loaded")
     logger.debug(f"Book title = {book.title}")
     response = HttpResponse()
@@ -156,10 +154,9 @@ def Thumbnail(request, book_id):
     return Cover(request, book_id, True)
 
 
-@sopds_auth_validate
 def ConvertFB2(request, book_id, convert_type):
     """Выдача файла книги после конвертации в EPUB или mobi"""
-    book = get_object_or_404(Book, id=book_id)
+    book = Book.objects.get(id=book_id)
 
     if book.format != "fb2":
         raise Http404
@@ -233,11 +230,11 @@ def ConvertFB2(request, book_id, convert_type):
     try:
         if tmp_fb2_path:
             os.remove(tmp_fb2_path)
-    except Exception:
+    except:
         pass
     try:
         os.remove(tmp_conv_path)
-    except Exception:
+    except:
         pass
 
     return response

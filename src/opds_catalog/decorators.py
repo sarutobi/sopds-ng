@@ -5,7 +5,7 @@ from functools import wraps
 
 from constance import config
 from django.contrib import auth
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpResponse
 
 
 def sopds_auth_validate(view_function):
@@ -23,16 +23,14 @@ def sopds_auth_validate(view_function):
             response.status_code = 401
             return response
 
-        # Определяем request: первый аргумент, если это HttpRequest, иначе второй (для методов класса)
-        request = (
-            args[0]
-            if args and isinstance(args[0], HttpRequest)
-            else args[1]
-            if len(args) > 1
-            else None
-        )
-        if request is None:
-            return _unauthed()
+        if (
+            args
+            and hasattr(args[0], "__class__")
+            and hasattr(args[0], view_function.__name__)
+        ):
+            request = args[1]
+        else:
+            request = args[0]
 
         header = "HTTP_AUTHORIZATION"
         if not config.SOPDS_AUTH or request.user.is_authenticated:
@@ -49,12 +47,8 @@ def sopds_auth_validate(view_function):
 
         if "basic" != auth_meth.lower():
             return _unauthed()
-
-        try:
-            auth_data = base64.b64decode(auth_data.strip()).decode("utf-8")
-            username, password = auth_data.split(":", 1)
-        except (base64.binascii.Error, UnicodeDecodeError, ValueError):
-            return _unauthed()
+        auth_data = base64.b64decode(auth_data.strip()).decode("utf-8")
+        username, password = auth_data.split(":", 1)
 
         user = auth.authenticate(username=username, password=password)
         if user and user.is_active:

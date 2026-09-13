@@ -132,7 +132,7 @@ def search_book(
     """Формирование запроса на выборку книг."""
     search_function = SEARCH_BOOK_REGISTRY.get(type)
     if search_function is None:
-        return Book.objects.none()
+        raise ValueError(f"Search type '{type}' is not supported")
     return search_function(config.SOPDS_AUTH, term, second_term, user)
 
 

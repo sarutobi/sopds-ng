@@ -334,7 +334,11 @@ def addbook(
 
 
 def findauthor(full_name):
-    author = Author.objects.filter(full_name=full_name[:SIZE_AUTHOR_NAME]).first()
+    try:
+        author = Author.objects.filter(full_name=full_name[:SIZE_AUTHOR_NAME])[:1]
+    except Author.DoesNotExist:
+        author = None
+
     return author
 
 

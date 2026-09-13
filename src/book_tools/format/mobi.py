@@ -12,40 +12,24 @@ class Mobipocket(BookFile):
         BookFile.__init__(self, file, original_filename, Mimetype.MOBI)
         bm = BookMobi(file)
         self._encryption_method = bm["encryption"]
-        self._set_title(bm["title"])
-        self._add_author(bm["author"])
-        docdate = bm["modificationDate"]
-        if docdate:
-            try:
-                docdate_str = docdate.strftime("%Y-%m-%d")
-            except (AttributeError, ValueError):
-                docdate_str = ""
-        else:
-            docdate_str = ""
-        self._set_docdate(docdate_str)
+        self.__set_title__(bm["title"])
+        self.__add_author__(bm["author"])
+        self.__set_docdate__(bm["modificationDate"].strftime("%Y-%m-%d"))
         if bm["subject"]:
             for tag in bm["subject"]:
-                self._add_tag(tag)
+                self.__add_tag__(tag)
         self.description: str = bm["description"]
 
     @classmethod
     def parse_book_data(cls, file, original_filename):
         book_file = BookFile(file, original_filename, Mimetype.MOBI)
         bm = BookMobi(file)
-        book_file._set_title(bm["title"])
-        book_file._add_author(bm["author"])
-        docdate = bm["modificationDate"]
-        if docdate:
-            try:
-                docdate_str = docdate.strftime("%Y-%m-%d")
-            except (AttributeError, ValueError):
-                docdate_str = ""
-        else:
-            docdate_str = ""
-        book_file._set_docdate(docdate_str)
+        book_file.__set_title__(bm["title"])
+        book_file.__add_author__(bm["author"])
+        book_file.__set_docdate__(bm["modificationDate"].strftime("%Y-%m-%d"))
         if bm["subject"]:
             for tag in bm["subject"]:
-                book_file._add_tag(tag)
+                book_file.__add_tag__(tag)
         book_file.description = bm["description"]
         return book_file
 

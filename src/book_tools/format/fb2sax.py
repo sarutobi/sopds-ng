@@ -290,14 +290,14 @@ class FB2sax(BookFile):
         if len(self.fb2parser.book_title.getvalue()) > 0:
             res = self.fb2parser.book_title.getvalue()[0].strip(strip_symbols)
         if len(res) > 0:
-            self._set_title(res)
+            self.__set_title__(res)
 
     def __detect_docdate(self):
         res = self.fb2parser.docdate.getattr("value") or ""
         if len(res) == 0 and len(self.fb2parser.docdate.getvalue()) > 0:
             res = self.fb2parser.docdate.getvalue()[0].strip()
         if len(res) > 0:
-            self._set_docdate(res)
+            self.__set_docdate__(res)
 
     def __detect_authors(self):
         for idx, author in enumerate(self.fb2parser.author_last.getvalue()):
@@ -305,7 +305,7 @@ class FB2sax(BookFile):
             first_name = self.fb2parser.author_first.getvalue()[idx].strip(
                 strip_symbols
             )
-            self._add_author(" ".join([first_name, last_name]), last_name)
+            self.__add_author__(" ".join([first_name, last_name]), last_name)
 
     def __detect_language(self):
         res = ""
@@ -316,7 +316,7 @@ class FB2sax(BookFile):
 
     def __detect_tags(self):
         for genre in self.fb2parser.genre.getvalue():
-            self._add_tag(genre.lower().strip(strip_symbols))
+            self.__add_tag__(genre.lower().strip(strip_symbols))
 
     def __detect_series_info(self):
         if len(self.fb2parser.series.attrss) > 0:

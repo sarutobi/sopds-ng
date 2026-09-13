@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 from book_tools.pymobi import compression
 
-# except Exception:
+# except:
 # from ordereddict import OrderedDict
 from book_tools.pymobi.util import decodeVarint, hexdump, toByte, toStr
 
@@ -259,21 +259,20 @@ class BookMobi(object):
 
     def __init__(self, file):
         if isinstance(file, str):
-            self._file_opened_by_mobi = True
-            self.f = open(file, "rb")
+            f = open(file, "rb")
         else:
-            self._file_opened_by_mobi = False
-            self.f = file
+            f = file
 
+        self.f = f
         self.f.seek(0, 0)
         # palm database header
-        header = self.f.read(78)
+        header = f.read(78)
         for key, u_fmt, offset in self.palmdb_format:
             (value,) = struct.unpack_from(u_fmt, header, offset)
             self.header[key] = value
         # palm database record
-        self.f.seek(78)
-        records = self.f.read(self.header["numberOfRecords"] * 8)
+        f.seek(78)
+        records = f.read(self.header["numberOfRecords"] * 8)
         for count in range(0, self.header["numberOfRecords"]):
             offset, value = struct.unpack_from(">LL", records, count * 8)
             attributes = value & 0xFF000000
@@ -362,29 +361,26 @@ class BookMobi(object):
                             print(recordType, data, "unknown type")
                     offset += recordLength
                     count += 1
-                (title,) = struct.unpack_from(
-                    "%ds" % self.mobi["fullNameLength"],
-                    record0,
-                    self.mobi["fullNameOffset"],
-                )
-                if title:
-                    self.book["title"] = toStr(title)
-                self.book["version"] = self.mobi["minVersion"]
-                self.book["author"] = toStr(
-                    self.mobi_exth[100] if 100 in self.mobi_exth else "unknown"
-                )
-                self.book["mobiType"] = self.typeDesc(
-                    mobi_type,
-                    self.mobi["mobiType"],
-                )
-                self.book["author"] = toStr(
-                    self.mobi_exth[100] if 100 in self.mobi_exth else "unknown"
-                )
-                self.book["encoding"] = self.typeDesc(
-                    encoding_type,
-                    self.mobi["textEncoding"],
-                )
-                self.book["srcs"] = self.mobi["srcsRecordNumber"] != 0xFFFFFFFF
+            (title,) = struct.unpack_from(
+                "%ds" % self.mobi["fullNameLength"],
+                record0,
+                self.mobi["fullNameOffset"],
+            )
+            if title:
+                self.book["title"] = toStr(title)
+            self.book["version"] = self.mobi["minVersion"]
+            self.book["author"] = toStr(
+                self.mobi_exth[100] if 100 in self.mobi_exth else "unknown"
+            )
+            self.book["mobiType"] = self.typeDesc(
+                mobi_type,
+                self.mobi["mobiType"],
+            )
+            self.book["encoding"] = self.typeDesc(
+                encoding_type,
+                self.mobi["textEncoding"],
+            )
+            self.book["srcs"] = self.mobi["srcsRecordNumber"] != 0xFFFFFFFF
 
     def __getitem__(self, name):
         return self.book.get(name)
@@ -455,13 +451,6 @@ class BookMobi(object):
     def decrypt(self, record):
         return record
 
-    def __del__(self):
-        if getattr(self, "_file_opened_by_mobi", False):
-            try:
-                self.f.close()
-            except Exception:
-                pass
-
     def imageExt(self, record):
         (ident,) = struct.unpack_from(">L", record, 0)
         if ident == 0x47494638:
@@ -509,7 +498,152 @@ class BookMobi(object):
             b"<head>",
             toByte(
                 '<head>\n<meta http-equiv="Content-Type" content="text/html; charset=%s" />'
-                % charset,
+                % charset
             ),
             data,
+            re.IGNORECASE,
         )
+        print()
+        return data
+
+    def unpackMobi(self, output_file):
+        rec_num = self.palmdoc["recordCount"]
+        text_length = self.palmdoc["textLength"]
+        unpack = self.unpackFunction()
+        data = []
+        print("Title: %s" % self.book["title"])
+        print("Compression Type: %s" % self.book["compression"])
+        print("Encryption Type: %s" % self.book["encryption"])
+        print("Dump html/css")
+        for rn in range(1, rec_num + 1):
+            record = self.loadRecord(rn)
+            extraflags = self.mobi["extraRecordDataFlags"] >> 1
+            while extraflags & 0x1:
+                # the maximum length of trailing entries size is 32.
+                (vint,) = struct.unpack_from(">L", record[-4:], 0)
+                fint = decodeVarint(vint)
+                record = record[:-fint]
+                extraflags >>= 1
+            if self.mobi["extraRecordDataFlags"] & 0x1:
+                # multibyte bytes is the last byte at the end of trailing
+                # entries
+                (mb_num,) = struct.unpack_from(">B", record[-1:], 0)
+                # bit 1-2 is length, 3-8 is unknown. plus 1 size byte
+                mb_num = (mb_num & 0x3) + 1
+                record = record[:-mb_num]
+            record = self.decrypt(record)
+            sys.stdout.write(".")
+            sys.stdout.flush()
+            data.append(unpack(record))
+        data_text = b"".join(data)
+        data_css = data_text[text_length:]
+        data_text = data_text[:text_length]
+        sys.stdout.write("html: %d" % text_length)
+        basename = os.path.splitext(output_file)[0]
+        if data_css:
+            sys.stdout.write(" / css: %d" % len(data_css))
+            css_filename = "%s.css" % basename
+            with open(css_filename, "wb") as f:
+                f.write(data_css)
+            data_text = re.sub(  # type: ignore[call-overload]
+                r"""<head>""",
+                '<head>\n<link rel="stylesheet" href="%s" type="text/css"/>'
+                % os.path.basename(css_filename),
+                data_text,
+                re.IGNORECASE,
+            )
+        print()
+        if self.mobi["firstImageIndex"] != 0xFFFFFFFF:
+            data_text = self.loadTextResource(data_text, basename)
+        with open(output_file, "wb") as f:
+            f.write(data_text)
+        # cover
+        if 201 in self.mobi_exth:
+            print("Dump cover")
+            (cover_rn,) = struct.unpack(">L", self.mobi_exth[201])
+            cover_rn += self.mobi["firstImageIndex"]
+            self.saveRecordImage(cover_rn, "%s_cover" % basename)
+        print("Unpack MOBI successfully")
+
+    def unpackMobiCover(self):
+        if 201 in self.mobi_exth:
+            (cover_rn,) = struct.unpack(">L", self.mobi_exth[201])
+            cover_rn += self.mobi["firstImageIndex"]
+            rec = self.loadRecord(cover_rn)
+            return rec
+        return None
+
+    def removeSrcs(self, outmobi, outsrcs=None):
+        srcs_rn = self.mobi["srcsRecordNumber"]
+        srcs_rc = self.mobi["srcsRecordCount"]
+        print("Title: %s" % self.book["title"])
+        if srcs_rn == 0xFFFFFFFF or srcs_rc == 0:
+            print("No SRCS section.")
+            return
+        print("Find SRCS: %d" % srcs_rn)
+        if outsrcs:
+            print("Output ZIP file: %s " % outsrcs)
+            f = open(outsrcs, "wb")
+            for rn in range(srcs_rn, srcs_rn + srcs_rc):
+                sys.stdout.write(".")
+                sys.stdout.flush()
+                rec = self.loadRecord(rn)
+                header = struct.unpack_from(">4L", rec, 0)
+                if header[0] == 0x53524353:
+                    # SRCS
+                    f.write(rec[16:])
+            f.close()
+        print()
+        print("Output MOBI file: %s" % outmobi)
+        with open(outmobi, "wb") as f:
+            self.f.seek(0)
+            f.write(self.f.read(78))
+            # replace srcs section with 2-zero bytes
+            recordlist_data = array.array(
+                "B", self.f.read(8 * self.header["numberOfRecords"])
+            )
+            print("Fix record offset")
+            srcs_offset = self.records[srcs_rn][0]
+            for count in range(0, srcs_rc):
+                sys.stdout.write(".")
+                sys.stdout.flush()
+                fix_offset = srcs_offset + count * 2
+                struct.pack_into(
+                    ">L", recordlist_data, (srcs_rn + count) * 8, fix_offset
+                )
+            offset = self.records[srcs_rn + srcs_rc][0] - srcs_offset - srcs_rc * 2
+            for rn in range(srcs_rn + srcs_rc, self.header["numberOfRecords"]):
+                sys.stdout.write(".")
+                sys.stdout.flush()
+                fix_offset = self.records[rn][0] - offset
+                struct.pack_into(">L", recordlist_data, rn * 8, fix_offset)
+            f.write(recordlist_data)
+            print()
+            # gap
+            gapToDataLength = self.records[0][0] - f.tell()
+            if gapToDataLength:
+                f.write(self.f.read(gapToDataLength))
+            # record
+            print("Write record")
+            record0 = array.array("B", self.loadRecord(0))
+            struct.pack_into(">LL", record0, 224, 0xFFFFFFFF, 0)
+            f.write(record0)
+            for rn in range(1, srcs_rn):
+                sys.stdout.write(".")
+                sys.stdout.flush()
+                rec = self.loadRecord(rn)
+                f.write(rec)
+            srcs_data = b"\x00\x00"
+            # srcs record
+            for rn in range(srcs_rn, srcs_rn + srcs_rc):
+                sys.stdout.write(".")
+                sys.stdout.flush()
+                f.write(srcs_data)
+            # record
+            for rn in range(srcs_rn + srcs_rc, self.header["numberOfRecords"]):
+                sys.stdout.write(".")
+                sys.stdout.flush()
+                rec = self.loadRecord(rn)
+                f.write(rec)
+            print()
+        print("Remove SRCS successfully")

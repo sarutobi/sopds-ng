@@ -66,15 +66,9 @@ class TestDownloads:
 
 @pytest.mark.parametrize("use_sax", [(True), (False)])
 def test_get_book_cover(
-    fake_sopds_root_lib,
-    create_regular_book,
-    client,
-    override_config,
-    use_sax,
-    django_user,
+    fake_sopds_root_lib, create_regular_book, client, override_config, use_sax
 ) -> None:
     """Обложка книги (FB2SAX вкл/выкл)."""
-    client.force_login(django_user)
     book: Book = create_regular_book
     assert book is not None
     url = reverse("opds:cover", args=(book.id,))
@@ -88,10 +82,8 @@ def test_cover_redirect_when_no_cover(
     fake_sopds_root_lib,
     create_regular_book,
     client,
-    django_user,
 ) -> None:
     """Cover без обложки -> редирект на заглушку."""
-    client.force_login(django_user)
     book: Book = create_regular_book
     book.filename = "nonexist.fb2"
     book.save()
@@ -102,10 +94,9 @@ def test_cover_redirect_when_no_cover(
 
 
 def test_thumbnail(
-    fake_sopds_root_lib, create_regular_book, client, override_config, django_user
+    fake_sopds_root_lib, create_regular_book, client, override_config
 ) -> None:
     """Проверка Thumbnail."""
-    client.force_login(django_user)
     book: Book = create_regular_book
     url = reverse("opds:thumb", args=(book.id,))
     with override_config(SOPDS_FB2SAX=True):

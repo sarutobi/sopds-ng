@@ -63,7 +63,7 @@ def book_metadata_to_bookfile(
     """
     book_file = BookFile(file, original_filename, mimetype)
 
-    book_file._set_title(meta.title)
+    book_file.__set_title__(meta.title)
 
     for author in meta.authors:
         name_parts = [
@@ -71,10 +71,10 @@ def book_metadata_to_bookfile(
         ]
         name = " ".join(name_parts)
         sortkey = author.last_name or name.split()[-1] if name else ""
-        book_file._add_author(name, sortkey)
+        book_file.__add_author__(name, sortkey)
 
     for genre in meta.genres:
-        book_file._add_tag(genre)
+        book_file.__add_tag__(genre)
 
     if meta.series is not None:
         book_file.series_info = {
@@ -89,9 +89,9 @@ def book_metadata_to_bookfile(
         book_file.description = meta.description
 
     if meta.docdate:
-        book_file._set_docdate(meta.docdate)
+        book_file.__set_docdate__(meta.docdate)
     elif meta.publication_date:
-        book_file._set_docdate(meta.publication_date.isoformat())
+        book_file.__set_docdate__(meta.publication_date.isoformat())
 
     return book_file
 
