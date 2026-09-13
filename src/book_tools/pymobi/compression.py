@@ -66,7 +66,7 @@ class Huffcdic(object):
     q = struct.Struct(">Q").unpack_from
 
     def loadHuff(self, huff):
-        if huff[0:8] != "HUFF\x00\x00\x00\x18":
+        if huff[0:8] != b"HUFF\x00\x00\x00\x18":
             raise ValueError("invalid huff header")
         off1, off2 = struct.unpack_from(">LL", huff, 8)
 
@@ -78,10 +78,10 @@ class Huffcdic(object):
             maxcode = ((maxcode + 1) << (32 - codelen)) - 1
             return (codelen, term, maxcode)
 
-        self.dict1 = map(dict1_unpack, struct.unpack_from(">256L", huff, off1))
+        self.dict1 = list(map(dict1_unpack, struct.unpack_from(">256L", huff, off1)))
 
         dict2 = struct.unpack_from(">64L", huff, off2)
-        self.mincode, self.maxcode = (), ()
+        self.mincode, self.maxcode = [], []
         for codelen, mincode in enumerate((0,) + dict2[0::2]):
             self.mincode += (mincode << (32 - codelen),)
         for codelen, maxcode in enumerate((0,) + dict2[1::2]):
@@ -109,13 +109,16 @@ class Huffcdic(object):
     def unpack(self, data):
         q = Huffcdic.q
 
+        if isinstance(data, str):
+            data = data.encode("utf-8")
+
         bitsleft = len(data) * 8
-        data += "\x00\x00\x00\x00\x00\x00\x00\x00"
+        data += b"\x00" * 8
         pos = 0
         (x,) = q(data, pos)
         n = 32
 
-        s = ""
+        s = b""
         while True:
             if n <= 0:
                 pos += 4
@@ -135,10 +138,10 @@ class Huffcdic(object):
                 break
 
             r = (maxcode - code) >> (32 - codelen)
-            slice, flag = self.dictionary[r]
+            slice_data, flag = self.dictionary[r]
             if not flag:
                 self.dictionary[r] = None
-                slice = self.unpack(slice)
-                self.dictionary[r] = (slice, 1)
-            s += slice
+                slice_data = self.unpack(slice_data)
+                self.dictionary[r] = (slice_data, 1)
+            s += slice_data
         return s

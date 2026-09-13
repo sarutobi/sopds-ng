@@ -177,44 +177,43 @@ def parse_fb2_zip(file_obj, original_filename: str) -> BookMetadata:
 def parse_epub(file_obj, original_filename: str) -> BookMetadata:
     """Parse EPUB file and return BookMetadata (uses legacy EPub parser)."""
     try:
-        epub = EPubOld(file_obj, original_filename)
+        with EPubOld(file_obj, original_filename) as epub:
+            authors: list[Author] = []
+            for a in epub.authors:
+                # EPub хранит name как полное имя автора ("Александр  Мирер")
+                # сохраняем в DTO как first_name, без last_name — конвертер сам выделит sortkey
+                authors.append(Author(first_name=a["name"]))
+
+            series: Optional[Series] = None
+            if epub.series_info:
+                idx = epub.series_info.get("index")
+                series = Series(
+                    name=epub.series_info.get("title", ""),
+                    series_no=int(idx) if idx else 0,
+                )
+
+            docdate: str = epub.docdate or ""
+
+            desc: str | None = None
+            if epub.description:
+                desc = (
+                    epub.description
+                    if isinstance(epub.description, str)
+                    else epub.description.decode("utf-8")
+                )
+
+            return BookMetadata(
+                title=epub.title,
+                authors=authors,
+                series=series,
+                genres=epub.tags or [],
+                language=epub.language_code or "",
+                description=desc,
+                docdate=docdate,
+            )
     except Exception as e:
         # Любые исключения EPub -> EpubStructureException
         raise EpubStructureException(str(e)) from e
-
-    authors: list[Author] = []
-    for a in epub.authors:
-        # EPub хранит name как полное имя автора ("Александр  Мирер")
-        # сохраняем в DTO как first_name, без last_name — конвертер сам выделит sortkey
-        authors.append(Author(first_name=a["name"]))
-
-    series: Optional[Series] = None
-    if epub.series_info:
-        idx = epub.series_info.get("index")
-        series = Series(
-            name=epub.series_info.get("title", ""),
-            series_no=int(idx) if idx else 0,
-        )
-
-    docdate: str = epub.docdate or ""
-
-    desc: str | None = None
-    if epub.description:
-        desc = (
-            epub.description
-            if isinstance(epub.description, str)
-            else epub.description.decode("utf-8")
-        )
-
-    return BookMetadata(
-        title=epub.title,
-        authors=authors,
-        series=series,
-        genres=epub.tags or [],
-        language=epub.language_code or "",
-        description=desc,
-        docdate=docdate,
-    )
 
 
 def parse_mobi(file_obj, original_filename: str) -> BookMetadata:

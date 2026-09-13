@@ -1,4 +1,5 @@
 import base64
+import logging
 import os
 import zipfile
 from abc import abstractmethod
@@ -12,6 +13,8 @@ from book_tools.exceptions import FB2StructureException
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.util import list_zip_file_infos, normalize_string
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -93,7 +96,7 @@ class FB2Base(BookFile):
             content = base64.b64decode(res[0].text)
             return content
         except Exception as err:
-            print("exception Extract %s" % err)
+            logger.exception("Ошибка извлечения обложки FB2: %s", err)
             return None
 
     def __detect_namespaces(self, tree: etree._ElementTree) -> None:
@@ -217,7 +220,18 @@ class FB2(FB2Base):
     def __create_tree__(self) -> etree._ElementTree:
         try:
             self.file.seek(0, 0)
-            return etree.parse(self.file)
+            data = self.file.read()
+            try:
+                return etree.parse(BytesIO(data))
+            except Exception:
+                for encoding in ("utf-8", "cp1251"):
+                    try:
+                        return etree.parse(
+                            BytesIO(data.decode(encoding).encode("utf-8"))
+                        )
+                    except Exception:
+                        continue
+                raise FB2StructureException("the file is not a valid XML")
         except Exception as err:
             raise FB2StructureException("the file is not a valid XML (%s)" % err)
 
@@ -260,9 +274,17 @@ class FB2Zip(FB2Base):
                 book.write(bf.read())
 
         book.seek(0, 0)
+        data = book.getvalue()
         try:
-            return etree.parse(book)
+            return etree.parse(BytesIO(data))
         except Exception:
+            for encoding in ("utf-8", "cp1251"):
+                try:
+                    # lxml.etree.parse needs a file-like object;
+                    # we decode and re-encode to utf-8 to satisfy the parser
+                    return etree.parse(BytesIO(data.decode(encoding).encode("utf-8")))
+                except Exception:
+                    continue
             raise FB2StructureException("'%s' is not a valid XML" % bookname)
 
     # def __exit__(self, kind, value, traceback):

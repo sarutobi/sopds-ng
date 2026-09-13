@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def toStr(src, coding="utf-8"):
     """for python3"""
     return src.decode(coding)
@@ -32,7 +37,7 @@ def hexdump(src, length=16, sep="."):
                 ["%s" % ((ord(x) <= 127 and FILTER[ord(x)]) or sep) for x in chars]
             )
         lines.append("%08x:  %-*s  |%s|\n" % (c, length * 3, hhex, printable))
-    print("".join(lines))
+    logger.debug("%s", "".join(lines))
 
 
 def decodeVarint(vint):

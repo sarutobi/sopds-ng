@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 from tempfile import mkdtemp
@@ -5,6 +6,8 @@ from tempfile import mkdtemp
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
 from book_tools.pymobi.mobi import BookMobi
+
+logger = logging.getLogger(__name__)
 
 
 class Mobipocket(BookFile):
@@ -59,7 +62,7 @@ class Mobipocket(BookFile):
         try:
             image = BookMobi(self.file).unpackMobiCover()
         except Exception as err:
-            print(err)
+            logger.exception("Ошибка при извлечении обложки Mobipocket: %s", err)
             image = None
 
         return image

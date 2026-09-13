@@ -350,3 +350,4 @@ webpack-stats.json
 docker-compose.override.yml
 
 !.gitea/
+data/

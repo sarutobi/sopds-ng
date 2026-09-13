@@ -23,9 +23,8 @@ class BookFile(object):
     def __enter__(self):
         return self
 
-    @abstractmethod
     def __exit__(self, kind, value, traceback):
-        pass
+        self.close()
 
     def extract_cover(self, working_dir):
         cover, minified = self.extract_cover_internal(working_dir)

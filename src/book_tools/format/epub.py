@@ -2,7 +2,7 @@ import os
 import shutil
 import urllib
 import zipfile
-from tempfile import mktemp
+from tempfile import mkstemp
 
 from lxml import etree
 
@@ -84,19 +84,26 @@ class EPub(BookFile):
             raise error
         except Exception as error:
             self.close()
-            raise EPub.StructureException(error.message)
+            raise EPub.StructureException(str(error))
 
     def close(self):
         self.__zip_file.close()
 
     def __exit__(self, kind, value, traceback):
-        self.__zip_file.__exit__(kind, value, traceback)
+        self.close()
 
     def __etree_from_entry(self, info):
         with self.__zip_file.open(info) as entry:
+            data = entry.read(1048576)
             try:
-                return etree.fromstring(entry.read(1048576))
-            except:
+                return etree.fromstring(data)
+            except Exception:
+                # Fallback: try decoding manually if XML declaration is missing or wrong
+                for encoding in ("utf-8", "cp1251"):
+                    try:
+                        return etree.fromstring(data.decode(encoding))
+                    except Exception:
+                        continue
                 raise EPub.StructureException(
                     "'" + info.filename + "' is not a valid XML"
                 )
@@ -178,7 +185,7 @@ class EPub(BookFile):
             path = os.path.normpath(prefix + node.get("href")).replace("\\", "/")
             try:
                 fileinfo = self.__zip_file.getinfo(path)
-            except:
+            except Exception:
                 fileinfo = self.__zip_file.getinfo(urllib.parse.unquote(path))
             mime = node.get("media-type")
             info = {"filename": fileinfo.filename, "mime": mime}
@@ -194,77 +201,76 @@ class EPub(BookFile):
                     info,
                     {
                         "filename": os.path.normpath(xhtml_prefix + img.get("src")),
-                        # TODO: detect mimetype
                         "mime": "image/auto",
                     },
                 ]
             else:
                 raise Exception("unknown mimetype %s" % mime)
 
-        try:
-            node = xpath(
-                '/opf:package/opf:manifest/opf:item[@properties="cover-image"]'
-            )
-            return image_infos(node)
-        except Exception:
-            pass
-
-        try:
-            node = xpath('/opf:package/opf:metadata/opf:meta[@name="cover"]')
-            return image_infos(
+        search_strategies = [
+            # 1. Manifest cover-image property
+            lambda: image_infos(
+                xpath('/opf:package/opf:manifest/opf:item[@properties="cover-image"]')
+            ),
+            # 2. Meta cover (opf:package/opf:metadata/opf:meta[@name="cover"])
+            lambda: image_infos(
                 xpath(
-                    '/opf:package/opf:manifest/opf:item[@id="%s"]' % node.get("content")
+                    '/opf:package/opf:manifest/opf:item[@id="%s"]'
+                    % xpath('/opf:package/opf:metadata/opf:meta[@name="cover"]').get(
+                        "content"
+                    )
                 )
-            )
-        except Exception:
-            pass
-
-        try:
-            node = xpath('/opf:package/opf:metadata/meta[@name="cover"]')
-            return image_infos(
+            ),
+            # 3. Meta cover (opf:package/opf:metadata/meta[@name="cover"])
+            lambda: image_infos(
                 xpath(
-                    '/opf:package/opf:manifest/opf:item[@id="%s"]' % node.get("content")
+                    '/opf:package/opf:manifest/opf:item[@id="%s"]'
+                    % xpath('/opf:package/opf:metadata/meta[@name="cover"]').get(
+                        "content"
+                    )
                 )
-            )
-        except Exception:
-            pass
+            ),
+            # 4. Meta cover (without opf prefix)
+            lambda: image_infos(
+                xpath(
+                    '/package/manifest/item[@id="%s"]'
+                    % xpath('/package/metadata/meta[@name="cover"]').get("content")
+                )
+            ),
+            # 5. Guide reference (specific type and title)
+            lambda: image_infos(
+                item_for_href(
+                    xpath(
+                        '/opf:package/opf:guide/opf:reference[@type="other.ms-coverimage-standard"][@title="Cover"]'
+                    ).get("href")
+                )
+            ),
+            # 6. Guide reference (general type)
+            lambda: image_infos(
+                item_for_href(
+                    xpath(
+                        '/opf:package/opf:guide/opf:reference[@type="other.ms-coverimage-standard"]'
+                    ).get("href")
+                )
+            ),
+            # 7. Manifest ID "cover"
+            lambda: image_infos(
+                xpath('/opf:package/opf:manifest/opf:item[@id="cover"]')
+            ),
+        ]
 
-        try:
-            node = xpath('/package/metadata/meta[@name="cover"]')
-            return image_infos(
-                xpath('/package/manifest/item[@id="%s"]' % node.get("content"))
-            )
-        except Exception:
-            pass
-
-        try:
-            node = xpath(
-                '/opf:package/opf:guide/opf:reference[@type="other.ms-coverimage-standard"][@title="Cover"]'
-            )
-            return image_infos(item_for_href(node.get("href")))
-        except Exception:
-            pass
-
-        try:
-            node = xpath(
-                '/opf:package/opf:guide/opf:reference[@type="other.ms-coverimage-standard"]'
-            )
-            return image_infos(item_for_href(node.get("href")))
-        except Exception:
-            pass
-
-        try:
-            node = xpath('/opf:package/opf:manifest/opf:item[@id="cover"]')
-            return image_infos(node)
-        except Exception:
-            pass
+        for strategy in search_strategies:
+            try:
+                return strategy()
+            except Exception:
+                continue
 
         return []
 
     def __get_root_info(self):
         try:
             container_info = self.__zip_file.getinfo(EPub.Entry.CONTAINER)
-        except:
+        except Exception:
             container_info = None
         if container_info:
             tree = self.__etree_from_entry(container_info)
@@ -314,7 +320,7 @@ class EPub(BookFile):
                 key_name = res[0].text
                 if key_name and key_name.startswith(EPub.CONTENT_ID_PREFIX):
                     content_ids.add(key_name[len(EPub.CONTENT_ID_PREFIX) :])
-        except:
+        except Exception:
             pass
         return list(content_ids)
 
@@ -343,7 +349,7 @@ class EPub(BookFile):
                     algo = algorithms[0]
                 else:
                     return UNKNOWN_ENCRYPTION
-            except:
+            except Exception:
                 return UNKNOWN_ENCRYPTION
 
         if self.__contains_entry(EPub.Entry.RIGHTS):
@@ -367,7 +373,7 @@ class EPub(BookFile):
                             "token_url": token_url,
                             "content_ids": content_ids,
                         }
-                except:
+                except Exception:
                     pass
             return UNKNOWN_ENCRYPTION
 
@@ -470,7 +476,8 @@ class EPub(BookFile):
 
         self.__zip_file.extractall(path=working_dir)
 
-        new_epub = mktemp(dir=working_dir)
+        fd, new_epub = mkstemp(dir=working_dir, suffix=".epub")
+        os.close(fd)
         with zipfile.ZipFile(new_epub, "w", zipfile.ZIP_DEFLATED) as zip_file:
             zip_file.writestr(EPub.Entry.MIMETYPE, Mimetype.EPUB, zipfile.ZIP_STORED)
             encrypted_files = []
@@ -499,7 +506,8 @@ class EPub(BookFile):
     def repair(self, working_dir):
         self.__zip_file.extractall(path=working_dir)
 
-        new_epub = mktemp(dir=working_dir)
+        fd, new_epub = mkstemp(dir=working_dir, suffix=".epub")
+        os.close(fd)
         with zipfile.ZipFile(new_epub, "w", zipfile.ZIP_DEFLATED) as zip_file:
             zip_file.writestr(EPub.Entry.MIMETYPE, Mimetype.EPUB, zipfile.ZIP_STORED)
             for entry in [
@@ -536,12 +544,12 @@ class EPub(BookFile):
         book_file = BookFile(file, original_filename, Mimetype.EPUB)
         # EPub.__init__ уже распарсил метаданные в self,
         # копируем из self в book_file (не перепарсивая)
-        book_file.title = self.title
+        book_file.title = self.title or original_filename
         book_file.description = self.description
-        book_file.authors = list(self.authors)
-        book_file.tags = list(self.tags)
+        book_file.authors = list(self.authors) if self.authors else []
+        book_file.tags = list(self.tags) if self.tags else []
         book_file.series_info = self.series_info
         book_file.language_code = self.language_code
-        book_file.docdate = self.docdate
-        book_file.issues = list(self.issues)
+        book_file.docdate = self.docdate or ""
+        book_file.issues = list(self.issues) if self.issues else []
         return book_file

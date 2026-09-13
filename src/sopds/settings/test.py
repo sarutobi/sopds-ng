@@ -22,6 +22,7 @@ STORAGES = {
     },
 }
 
+STATIC_ROOT = BASE_DIR / "tmp/static"
 
 SOPDS_SERVER_LOG_LEVEL = "INFO"
 

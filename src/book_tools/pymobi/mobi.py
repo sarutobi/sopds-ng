@@ -1,5 +1,6 @@
 import array
 import datetime
+import logging
 import os.path
 import re
 import struct
@@ -13,6 +14,8 @@ from book_tools.pymobi import compression
 # except:
 # from ordereddict import OrderedDict
 from book_tools.pymobi.util import decodeVarint, hexdump, toByte, toStr
+
+logger = logging.getLogger(__name__)
 
 DEBUG = False
 
@@ -358,7 +361,7 @@ class BookMobi(object):
                     self.mobi_exth[recordType] = data
                     if DEBUG:
                         if recordType not in mobi_exth_type:
-                            print(recordType, data, "unknown type")
+                            logger.debug("%s %s unknown type", recordType, data)
                     offset += recordLength
                     count += 1
             (title,) = struct.unpack_from(
@@ -389,7 +392,7 @@ class BookMobi(object):
         return len(self.book)
 
     def __iter__(self):
-        return self.book.itervalues()
+        return self.book.values()
 
     def isMobipocket(self):
         return self.book["ident"] == pd_file_code["MobiPocket"]
@@ -481,7 +484,7 @@ class BookMobi(object):
             img_file = self.saveRecordImage(num, img_basename)
             return toByte('<img src="%s"' % img_file)
 
-        print("Dump image")
+        logger.info("Dump image")
         img_idx_base = int(self.mobi["firstImageIndex"])
         img_pattern = (
             toByte(r"""<img\s+recindex=['"](\d+)['"]"""),
@@ -503,7 +506,6 @@ class BookMobi(object):
             data,
             re.IGNORECASE,
         )
-        print()
         return data
 
     def unpackMobi(self, output_file):
@@ -511,10 +513,10 @@ class BookMobi(object):
         text_length = self.palmdoc["textLength"]
         unpack = self.unpackFunction()
         data = []
-        print("Title: %s" % self.book["title"])
-        print("Compression Type: %s" % self.book["compression"])
-        print("Encryption Type: %s" % self.book["encryption"])
-        print("Dump html/css")
+        logger.info("Title: %s", self.book["title"])
+        logger.info("Compression Type: %s", self.book["compression"])
+        logger.info("Encryption Type: %s", self.book["encryption"])
+        logger.info("Dump html/css")
         for rn in range(1, rec_num + 1):
             record = self.loadRecord(rn)
             extraflags = self.mobi["extraRecordDataFlags"] >> 1
@@ -552,18 +554,17 @@ class BookMobi(object):
                 data_text,
                 re.IGNORECASE,
             )
-        print()
         if self.mobi["firstImageIndex"] != 0xFFFFFFFF:
             data_text = self.loadTextResource(data_text, basename)
         with open(output_file, "wb") as f:
             f.write(data_text)
         # cover
         if 201 in self.mobi_exth:
-            print("Dump cover")
+            logger.info("Dump cover")
             (cover_rn,) = struct.unpack(">L", self.mobi_exth[201])
             cover_rn += self.mobi["firstImageIndex"]
             self.saveRecordImage(cover_rn, "%s_cover" % basename)
-        print("Unpack MOBI successfully")
+        logger.info("Unpack MOBI successfully")
 
     def unpackMobiCover(self):
         if 201 in self.mobi_exth:
@@ -576,13 +577,13 @@ class BookMobi(object):
     def removeSrcs(self, outmobi, outsrcs=None):
         srcs_rn = self.mobi["srcsRecordNumber"]
         srcs_rc = self.mobi["srcsRecordCount"]
-        print("Title: %s" % self.book["title"])
+        logger.info("Title: %s", self.book["title"])
         if srcs_rn == 0xFFFFFFFF or srcs_rc == 0:
-            print("No SRCS section.")
+            logger.info("No SRCS section.")
             return
-        print("Find SRCS: %d" % srcs_rn)
+        logger.info("Find SRCS: %d", srcs_rn)
         if outsrcs:
-            print("Output ZIP file: %s " % outsrcs)
+            logger.info("Output ZIP file: %s ", outsrcs)
             f = open(outsrcs, "wb")
             for rn in range(srcs_rn, srcs_rn + srcs_rc):
                 sys.stdout.write(".")
@@ -593,8 +594,7 @@ class BookMobi(object):
                     # SRCS
                     f.write(rec[16:])
             f.close()
-        print()
-        print("Output MOBI file: %s" % outmobi)
+        logger.info("Output MOBI file: %s", outmobi)
         with open(outmobi, "wb") as f:
             self.f.seek(0)
             f.write(self.f.read(78))
@@ -602,7 +602,7 @@ class BookMobi(object):
             recordlist_data = array.array(
                 "B", self.f.read(8 * self.header["numberOfRecords"])
             )
-            print("Fix record offset")
+            logger.info("Fix record offset")
             srcs_offset = self.records[srcs_rn][0]
             for count in range(0, srcs_rc):
                 sys.stdout.write(".")
@@ -618,13 +618,12 @@ class BookMobi(object):
                 fix_offset = self.records[rn][0] - offset
                 struct.pack_into(">L", recordlist_data, rn * 8, fix_offset)
             f.write(recordlist_data)
-            print()
             # gap
             gapToDataLength = self.records[0][0] - f.tell()
             if gapToDataLength:
                 f.write(self.f.read(gapToDataLength))
             # record
-            print("Write record")
+            logger.info("Write record")
             record0 = array.array("B", self.loadRecord(0))
             struct.pack_into(">LL", record0, 224, 0xFFFFFFFF, 0)
             f.write(record0)
@@ -645,5 +644,4 @@ class BookMobi(object):
                 sys.stdout.flush()
                 rec = self.loadRecord(rn)
                 f.write(rec)
-            print()
-        print("Remove SRCS successfully")
+        logger.info("Remove SRCS successfully")

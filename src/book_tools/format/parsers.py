@@ -198,7 +198,6 @@ class FB2(EbookMetaParser):
             return content
         except Exception as err:
             logger.error(f"Ошибка при извлечении обложки: {err}")
-            print("exception Extract %s" % err)
             return None
 
     def _find_elements(self, xpath: str) -> Any:
