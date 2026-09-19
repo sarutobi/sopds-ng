@@ -7,7 +7,7 @@ from typing import Any, Callable, NamedTuple, TypeVar
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator
-from django.db.models import Count, IntegerField, Prefetch, QuerySet, Value
+from django.db.models import Count, IntegerField, Prefetch, Q, QuerySet, Value
 from django.db.models.functions import Substr
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
@@ -448,6 +448,29 @@ def find_books_by_template(
 def author_books_count(author: Author | int) -> int:
     """Подсчет числа книг для автора."""
     return Book.objects.filter(authors=author).count()
+
+
+def filter_books(query: str, authors_only: bool = False):
+    """
+    Универсальный поиск книг по названию и авторам.
+    Используется в основном ботом.
+
+    :param query: Строка поиска
+    :param authors_only: Если True, искать только по авторам
+    :return: QuerySet книг
+    """
+    if not query:
+        return Book.objects.none()
+
+    if authors_only:
+        return Book.objects.filter(
+            authors__search_full_name__icontains=query
+        ).distinct()
+
+    # Поиск по названию ИЛИ по авторам
+    return Book.objects.filter(
+        Q(title__icontains=query) | Q(authors__search_full_name__icontains=query)
+    ).distinct()
 
 
 def search_entities(

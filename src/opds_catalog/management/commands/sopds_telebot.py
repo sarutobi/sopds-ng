@@ -12,66 +12,30 @@ from django.db import connection, connections
 from django.db.models import Q
 from django.utils import translation
 from django.utils.html import strip_tags
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import InvalidToken
 from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
-    Filters,
     MessageHandler,
-    RegexHandler,
     Updater,
+    filters,
 )
 
 from opds_catalog import dl, settings
 from opds_catalog.config import catalog_config
 from opds_catalog.models import Book
+from sopds_telebot.handlers.books import (
+    handle_download_books,
+    handle_get_book_file,
+    handle_get_books,
+    handle_get_books_page,
+)
+from sopds_telebot.middleware import CheckAuthDecorator, cmdtrans
+from sopds_telebot.utils import daemonize, kill_process, writepid
 
 query_delimiter = "####"
-
-
-def cmdtrans(func):
-    def wrapper(self, bot, update):
-        translation.activate(catalog_config.CURRENT_LANGUAGE)
-        result = func(self, bot, update)
-        translation.deactivate()
-        return result
-
-    return wrapper
-
-
-def CheckAuthDecorator(func):
-    def wrapper(self, bot, update):
-        if not catalog_config.BOT_AUTH_ENABLED:
-            return func(self, bot, update)
-
-        if connection.connection and not connection.is_usable():
-            del connections._connections.default
-
-        query = update.message or update.callback_query.message
-        username = (
-            update.message.from_user.username
-            if update.message
-            else update.callback_query.from_user.username
-        )
-        users = User.objects.filter(username__iexact=username)
-
-        if users and users[0].is_active:
-            return func(self, bot, update)
-
-        bot.sendMessage(
-            chat_id=query.chat_id,
-            text=_(
-                "Hello %s!\nUnfortunately you do not have access to information. Please contact the bot administrator."
-            )
-            % username,
-        )
-        self.logger.info(_("Denied access for user: %s") % username)
-
-        return
-
-    return wrapper
 
 
 class Command(BaseCommand):
@@ -148,349 +112,63 @@ class Command(BaseCommand):
         self.logger.info("Start talking with user: %s" % update.message.from_user)
 
     def BookFilter(self, query):
-        if connection.connection and not connection.is_usable():
-            del connections._connections.default
+        """Делегирование поиску в сервисном слое."""
+        from opds_catalog.services.book_services import filter_books
 
-        q_objects = Q()
-        q_objects.add(Q(search_title__contains=query.upper()), Q.OR)
-        q_objects.add(Q(authors__search_full_name__contains=query.upper()), Q.OR)
-        books = (
-            Book.objects.filter(q_objects)
-            .order_by("search_title", "-docdate")
-            .distinct()
-        )
-
-        return books
+        return filter_books(query)
 
     def BookPager(self, books, page_num, query):
-        paginator = Paginator(books, catalog_config.BOT_MAX_ITEMS)
-        try:
-            page = paginator.page(page_num)
-        except (EmptyPage, PageNotAnInteger):
-            page = paginator.page(paginator.num_pages)
-        items = []
+        """Делегирование пагинации в сервисный слой."""
+        from sopds_telebot.services.pager import BookPager
 
-        prev_title = ""
-        prev_authors_set = set()
-
-        summary_DOUBLES_HIDE = catalog_config.DOUBLES_HIDE
-
-        # Добавляем последний элемент предыдущей страницы для дедупликации на границе
-        if summary_DOUBLES_HIDE and page.has_previous():
-            prev_page = paginator.page(page.previous_page_number())
-            page_objects = [
-                prev_page.object_list[len(prev_page.object_list) - 1]
-            ] + list(page.object_list)
-        else:
-            page_objects = list(page.object_list)
-
-        for row in page_objects:
-            p = {
-                "doubles": 0,
-                "lang_code": row.lang_code,
-                "filename": row.filename,
-                "path": row.path,
-                "registerdate": row.registerdate,
-                "id": row.id,
-                "annotation": strip_tags(row.annotation),
-                "docdate": row.docdate,
-                "format": row.format,
-                "title": row.title,
-                "filesize": row.filesize // 1000,
-                "authors": row.authors.values(),
-                "genres": row.genres.values(),
-                "series": row.series.values(),
-                "ser_no": row.bseries_set.values("ser_no"),
-            }
-            if summary_DOUBLES_HIDE:
-                title = p["title"]
-                authors_set = {a["id"] for a in p["authors"]}
-                if (
-                    title.upper() == prev_title.upper()
-                    and authors_set == prev_authors_set
-                ):
-                    items[-1]["doubles"] += 1
-                else:
-                    items.append(p)
-                prev_title = title
-                prev_authors_set = authors_set
-            else:
-                items.append(p)
-
-        # Дубликаты: удаляем граничный элемент, вытягиваем со следующей страницы
-        if summary_DOUBLES_HIDE:
-            # Удаляем граничный элемент с предыдущей страницы
-            if page.has_previous() and items:
-                items.pop(0)
-
-            # "Вытягиваем" дубликаты со следующей страницы
-            if page.has_next() and items:
-                next_page = paginator.page(page.next_page_number())
-                for row in next_page.object_list:
-                    if (
-                        row.title.upper() == prev_title.upper()
-                        and {a["id"] for a in row.authors.values()} == prev_authors_set
-                    ):
-                        items[-1]["doubles"] += 1
-                    else:
-                        break
-
-        response = ""
-        for b in items:
-            authors = ", ".join([a["full_name"] for a in b["authors"]])
-            doubles = _("(doubles:%s) ") % b["doubles"] if b["doubles"] else ""
-            response += "<b>%(title)s</b>\n%(author)s\n%(dbl)s/download%(link)s\n\n" % {
-                "title": b["title"],
-                "author": authors,
-                "link": b["id"],
-                "dbl": doubles,
-            }
-
-        buttons = [
-            InlineKeyboardButton(
-                "1 <<", callback_data="%s%s%s" % (query, query_delimiter, 1)
-            ),
-            InlineKeyboardButton(
-                "%s <" % page.previous_page_number(),
-                callback_data="%s%s%s"
-                % (query, query_delimiter, page.previous_page_number()),
-            ),
-            InlineKeyboardButton(
-                "[ %s ]" % page.number,
-                callback_data="%s%s%s" % (query, query_delimiter, "current"),
-            ),
-            InlineKeyboardButton(
-                "> %s" % page.next_page_number(),
-                callback_data="%s%s%s"
-                % (query, query_delimiter, page.next_page_number()),
-            ),
-            InlineKeyboardButton(
-                ">> %s" % paginator.num_pages,
-                callback_data="%s%s%s" % (query, query_delimiter, paginator.num_pages),
-            ),
-        ]
-
-        markup = InlineKeyboardMarkup([buttons]) if paginator.num_pages > 1 else None
-
-        return {"message": response, "buttons": markup}
+        return BookPager(books, page_num, query)
 
     @cmdtrans
     @CheckAuthDecorator
     def getBooks(self, bot, update):
-        query = update.message.text
-        self.logger.info(
-            "Got message from user %s: %s" % (update.message.from_user.username, query)
-        )
+        handle_get_books(bot, update, self)
 
-        if len(query) < 3:
-            response = _("Too short for search, please try again.")
-        else:
-            response = _("I'm searching for the book: %s") % (query)
+    def get_books_page(self, bot, update, query, page_num):
+        """Метод-посредник для вызова хендлера пагинации."""
+        from opds_catalog.services.book_services import filter_books
 
-        bot.send_message(chat_id=update.message.chat_id, text=response)
-        self.logger.info(
-            "Send message to user %s: %s"
-            % (update.message.from_user.username, response)
-        )
-
-        if len(query) < 3:
-            return
-
-        books = self.BookFilter(query)
-        books_count = books.count()
-
-        if books_count == 0:
-            response = _("No results were found for your query, please try again.")
-            bot.send_message(chat_id=update.message.chat_id, text=response)
-            self.logger.info(
-                "Send message to user %s: %s"
-                % (update.message.from_user.username, response)
-            )
-            return
-
-        response = (
-            _(
-                "Found %s books.\nI create list, after a few seconds, select the file to download:"
-            )
-            % books_count
-        )
-        bot.send_message(chat_id=update.message.chat_id, text=response)
-        self.logger.info(
-            "Send message to user %s: %s"
-            % (update.message.from_user.username, response)
-        )
-
-        response = self.BookPager(books, 1, query)
-        bot.send_message(
-            chat_id=update.message.chat_id,
-            text=response["message"],
-            parse_mode="HTML",
-            reply_markup=response["buttons"],
-        )
-
-    @cmdtrans
-    @CheckAuthDecorator
-    def getBooksPage(self, bot, update):
-        callback_query = update.callback_query
-        (query, page_num) = callback_query.data.split(query_delimiter, maxsplit=1)
-        if page_num == "current":
-            return
-        try:
-            page_num = int(page_num)
-        except:
-            page_num = 1
-
-        books = self.BookFilter(query)
-        response = self.BookPager(books, page_num, query)
-        bot.edit_message_text(
-            chat_id=callback_query.message.chat_id,
-            message_id=callback_query.message.message_id,
-            text=response["message"],
-            parse_mode="HTML",
-            reply_markup=response["buttons"],
-        )
-        return
+        books = filter_books(query)
+        handle_get_books_page(bot, update, books, page_num, self)
 
     @cmdtrans
     @CheckAuthDecorator
     def downloadBooks(self, bot, update):
-        book_id_set = re.findall(r"\d+$", update.message.text)
-        if len(book_id_set) == 1:
-            try:
-                book_id = int(book_id_set[0])
-                book = Book.objects.get(id=book_id)
-            except:
-                book_id = None
-                book = None
-        else:
-            book_id = None
-            book = None
-
-        if book == None:
-            response = _(
-                "The book on the link you specified is not found, try to repeat the book search first."
-            )
-            bot.sendMessage(
-                chat_id=update.message.chat_id, text=response, parse_mode="HTML"
-            )
-            self.logger.info("Not find download links: %s" % response)
-            return
-
-        authors = ", ".join([a["full_name"] for a in book.authors.values()])
-        response = (
-            "<b>%(title)s</b>\n%(author)s\n<b>"
-            + _("Annotation:")
-            + "</b>%(annotation)s\n"
-        ) % {"title": book.title, "author": authors, "annotation": book.annotation}
-
-        buttons = [
-            InlineKeyboardButton(
-                book.format.upper(), callback_data="/getfileorig%s" % book_id
-            )
-        ]
-        if book.format not in settings.NOZIP_FORMATS:
-            buttons += [
-                InlineKeyboardButton(
-                    book.format.upper() + ".ZIP",
-                    callback_data="/getfilezip%s" % book_id,
-                )
-            ]
-        if (catalog_config.FB2_TO_EPUB_PATH != "") and (book.format == "fb2"):
-            buttons += [
-                InlineKeyboardButton("EPUB", callback_data="/getfileepub%s" % book_id)
-            ]
-        if (catalog_config.FB2_TO_MOBI_PATH != "") and (book.format == "fb2"):
-            buttons += [
-                InlineKeyboardButton("MOBI", callback_data="/getfilemobi%s" % book_id)
-            ]
-
-        markup = InlineKeyboardMarkup([buttons])
-        bot.sendMessage(
-            chat_id=update.message.chat_id,
-            text=response,
-            parse_mode="HTML",
-            reply_markup=markup,
-        )
-        self.logger.info("Send download buttons.")
-        return
+        handle_download_books(bot, update, self)
 
     @cmdtrans
     @CheckAuthDecorator
     def getBookFile(self, bot, update):
-        callback_query = update.callback_query
-        query = callback_query.data
-        book_id_set = re.findall(r"\d+$", query)
-        if len(book_id_set) == 1:
-            try:
-                book_id = int(book_id_set[0])
-                book = Book.objects.get(id=book_id)
-            except:
-                book = None
-        else:
-            book_id = None
-            book = None
-
-        if book == None:
-            response = _(
-                "The book on the link you specified is not found, try to repeat the book search first."
-            )
-            bot.sendMessage(
-                chat_id=callback_query.message.chat_id, text=response, parse_mode="HTML"
-            )
-            self.logger.info("Not find download links: %s" % response)
-            return
-
-        filename = dl.getFileName(book)
-        document = None
-
-        if re.match(r"/getfileorig", query):
-            document = dl.getFileData(book)
-            # document = config.SOPDS_SITE_ROOT + reverse("opds_catalog:download",kwargs={"book_id": book.id, "zip_flag": 0})
-
-        if re.match(r"/getfilezip", query):
-            document = dl.getFileDataZip(book)
-            # document = config.SOPDS_SITE_ROOT + reverse("opds_catalog:download", kwargs={"book_id": book.id, "zip_flag": 1})
-            filename = filename + ".zip"
-
-        if re.match(r"/getfileepub", query):
-            document = dl.getFileDataEpub(book)
-            # document = config.SOPDS_SITE_ROOT+reverse("opds_catalog:convert",kwargs={"book_id": book.id, "convert_type": "epub"}))]
-            filename = filename + ".epub"
-
-        if re.match(r"/getfilemobi", query):
-            document = dl.getFileDataMobi(book)
-            # document = config.SOPDS_SITE_ROOT+reverse("opds_catalog:convert",kwargs={"book_id": book.id, "convert_type": "mobi"}))]
-            filename = filename + ".mobi"
-
-        if document:
-            bot.send_document(
-                chat_id=callback_query.message.chat_id,
-                document=document,
-                filename=filename,
-            )
-            document.close()
-            self.logger.info("Send file: %s" % filename)
-        else:
-            response = _(
-                "There was a technical error, please contact the Bot administrator."
-            )
-            bot.sendMessage(
-                chat_id=callback_query.message.chat_id, text=response, parse_mode="HTML"
-            )
-            self.logger.info("Book get error: %s" % response)
-            return
-
-        return
+        handle_get_book_file(bot, update, self)
 
     @cmdtrans
     @CheckAuthDecorator
     def botCallback(self, bot, update):
-        query = update.callback_query
+        query_obj = update.callback_query
 
-        if re.match(r"/getfile", query.data):
+        if not query_obj:
+            return
+
+        data = query_obj.data
+        if re.match(r"/getfile", data):
             return self.getBookFile(bot, update)
         else:
-            return self.getBooksPage(bot, update)
+            # Парсим query и page_num из callback_data (формат: query####page)
+            if query_delimiter in data:
+                query, page_num = data.split(query_delimiter, 1)
+                if page_num == "current":
+                    return
+                try:
+                    page_num = int(page_num)
+                except ValueError:
+                    page_num = 1
+                return self.get_books_page(bot, update, query, page_num)
+
+            return self.get_books_page(bot, update, "", 1)
 
     def start(self):
         writepid(self.pidfile)
@@ -499,8 +177,10 @@ class Command(BaseCommand):
         try:
             updater = Updater(token=catalog_config.BOT_TOKEN)  # type: ignore[call-arg]
             start_command_handler = CommandHandler("start", self.startCommand)
-            getBook_handler = MessageHandler(Filters.text, self.getBooks)
-            download_handler = RegexHandler("^/download\\d+$", self.downloadBooks)
+            getBook_handler = MessageHandler(filters.TEXT, self.getBooks)
+            download_handler = MessageHandler(
+                filters.Regex(r"^/download\d+$"), self.downloadBooks
+            )
 
             updater.dispatcher.add_handler(start_command_handler)
             updater.dispatcher.add_handler(getBook_handler)
@@ -511,51 +191,100 @@ class Command(BaseCommand):
             updater.idle()
         except InvalidToken:
             self.stdout.write(
-                'Invalid telegram token.\nSet correct token for telegram API by command:\n python3 manage.py sopds_util setconf SOPDS_TELEBOT_API_TOKEN "<token>"'
+                "Invalid telegram token.\nSet correct token for telegram API by command:\n"
+                ' python3 manage.py sopds_util setconf SOPDS_TELEBOT_API_TOKEN "<token>"'
             )
             self.logger.error("Invalid telegram token.")
 
         except (KeyboardInterrupt, SystemExit):
             pass
 
+    def _build_pager_message(self, page_data):
+        """Формирует HTML-текст страницы книг."""
+        items, meta = (
+            page_data if isinstance(page_data, tuple) else (page_data[0], page_data[1])
+        )
+
+        if not items:
+            return _("No books found on this page.")
+
+        lines = []
+        for book in items:
+            # Теперь items содержит словари, а не объекты Book
+            authors_qs = book["authors"]
+            authors = ", ".join([a["full_name"] for a in authors_qs])
+            doubles = meta["doubles"].get(book["id"], 0)
+            doubles_text = (
+                f" (doubles: {doubles})"
+                if doubles > 0 and not catalog_config.SOPDS_DOUBLES_HIDE
+                else ""
+            )
+            lines.append(
+                f"<b>{book['title']}</b>\n{authors}{doubles_text}\n/download{book['id']}\n"
+            )
+
+        return "\n".join(lines)
+
+    def _build_pager_buttons(self, page_data, query):
+        """Формирует inline-кнопки пагинации."""
+        items, meta = (
+            page_data if isinstance(page_data, tuple) else (page_data[0], page_data[1])
+        )
+
+        keyboard = []
+        nav_row = []
+
+        if meta.get("has_prev"):
+            nav_row.append(
+                InlineKeyboardButton(
+                    "⬅️ Prev",
+                    callback_data=f"{query}{query_delimiter}{meta['current'] - 1}",
+                )
+            )
+        if meta.get("has_next"):
+            nav_row.append(
+                InlineKeyboardButton(
+                    "Next ➡️",
+                    callback_data=f"{query}{query_delimiter}{meta['current'] + 1}",
+                )
+            )
+
+        if nav_row:
+            keyboard.append(nav_row)
+
+        return InlineKeyboardMarkup(keyboard)
+
+    def _build_download_buttons(self, book):
+        """Формирует кнопки загрузки для конкретной книги."""
+        buttons = [
+            InlineKeyboardButton(
+                book.format.upper(), callback_data="/getfileorig%s" % book.id
+            )
+        ]
+        if book.format not in settings.NOZIP_FORMATS:
+            buttons += [
+                InlineKeyboardButton(
+                    book.format.upper() + ".ZIP",
+                    callback_data="/getfilezip%s" % book.id,
+                )
+            ]
+        if (catalog_config.FB2_TO_EPUB_PATH != "") and (book.format == "fb2"):
+            buttons += [
+                InlineKeyboardButton("EPUB", callback_data="/getfileepub%s" % book.id)
+            ]
+        if (catalog_config.FB2_TO_MOBI_PATH != "") and (book.format == "fb2"):
+            buttons += [
+                InlineKeyboardButton("MOBI", callback_data="/getfilemobi%s" % book.id)
+            ]
+
+        return InlineKeyboardMarkup([buttons])
+
     def stop(self, pid):
-        try:
-            os.kill(int(pid), signal.SIGTERM)
-        except OSError as e:
-            self.stdout.write("Error stopping sopds_telebot: %s" % str(e))
+        if kill_process(pid):
+            self.logger.info(f"Stopped process {pid}")
+        else:
+            self.stdout.write(f"Error stopping sopds_telebot: {pid}")
 
     def restart(self, pid):
         self.stop(pid)
         self.start()
-
-
-def writepid(pid_file):
-    """
-    Write the process ID to disk.
-    """
-    fp = open(pid_file, "w")
-    fp.write(str(os.getpid()))
-    fp.close()
-
-
-def daemonize():
-    """
-    Detach from the terminal and continue as a daemon.
-    """
-    # swiped from twisted/scripts/twistd.py
-    # See http://www.erlenstar.demon.co.uk/unix/faq_toc.html#TOC16
-    if os.fork():  # launch child and...
-        os._exit(0)  # kill off parent
-    os.setsid()
-    if os.fork():  # launch child and...
-        os._exit(0)  # kill off parent again.
-    os.umask(0)
-
-    std_in = open("/dev/null", "r")
-    std_out = open(catalog_config.BOT_LOG_FILE, "a+")
-    os.dup2(std_in.fileno(), sys.stdin.fileno())
-    os.dup2(std_out.fileno(), sys.stdout.fileno())
-    os.dup2(std_out.fileno(), sys.stderr.fileno())
-
-    os.close(std_in.fileno())
-    os.close(std_out.fileno())

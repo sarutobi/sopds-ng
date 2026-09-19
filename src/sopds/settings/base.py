@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "constance.backends.database",
     "constance",
     "opds_catalog",
+    "sopds_telebot",
     "sopds_web_backend",
     "django.contrib.admin",
     "django.contrib.staticfiles",
