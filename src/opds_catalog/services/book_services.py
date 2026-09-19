@@ -70,13 +70,14 @@ def find_by_author_and_series(
 def find_book_doubles(
     _: bool, book_id: str, __: str | None = None, ___=None
 ) -> QuerySet[Book]:
-    """Поиск дубликатов книги."""
-    mbook = Book.objects.only("title").get(id=to_int(book_id))
-    return (
-        Book.objects.filter(title__iexact=mbook.title, authors__in=mbook.authors.all())
-        .exclude(id=to_int(book_id))
-        .order_by(*DEFAULT_ORDER_BY)
-    )
+    """Поиск дубликатов книги.
+
+    Делегирует в DuplicatesService для обеспечения единой логики
+    определения дублей.
+    """
+    from opds_catalog.services.duplicates_service import DuplicatesService
+
+    return DuplicatesService.find_doubles_for_book(to_int(book_id))
 
 
 def find_books_by_substring(
@@ -330,7 +331,7 @@ def paginated_book_content(
                 to_attr="c_bookshelf",
             )
         )
-    books = books.prefetch_related(*prefetch)
+    books = books.order_by(*DEFAULT_ORDER_BY).prefetch_related(*prefetch)
 
     django_paginator = Paginator(books, maxitems)
     page = django_paginator.page(page_num)

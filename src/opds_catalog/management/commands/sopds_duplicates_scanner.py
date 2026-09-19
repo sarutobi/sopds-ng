@@ -1,3 +1,11 @@
+"""Команда поиска дубликатов книг.
+
+Использует единый сервис DuplicatesService для обнаружения
+дубликатов по всей коллекции. Логика определения дублей
+изолирована в одном месте и в дальнейшем может быть вынесена
+в плагин (Release 2.0).
+"""
+
 import logging
 import os
 
@@ -6,7 +14,7 @@ from django.core.management.base import BaseCommand
 
 from opds_catalog import settings
 from opds_catalog.config import catalog_config
-from opds_catalog.models import Book
+from opds_catalog.services.duplicates_service import DuplicatesService
 
 
 class Command(BaseCommand):
@@ -33,14 +41,12 @@ class Command(BaseCommand):
         formatter = logging.Formatter("%(asctime)s %(levelname)-8s %(message)s")
 
         if settings.LOGLEVEL != logging.NOTSET:
-            # Создаем обработчик для записи логов в файл
             fh = logging.FileHandler(catalog_config.SCANNER_LOG_FILE)
             fh.setLevel(settings.LOGLEVEL)
             fh.setFormatter(formatter)
             self.logger.addHandler(fh)
 
         if options["verbose"]:
-            # Создадим обработчик для вывода логов на экран с максимальным уровнем вывода
             ch = logging.StreamHandler()
             ch.setLevel(logging.DEBUG)
             ch.setFormatter(formatter)
@@ -53,22 +59,17 @@ class Command(BaseCommand):
                 return
 
             self.scan_is_active = True
-            found_doubles = []
-            for book in Book.objects.all():
-                self.logger.info(f"Check duplicates for book_id {book.id}")
-                if book.id not in found_doubles:
-                    for book_doubles in (
-                        Book.objects.filter(
-                            title=book.title, authors__in=book.authors.all()
-                        )
-                        .exclude(id=book.id)
-                        .distinct()
-                        .order_by("-docdate")
-                    ):
-                        self.logger.info(
-                            f"Found duplicate id {book_doubles.id} for book {book.id}"
-                        )
-                        found_doubles.append(book_doubles.id)
+
+            # Используем единый сервис для поиска дубликатов.
+            duplicates_map = DuplicatesService.find_all_duplicates()
+
+            total_books_with_doubles = len(duplicates_map)
+            self.logger.info(f"Found duplicates for {total_books_with_doubles} books")
+
+            for book_id, doubles_qs in duplicates_map.items():
+                self.logger.info(f"Book id={book_id} has doubles:")
+                for dbl in doubles_qs:
+                    self.logger.info(f"  - duplicate id={dbl.id}")
 
             self.scan_is_active = False
             self.stdout.write("Complete book duplicates scan.")

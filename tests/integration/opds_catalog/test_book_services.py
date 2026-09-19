@@ -109,7 +109,9 @@ class TestBookServices:
 
     def test_find_book_doubles(self, book_with_relations, catalog):
         """Поиск дубликатов книги."""
-        # Создаём книгу-дубликат
+        # Создаём книгу-дубликат с тем же составом авторов
+        from opds_catalog.models import bauthor
+
         book2 = Book.objects.create(
             filename="dup.fb2",
             path=".",
@@ -117,12 +119,12 @@ class TestBookServices:
             cat_type=0,
             title="Книга",
             search_title="КНИГА",
+            lang="ru",
             catalog=catalog,
         )
-        author = book_with_relations.authors.first()
-        from opds_catalog.models import bauthor
-
-        bauthor.objects.create(book=book2, author=author)
+        # Копируем всех авторов исходной книги
+        for author in book_with_relations.authors.all():
+            bauthor.objects.create(book=book2, author=author)
         results = book_services.search_book(
             "d", str(book_with_relations.id), None, None
         )
