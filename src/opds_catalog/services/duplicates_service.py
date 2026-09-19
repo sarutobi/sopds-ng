@@ -77,6 +77,60 @@ class DuplicatesService:
         return Book.objects.filter(id__in=ids)
 
     @staticmethod
+    def find_first_double_ids(book_ids: list[int]) -> dict[int, int]:
+        """Для каждого id книги возвращает id её первого дубля (если есть).
+
+        Оптимизация: загружает книги из ``book_ids`` плюс их потенциальных
+        дублей (по ``title`` и ``lang``) одним запросом с ``prefetch_related``.
+
+        :param book_ids: Список идентификаторов книг.
+        :returns: ``{book_id: first_double_id}`` — только для книг, у которых
+                  есть хотя бы один дубль.
+        """
+        if not book_ids:
+            return {}
+
+        target_books = list(
+            Book.objects.filter(id__in=book_ids).prefetch_related("authors")
+        )
+        if not target_books:
+            return {}
+
+        # Загружаем потенциальных дублей по title (iexact) и lang за один запрос.
+        from django.db.models import Q
+
+        query = Q()
+        for book in target_books:
+            query |= Q(title__iexact=book.title or "", lang=book.lang or "")
+
+        candidates = list(
+            Book.objects.filter(query)
+            .exclude(id__in=book_ids)
+            .prefetch_related("authors")
+        )
+
+        candidates_by_key: dict[tuple[str, str], list[Book]] = {}
+        for cand in candidates:
+            key = ((cand.title or "").lower().strip(), cand.lang or "")
+            candidates_by_key.setdefault(key, []).append(cand)
+
+        result: dict[int, int] = {}
+        for book in target_books:
+            target_authors = set(
+                book.authors.values_list("search_full_name", flat=True)
+            )
+            key = ((book.title or "").lower().strip(), book.lang or "")
+            for cand in candidates_by_key.get(key, []):
+                cand_authors = set(
+                    cand.authors.values_list("search_full_name", flat=True)
+                )
+                if cand_authors == target_authors:
+                    result[book.id] = cand.id
+                    break
+
+        return result
+
+    @staticmethod
     def find_all_duplicates() -> dict[int, QuerySet[Book]]:
         """Находит все группы дублей в системе.
 

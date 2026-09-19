@@ -753,8 +753,25 @@ class SearchBooksFeed(SOPDSBaseFeed):
         }
 
     def items(self, obj):
-        """Содержимое фида."""
-        return obj["books"]
+        """Содержимое фида.
+
+        Подставляет в каждый элемент id первой книги-дубля (если есть),
+        используя единый сервис DuplicatesService.
+        """
+        items = obj["books"]
+        if not items:
+            return items
+
+        # Предвычисляем карту {book_id: first_double_id} одним проходом.
+        from opds_catalog.services.duplicates_service import DuplicatesService
+
+        book_ids = [item["id"] for item in items]
+        first_double_ids = DuplicatesService.find_first_double_ids(book_ids)
+
+        for item in items:
+            item["doubles"] = first_double_ids.get(item["id"])
+
+        return items
 
     def item_guid(self, item):
         """Уникальный идентификатор элемента фида."""
@@ -779,7 +796,7 @@ class SearchBooksFeed(SOPDSBaseFeed):
         return {
             "authors": item["authors"],
             "genres": item["genres"],
-            "doubles": item["id"] if item["doubles"] > 0 else None,
+            "doubles": item.get("doubles"),
         }
 
     def item_description(self, item):

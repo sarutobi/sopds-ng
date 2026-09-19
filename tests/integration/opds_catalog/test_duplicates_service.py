@@ -152,6 +152,47 @@ class TestFindDoublesForBook:
 # --- find_all_duplicates ---
 
 
+class TestFindFirstDoubleIds:
+    """Тесты массового поиска id первого дубля."""
+
+    def test_returns_empty_for_empty_input(self):
+        """Пустой список возвращает пустой словарь."""
+        assert DuplicatesService.find_first_double_ids([]) == {}
+
+    def test_finds_double_for_each_book(self, catalog):
+        """Для каждой книги с дублем возвращается id первого дубля из БД."""
+        # Группа 1: "Война и мир" — две книги
+        b1 = _make_book("Война и мир", author_names=["Толстой"], catalog=catalog)
+        b2 = _make_book("Война и мир", author_names=["Толстой"], catalog=catalog)
+        # Одиночная книга
+        b_single = _make_book("Уникальная", catalog=catalog)
+
+        result = DuplicatesService.find_first_double_ids([b1.id, b_single.id])
+
+        assert result.get(b1.id) == b2.id
+        assert b_single.id not in result
+
+    def test_different_languages_have_no_doubles(self, catalog):
+        """Книги на разных языках не имеют дублей в результате."""
+        b_ru = _make_book("Title", lang="ru", author_names=["Author"], catalog=catalog)
+        b_en = _make_book("Title", lang="en", author_names=["Author"], catalog=catalog)
+
+        result = DuplicatesService.find_first_double_ids([b_ru.id, b_en.id])
+
+        assert result == {}
+
+    def test_nonexistent_ids_are_skipped(self, catalog):
+        """Несуществующие id просто пропускаются."""
+        b1 = _make_book("Книга", author_names=["Автор"], catalog=catalog)
+
+        result = DuplicatesService.find_first_double_ids([b1.id, 99999])
+
+        assert 99999 not in result
+
+
+# --- find_all_duplicates ---
+
+
 class TestFindAllDuplicates:
     """Тесты поиска дубликатов по всей коллекции."""
 
