@@ -4,6 +4,7 @@
 !.dockerignore
 /tmp
 /log
+/src/tmp/
 
 ### Python template
 # Byte-compiled / optimized / DLL files
