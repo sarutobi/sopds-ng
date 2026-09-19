@@ -9,7 +9,8 @@ from django.db.models import Prefetch, QuerySet
 from django.utils.html import strip_tags
 
 from opds_catalog.models import Book, Catalog, bookshelf
-from opds_catalog.utils import get_lang_name
+from opds_catalog.services import book_services
+from opds_catalog.services.pagination_utils import paginator_to_dict
 
 DUMMY_CATALOG = Catalog(id=0, cat_name="Empty", cat_type=0)
 
@@ -123,37 +124,11 @@ def paginated_catalog_content(
         )
 
     for row in books_list:
-        authors_list = list(row.c_authors)
-        genres_list = list(row.c_genres)
-        series_list = list(row.c_series)
-        ser_no_list = list(row.c_ser_no)
-
-        readtime = None
-        if auth_enabled and hasattr(row, "c_bookshelf") and row.c_bookshelf:
-            readtime = row.c_bookshelf[0].readtime
-
-        merged.append(
-            {
-                "is_catalog": 0,
-                "lang_code": row.lang_code,
-                "lang": get_lang_name(row.lang),
-                "filename": row.filename,
-                "path": row.path,
-                "registerdate": row.registerdate,
-                "id": row.id,
-                "annotation": strip_tags(row.annotation),
-                "docdate": row.docdate,
-                "format": row.format,
-                "title": row.title,
-                "filesize": row.filesize // 1000,
-                "authors": authors_list,
-                "genres": genres_list,
-                "series": series_list,
-                "ser_no": ser_no_list,
-                "readtime": readtime,
-                "prefix": "b",
-            }
-        )
+        item = book_services._build_book_item(row, user, auth_enabled)
+        item["is_catalog"] = 0
+        item["prefix"] = "b"
+        item["filesize"] = item["filesize"] // 1000
+        merged.append(item)
 
     paginator = Paginator(merged, pager_max_items)
     try:
@@ -161,22 +136,4 @@ def paginated_catalog_content(
     except (EmptyPage, PageNotAnInteger):
         page = paginator.page(paginator.num_pages)
 
-    return page.object_list, _paginator_to_dict(page)
-
-
-def _paginator_to_dict(page) -> dict:
-    """Преобразует Django Paginator Page в словарь, совместимый с OPDS."""
-    paginator = page.paginator
-    return {
-        "num_pages": paginator.num_pages,
-        "has_previous": page.has_previous(),
-        "has_next": page.has_next(),
-        "previous_page_number": page.previous_page_number()
-        if page.has_previous()
-        else 1,
-        "next_page_number": page.next_page_number()
-        if page.has_next()
-        else paginator.num_pages,
-        "number": page.number,
-        "page_range": list(paginator.page_range),
-    }
+    return page.object_list, paginator_to_dict(page)

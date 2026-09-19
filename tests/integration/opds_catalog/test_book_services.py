@@ -134,11 +134,24 @@ class TestBookServices:
         count = book_services.author_books_count(author)
         assert count == 1
 
-    def test_author_books_count_by_int(self, book_with_relations):
-        """Подсчёт книг автора по ID."""
-        author = book_with_relations.authors.first()
-        count = book_services.author_books_count(author.id)
-        assert count == 1
+    def test_build_book_item_returns_dicts(self, book_with_relations):
+        """Проверка, что _build_book_item возвращает только словари, а не ORM-объекты."""
+        # Эмулируем prefetch_related, как это делает paginated_book_content
+        book = book_with_relations
+        book.c_authors = list(book.authors.all())
+        book.c_genres = list(book.genres.all())
+        book.c_series = list(book.series.all())
+        book.c_ser_no = list(book.bseries_set.all())
+
+        item = book_services._build_book_item(book)
+
+        assert isinstance(item, dict)
+        for key in ["authors", "genres", "series", "ser_no"]:
+            assert isinstance(item[key], list)
+            for val in item[key]:
+                assert isinstance(val, dict), (
+                    f"Value in {key} should be dict, got {type(val)}"
+                )
 
     def test_book_description_with_ser_no(self, book_with_relations):
         """Описание книги с номером в серии."""
