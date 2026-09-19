@@ -4,10 +4,9 @@ import zipfile
 from enum import StrEnum
 from io import BytesIO
 
-from constance import config
-
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2, FB2sax
+from opds_catalog.config import catalog_config
 
 
 class SearchType(StrEnum):
@@ -70,7 +69,7 @@ class SearchType(StrEnum):
 def extract_fb2_cover(
     file: BytesIO, original_filename: str, mimetype: str
 ) -> bytes | None:
-    if config.SOPDS_FB2SAX:
+    if catalog_config.FB2_SAX_ENABLED:
         parser = FB2sax(file, original_filename)
     else:
         parser = FB2(file)

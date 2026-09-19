@@ -3,10 +3,10 @@
 import base64
 from functools import wraps
 
-from constance import config
 from django.contrib import auth
 from django.http import HttpResponse
 
+from opds_catalog.config import catalog_config
 from sopds_web_backend.services import auth_services
 
 
@@ -35,7 +35,7 @@ def sopds_auth_validate(view_function):
             request = args[0]
 
         header = "HTTP_AUTHORIZATION"
-        if not config.SOPDS_AUTH or request.user.is_authenticated:
+        if not catalog_config.AUTH_ENABLED or request.user.is_authenticated:
             return view_function(*args, **kwargs)
 
         try:

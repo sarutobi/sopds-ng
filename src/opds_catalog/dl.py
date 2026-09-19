@@ -6,7 +6,6 @@ import os
 import subprocess
 import zipfile
 
-from constance import config
 from django.http import (
     Http404,
     HttpRequest,
@@ -20,6 +19,7 @@ from book_tools.format import create_bookfile, mime_detector
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2
 from opds_catalog import constants, settings, utils
+from opds_catalog.config import catalog_config
 from opds_catalog.decorators import sopds_auth_validate
 from opds_catalog.models import Book, bookshelf
 from opds_catalog.utils import getFileData, getFileName
@@ -40,7 +40,7 @@ def Download(request, book_id, zip_flag):
     book = Book.objects.get(id=book_id)
 
     logger.info("Processing user bookshelf ")
-    if config.SOPDS_AUTH:
+    if catalog_config.AUTH_ENABLED:
         if request.user.is_authenticated:
             bookshelf.objects.get_or_create(user=request.user, book=book)
 
@@ -87,7 +87,7 @@ def Download(request, book_id, zip_flag):
 
 
 # Новая версия (0.42) процедуры извлечения обложек из файлов книг fb2, epub, mobi
-# @cache_page(config.SOPDS_CACHE_TIME)
+# @cache_page(catalog_config.CACHE_TIME)
 def Cover(
     request: HttpRequest, book_id: int, thumbnail=False
 ) -> HttpResponse | HttpResponseRedirect:
@@ -135,7 +135,8 @@ def Cover(
         if thumbnail:
             thumb = Image.open(io.BytesIO(image)).convert("RGB")
             thumb.thumbnail(
-                (settings.THUMB_SIZE, settings.THUMB_SIZE), Image.Resampling.LANCZOS
+                (catalog_config.THUMB_SIZE, catalog_config.THUMB_SIZE),
+                Image.Resampling.LANCZOS,
             )
             tfile = io.BytesIO()
             thumb.save(tfile, "JPEG")
@@ -161,10 +162,10 @@ def ConvertFB2(request, book_id, convert_type):
     if book.format != "fb2":
         raise Http404
 
-    if config.SOPDS_AUTH and request.user.is_authenticated:
+    if catalog_config.AUTH_ENABLED and request.user.is_authenticated:
         bookshelf.objects.get_or_create(user=request.user, book=book)
 
-    full_path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
+    full_path = os.path.join(catalog_config.ROOT_LIB, book.path)
     if book.cat_type == constants.CAT_INP:
         # Убираем из пути INPX и INP файл
         inp_path, zip_name = os.path.split(full_path)
@@ -172,7 +173,7 @@ def ConvertFB2(request, book_id, convert_type):
         path, inpx_name = os.path.split(inpx_path)
         full_path = os.path.join(path, zip_name)
 
-    # if config.SOPDS_TITLE_AS_FILENAME:
+    # if catalog_config.TITLE_AS_FILENAME:
     #     transname = utils.translit(book.title + "." + book.format)
     # else:
     #     transname = utils.translit(book.filename)
@@ -183,9 +184,9 @@ def ConvertFB2(request, book_id, convert_type):
     dlfilename = "%s.%s" % (n, convert_type)
 
     if convert_type == "epub":
-        converter_path = config.SOPDS_FB2TOEPUB
+        converter_path = catalog_config.FB2_TO_EPUB_PATH
     elif convert_type == "mobi":
-        converter_path = config.SOPDS_FB2TOMOBI
+        converter_path = catalog_config.FB2_TO_MOBI_PATH
     else:
         raise Http404
     if not converter_path:
@@ -202,11 +203,11 @@ def ConvertFB2(request, book_id, convert_type):
         except FileNotFoundError:
             raise Http404
         z = zipfile.ZipFile(fz, "r", allowZip64=True)
-        z.extract(book.filename, config.SOPDS_TEMP_DIR)
-        tmp_fb2_path = os.path.join(config.SOPDS_TEMP_DIR, book.filename)
+        z.extract(book.filename, catalog_config.TEMP_DIR)
+        tmp_fb2_path = os.path.join(catalog_config.TEMP_DIR, book.filename)
         file_path = tmp_fb2_path
 
-    tmp_conv_path = os.path.join(config.SOPDS_TEMP_DIR, dlfilename)
+    tmp_conv_path = os.path.join(catalog_config.TEMP_DIR, dlfilename)
     proc = subprocess.Popen(
         [converter_path, file_path, tmp_conv_path],
         stdout=subprocess.PIPE,

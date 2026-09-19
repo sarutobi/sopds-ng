@@ -7,14 +7,13 @@ import re
 import time
 import zipfile
 
-from constance import config
-
 # from django.db import transaction
 from django.utils.translation import gettext as _
 
 from book_tools.format import create_bookfile
 from book_tools.format.util import strip_symbols
 from opds_catalog import fb2parse, inpx_parser
+from opds_catalog.config import catalog_config
 from opds_catalog.constants import CAT_INP, CAT_INPX, CAT_NORMAL, CAT_ZIP
 from opds_catalog.services import scanner
 
@@ -54,16 +53,16 @@ class opdsScanner:
         # TODO: Вынести это в вызывающий код
         self.logger.info(" ***** Starting sopds-scan...")
         self.logger.debug("OPTIONS SET")
-        if config.SOPDS_ROOT_LIB is not None:
-            self.logger.debug("root_lib = %s" % config.SOPDS_ROOT_LIB)
-        if config.SOPDS_FB2TOEPUB is not None:
-            self.logger.debug("fb2toepub = %s" % config.SOPDS_FB2TOEPUB)
-        if config.SOPDS_FB2TOMOBI is not None:
-            self.logger.debug("fb2tomobi = %s" % config.SOPDS_FB2TOMOBI)
-        if config.SOPDS_TEMP_DIR is not None:
-            self.logger.debug("temp_dir = %s" % config.SOPDS_TEMP_DIR)
-        if config.SOPDS_FB2SAX is not None:
-            self.logger.info("FB2SAX = %s" % config.SOPDS_FB2SAX)
+        if catalog_config.ROOT_LIB is not None:
+            self.logger.debug("root_lib = %s" % catalog_config.ROOT_LIB)
+        if catalog_config.FB2_TO_EPUB_PATH is not None:
+            self.logger.debug("fb2toepub = %s" % catalog_config.FB2_TO_EPUB_PATH)
+        if catalog_config.FB2_TO_MOBI_PATH is not None:
+            self.logger.debug("fb2tomobi = %s" % catalog_config.FB2_TO_MOBI_PATH)
+        if catalog_config.TEMP_DIR is not None:
+            self.logger.debug("temp_dir = %s" % catalog_config.TEMP_DIR)
+        if catalog_config.FB2_SAX_ENABLED is not None:
+            self.logger.info("FB2SAX = %s" % catalog_config.FB2_SAX_ENABLED)
 
     def log_stats(self) -> None:
         """Вывод в лог статистики работы сканера"""
@@ -72,7 +71,7 @@ class opdsScanner:
         self.logger.info("Books added      : " + str(self.books_added))
         self.logger.info("Books skipped    : " + str(self.books_skipped))
         self.logger.info("Bad books        : " + str(self.bad_books))
-        if config.SOPDS_DELETE_LOGICAL:
+        if catalog_config.DELETE_LOGICAL:
             self.logger.info("Books deleted    : " + str(self.books_deleted))
         else:
             self.logger.info("Books DB entries deleted : " + str(self.books_deleted))
@@ -104,10 +103,12 @@ class opdsScanner:
         self.rel_path = None
 
         scanner.avail_check_prepare()
-        self.logger.debug(f"ZipScan: {config.SOPDS_ZIPSCAN}")
-        for full_path, dirs, files in os.walk(config.SOPDS_ROOT_LIB, followlinks=True):
+        self.logger.debug(f"ZipScan: {catalog_config.ZIP_SCAN_ENABLED}")
+        for full_path, dirs, files in os.walk(
+            catalog_config.ROOT_LIB, followlinks=True
+        ):
             # Если разрешена обработка inpx, то при нахождении inpx обрабатываем его и прекращаем обработку текущего каталога
-            if config.SOPDS_INPX_ENABLE:
+            if catalog_config.INPX_ENABLED:
                 inpx_files = [
                     inpx for inpx in files if re.match(".*(.inpx|.INPX)$", inpx)
                 ]
@@ -122,7 +123,7 @@ class opdsScanner:
                 file = os.path.join(full_path, name)
                 (n, e) = os.path.splitext(name)
                 if e.lower() == ".zip":
-                    if config.SOPDS_ZIPSCAN:
+                    if catalog_config.ZIP_SCAN_ENABLED:
                         self.logger.info(f"Process zip file {file}")
                         self.processzip(name, full_path, file)
                 else:
@@ -130,7 +131,7 @@ class opdsScanner:
                     file_size = os.path.getsize(file)
                     self.processfile(name, full_path, file, None, 0, file_size)
 
-        # if config.SOPDS_DELETE_LOGICAL:
+        # if catalog_config.DELETE_LOGICAL:
         #    self.books_deleted=opdsdb.books_del_logical()
         # else:
         #    self.books_deleted=opdsdb.books_del_phisical()
@@ -148,10 +149,10 @@ class opdsScanner:
         :returns: 0 если файл требуется обработать, 1 если обработка не требуется
         """
         self.rel_path = os.path.relpath(
-            os.path.join(inpx, inp_file), config.SOPDS_ROOT_LIB
+            os.path.join(inpx, inp_file), catalog_config.ROOT_LIB
         )
 
-        if config.SOPDS_INPX_SKIP_UNCHANGED and scanner.archive_skip(
+        if catalog_config.INPX_SKIP_UNCHANGED and scanner.archive_skip(
             self.rel_path, inp_size, depth=1
         ):
             self.logger.info(f"INP metafile {inp_file} not changed, skipping.")
@@ -215,9 +216,9 @@ class opdsScanner:
         self.logger.info(f"Start processing INPX file {name}")
         self.logger.debug(f"Full path =  {full_path}")
 
-        rel_file = os.path.relpath(file, config.SOPDS_ROOT_LIB)
+        rel_file = os.path.relpath(file, catalog_config.ROOT_LIB)
         inpx_size = os.path.getsize(file)
-        if config.SOPDS_INPX_SKIP_UNCHANGED and scanner.archive_skip(
+        if catalog_config.INPX_SKIP_UNCHANGED and scanner.archive_skip(
             rel_file, inpx_size, depth=2
         ):
             self.logger.info(f"INPX file {file} is not changed. Skipping")
@@ -226,15 +227,15 @@ class opdsScanner:
             scanner.addcattree(rel_file, CAT_INPX, inpx_size)
             inpx = inpx_parser.Inpx(file, self.inpx_callback, self.inpskip_callback)
             # FIXME: Неизвестные атрибуты inpx_parser
-            inpx.INPX_TEST_ZIP = config.SOPDS_INPX_TEST_ZIP
-            inpx.INPX_TEST_FILES = config.SOPDS_INPX_TEST_FILES
+            inpx.INPX_TEST_ZIP = catalog_config.INPX_TEST_ZIP
+            inpx.INPX_TEST_FILES = catalog_config.INPX_TEST_FILES
             inpx.parse()
 
     def processzip(self, name, full_path, file):
         self.logger.info(f"Start processing zipfile {name}")
         self.logger.debug(f"File directory: {full_path}")
         self.logger.debug(f"Full file path: {file}")
-        rel_file = os.path.relpath(file, config.SOPDS_ROOT_LIB)
+        rel_file = os.path.relpath(file, catalog_config.ROOT_LIB)
         zsize = os.path.getsize(file)
         if scanner.archive_skip(rel_file, zsize, depth=0):
             self.arch_skipped += 1
@@ -275,8 +276,8 @@ class opdsScanner:
         self.logger.debug(f"Archive: {archive}")
         self.logger.debug(f"File size: {file_size}")
         (n, e) = os.path.splitext(name)
-        if e.lower() in config.SOPDS_BOOK_EXTENSIONS.split():
-            rel_path = os.path.relpath(full_path, config.SOPDS_ROOT_LIB)
+        if e.lower() in catalog_config.BOOK_EXTENSIONS:
+            rel_path = os.path.relpath(full_path, catalog_config.ROOT_LIB)
             self.logger.debug(f"Attempt to add book {rel_path}/{name}")
             try:
                 if scanner.findbook(name, rel_path, 1) is None:

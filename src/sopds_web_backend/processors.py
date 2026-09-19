@@ -1,29 +1,29 @@
 from random import randint
 
-from constance import config
 from django.db.models import Max
 
 from opds_catalog import settings
+from opds_catalog.config import catalog_config
 from opds_catalog.models import Book, Counter, bookshelf, lang_menu
 
 
 def sopds_processor(request):
     args = {}
     args["app_title"] = settings.TITLE
-    args["sopds_auth"] = config.SOPDS_AUTH
+    args["sopds_auth"] = catalog_config.AUTH_ENABLED
     args["sopds_version"] = settings.VERSION
-    args["alphabet"] = config.SOPDS_ALPHABET_MENU
-    args["splititems"] = config.SOPDS_SPLITITEMS
-    args["fb2tomobi"] = config.SOPDS_FB2TOMOBI != ""
-    args["fb2toepub"] = config.SOPDS_FB2TOEPUB != ""
+    args["alphabet"] = catalog_config.ALPHABET_MENU_ENABLED
+    args["splititems"] = catalog_config.SPLIT_ITEMS_THRESHOLD
+    args["fb2tomobi"] = catalog_config.FB2_TO_MOBI_PATH != ""
+    args["fb2toepub"] = catalog_config.FB2_TO_EPUB_PATH != ""
     args["nozip"] = settings.NOZIP_FORMATS
     args["cache_t"] = 0
 
-    # if config.SOPDS_ALPHABET_MENU:
+    # if catalog_config.ALPHABET_MENU_ENABLED:
     if args["alphabet"]:
         args["lang_menu"] = lang_menu
 
-    # if config.SOPDS_AUTH:
+    # if catalog_config.AUTH_ENABLED:
     if args["sopds_auth"]:
         user = request.user
         if user.is_authenticated:

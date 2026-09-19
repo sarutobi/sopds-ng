@@ -1,6 +1,5 @@
 import logging
 
-from constance import config
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
 from django.core.cache import cache
@@ -15,6 +14,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.vary import vary_on_headers
 
+from opds_catalog.config import catalog_config
 from opds_catalog.models import (
     Author,
     Book,
@@ -32,6 +32,7 @@ from opds_catalog.services import (
     series_services,
 )
 from opds_catalog.services.catalog_services import DUMMY_CATALOG
+from opds_catalog.services.pagination_utils import paginator_to_dict
 from opds_catalog.utils import get_lang_name, to_int
 from sopds_web_backend.services import auth_services
 
@@ -45,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 def sopds_login(function=None, redirect_field_name=REDIRECT_FIELD_NAME, url=None):
     actual_decorator = user_passes_test(
-        lambda u: u.is_authenticated if config.SOPDS_AUTH else True,
+        lambda u: u.is_authenticated if catalog_config.AUTH_ENABLED else True,
         login_url=reverse_lazy(url),
         redirect_field_name=redirect_field_name,
     )
@@ -82,7 +83,7 @@ def search_book_by_title_match(args):
 @sopds_login(url="web:login")
 def SearchBooksView(request):
     """Диспетчер для обработки параметров запроса книг."""
-    SOPDS_AUTH = config.SOPDS_AUTH
+    SOPDS_AUTH = catalog_config.AUTH_ENABLED
     args = {}
     args.update(csrf(request))
     if request.GET:
@@ -129,7 +130,7 @@ def SearchBooksView(request):
             op["number"],
         )
 
-        args["cache_t"] = 0 if search_res.is_bookshelf else config.SOPDS_CACHE_TIME
+        args["cache_t"] = 0 if search_res.is_bookshelf else catalog_config.CACHE_TIME
 
     return render(request, "sopds_books.html", args)
 
@@ -156,11 +157,13 @@ def SearchSeriesView(request):
             )
 
         series_qs = res.queryset
-        paginator = Paginator(series_qs, config.SOPDS_MAXITEMS)
+        paginator = Paginator(series_qs, catalog_config.MAX_ITEMS)
         try:
             page = paginator.page(page_num)
         except (EmptyPage, PageNotAnInteger):
             page = paginator.page(paginator.num_pages)
+
+        from opds_catalog.services.pagination_utils import paginator_to_dict
 
         items = [
             {
@@ -174,9 +177,7 @@ def SearchSeriesView(request):
             for row in page.object_list
         ]
 
-        from opds_catalog.services.book_services import _paginator_to_dict
-
-        args["paginator"] = _paginator_to_dict(page)
+        args["paginator"] = paginator_to_dict(page)
         args["searchterms"] = searchterms
         args["searchtype"] = searchtype
         args["series"] = items
@@ -184,7 +185,7 @@ def SearchSeriesView(request):
         args["current"] = "search"
         args["breadcrumbs"] = res.breadcrumbs
         args["cache_id"] = "%s:%s:%s" % (searchterms, searchtype, page.number)
-        args["cache_t"] = config.SOPDS_CACHE_TIME
+        args["cache_t"] = catalog_config.CACHE_TIME
 
     return render(request, "sopds_series.html", args)
 
@@ -211,7 +212,7 @@ def SearchAuthorsView(request):
             )
 
         authors_qs = res.queryset
-        paginator = Paginator(authors_qs, config.SOPDS_MAXITEMS)
+        paginator = Paginator(authors_qs, catalog_config.MAX_ITEMS)
         try:
             page = paginator.page(page_num)
         except (EmptyPage, PageNotAnInteger):
@@ -229,9 +230,7 @@ def SearchAuthorsView(request):
             for row in page.object_list
         ]
 
-        from opds_catalog.services.book_services import _paginator_to_dict
-
-        args["paginator"] = _paginator_to_dict(page)
+        args["paginator"] = paginator_to_dict(page)
         args["searchterms"] = searchterms
         args["searchtype"] = searchtype
         args["authors"] = items
@@ -239,7 +238,7 @@ def SearchAuthorsView(request):
         args["current"] = "search"
         args["breadcrumbs"] = res.breadcrumbs
         args["cache_id"] = "%s:%s:%s" % (searchterms, searchtype, page.number)
-        args["cache_t"] = config.SOPDS_CACHE_TIME
+        args["cache_t"] = catalog_config.CACHE_TIME
 
     return render(request, "sopds_authors.html", args)
 
@@ -267,9 +266,9 @@ def CatalogsView(request):
     items, op = catalog_services.paginated_catalog_content(
         cat or DUMMY_CATALOG,
         page_num,
-        config.SOPDS_MAXITEMS,
+        catalog_config.MAX_ITEMS,
         user=request.user,
-        auth_enabled=config.SOPDS_AUTH,
+        auth_enabled=catalog_config.AUTH_ENABLED,
     )
 
     args["paginator"] = op
@@ -287,7 +286,7 @@ def CatalogsView(request):
     args["breadcrumbs_cat"] = breadcrumbs_list
     args["breadcrumbs"] = [_("Catalogs")]
     args["cache_id"] = "%s:%s:%s" % (args["current"], cat_id, op["number"])
-    args["cache_t"] = config.SOPDS_CACHE_TIME
+    args["cache_t"] = catalog_config.CACHE_TIME
 
     return render(request, "sopds_catalogs.html", args)
 
@@ -313,7 +312,7 @@ def BooksView(request):
     args["lang_code"] = lang_code
     args["breadcrumbs"] = [_("Books"), _("Select"), lang_menu[lang_code], chars]
     args["cache_id"] = "%s:%s:%s" % (args["current"], lang_code, chars)
-    args["cache_t"] = config.SOPDS_CACHE_TIME
+    args["cache_t"] = catalog_config.CACHE_TIME
 
     return render(request, "sopds_selectbook.html", args)
 
@@ -339,7 +338,7 @@ def AuthorsView(request):
     args["lang_code"] = lang_code
     args["breadcrumbs"] = [_("Authors"), _("Select"), lang_menu[lang_code], chars]
     args["cache_id"] = "%s:%s:%s" % (args["current"], lang_code, chars)
-    args["cache_t"] = config.SOPDS_CACHE_TIME
+    args["cache_t"] = catalog_config.CACHE_TIME
 
     return render(request, "sopds_selectauthor.html", args)
 
@@ -365,7 +364,7 @@ def SeriesView(request):
     args["lang_code"] = lang_code
     args["breadcrumbs"] = [_("Series"), _("Select"), lang_menu[lang_code], chars]
     args["cache_id"] = "%s:%s:%s" % (args["current"], lang_code, chars)
-    args["cache_t"] = config.SOPDS_CACHE_TIME
+    args["cache_t"] = catalog_config.CACHE_TIME
 
     return render(request, "sopds_selectseries.html", args)
 
@@ -392,7 +391,7 @@ def GenresView(request):
     args["current"] = "genre"
     args["parent_id"] = section_id
     args["cache_id"] = "%s:%s" % (args["current"], section_id)
-    args["cache_t"] = config.SOPDS_CACHE_TIME
+    args["cache_t"] = catalog_config.CACHE_TIME
 
     return render(request, "sopds_selectgenres.html", args)
 

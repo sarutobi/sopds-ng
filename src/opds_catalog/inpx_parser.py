@@ -6,13 +6,12 @@ Created on 14 нояб. 2016 г.
 
 # -*- coding: utf-8 -*-
 # from opds_catalog import settings
-# from constance import config
+# from opds_catalog.config import catalog_config
 import logging
 import os
 import zipfile
 
-from constance import config
-
+from opds_catalog.config import catalog_config
 from opds_catalog.utils import get_infolist_filename
 
 sAuthor = "AUTHOR"
@@ -54,8 +53,8 @@ class Inpx:
         self.inpx_itemseparator = ":"
         self.append_callback = append_callback
         self.inpskip_callback = inpskip_callback
-        self.TEST_ZIP = config.SOPDS_INPX_TEST_ZIP
-        self.TEST_FILES = config.SOPDS_INPX_TEST_FILES
+        self.TEST_ZIP = catalog_config.INPX_TEST_ZIP
+        self.TEST_FILES = catalog_config.INPX_TEST_FILES
         self.error = 0
 
     def parse(self):

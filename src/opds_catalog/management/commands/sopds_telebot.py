@@ -4,7 +4,6 @@ import re
 import signal
 import sys
 
-from constance import config
 from django.conf import settings as main_settings
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
@@ -26,6 +25,7 @@ from telegram.ext import (
 )
 
 from opds_catalog import dl, settings
+from opds_catalog.config import catalog_config
 from opds_catalog.models import Book
 
 query_delimiter = "####"
@@ -33,7 +33,7 @@ query_delimiter = "####"
 
 def cmdtrans(func):
     def wrapper(self, bot, update):
-        translation.activate(config.SOPDS_LANGUAGE)
+        translation.activate(catalog_config.CURRENT_LANGUAGE)
         result = func(self, bot, update)
         translation.deactivate()
         return result
@@ -43,7 +43,7 @@ def cmdtrans(func):
 
 def CheckAuthDecorator(func):
     def wrapper(self, bot, update):
-        if not config.SOPDS_TELEBOT_AUTH:
+        if not catalog_config.BOT_AUTH_ENABLED:
             return func(self, bot, update)
 
         if connection.connection and not connection.is_usable():
@@ -97,7 +97,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        self.pidfile = os.path.join(main_settings.BASE_DIR, config.SOPDS_TELEBOT_PID)
+        self.pidfile = os.path.join(main_settings.BASE_DIR, catalog_config.BOT_PID_FILE)
         action = options["command"]
         self.logger = logging.getLogger("")
         self.logger.setLevel(logging.DEBUG)
@@ -105,7 +105,7 @@ class Command(BaseCommand):
 
         if settings.LOGLEVEL != logging.NOTSET:
             # Создаем обработчик для записи логов в файл
-            fh = logging.FileHandler(config.SOPDS_TELEBOT_LOG)
+            fh = logging.FileHandler(catalog_config.BOT_LOG_FILE)
             fh.setLevel(settings.LOGLEVEL)
             fh.setFormatter(formatter)
             self.logger.addHandler(fh)
@@ -163,7 +163,7 @@ class Command(BaseCommand):
         return books
 
     def BookPager(self, books, page_num, query):
-        paginator = Paginator(books, config.SOPDS_TELEBOT_MAXITEMS)
+        paginator = Paginator(books, catalog_config.BOT_MAX_ITEMS)
         try:
             page = paginator.page(page_num)
         except (EmptyPage, PageNotAnInteger):
@@ -173,7 +173,7 @@ class Command(BaseCommand):
         prev_title = ""
         prev_authors_set = set()
 
-        summary_DOUBLES_HIDE = config.SOPDS_DOUBLES_HIDE
+        summary_DOUBLES_HIDE = catalog_config.DOUBLES_HIDE
 
         # Добавляем последний элемент предыдущей страницы для дедупликации на границе
         if summary_DOUBLES_HIDE and page.has_previous():
@@ -395,11 +395,11 @@ class Command(BaseCommand):
                     callback_data="/getfilezip%s" % book_id,
                 )
             ]
-        if (config.SOPDS_FB2TOEPUB != "") and (book.format == "fb2"):
+        if (catalog_config.FB2_TO_EPUB_PATH != "") and (book.format == "fb2"):
             buttons += [
                 InlineKeyboardButton("EPUB", callback_data="/getfileepub%s" % book_id)
             ]
-        if (config.SOPDS_FB2TOMOBI != "") and (book.format == "fb2"):
+        if (catalog_config.FB2_TO_MOBI_PATH != "") and (book.format == "fb2"):
             buttons += [
                 InlineKeyboardButton("MOBI", callback_data="/getfilemobi%s" % book_id)
             ]
@@ -497,7 +497,7 @@ class Command(BaseCommand):
         quit_command = "CTRL-BREAK" if sys.platform == "win32" else "CONTROL-C"
         self.stdout.write("Quit the sopds_telebot with %s.\n" % quit_command)
         try:
-            updater = Updater(token=config.SOPDS_TELEBOT_API_TOKEN)  # type: ignore[call-arg]
+            updater = Updater(token=catalog_config.BOT_TOKEN)  # type: ignore[call-arg]
             start_command_handler = CommandHandler("start", self.startCommand)
             getBook_handler = MessageHandler(Filters.text, self.getBooks)
             download_handler = RegexHandler("^/download\\d+$", self.downloadBooks)
@@ -552,7 +552,7 @@ def daemonize():
     os.umask(0)
 
     std_in = open("/dev/null", "r")
-    std_out = open(config.SOPDS_TELEBOT_LOG, "a+")
+    std_out = open(catalog_config.BOT_LOG_FILE, "a+")
     os.dup2(std_in.fileno(), sys.stdin.fileno())
     os.dup2(std_out.fileno(), sys.stdout.fileno())
     os.dup2(std_out.fileno(), sys.stderr.fileno())

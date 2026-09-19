@@ -4,13 +4,13 @@ import signal
 import sys
 
 from apscheduler.schedulers.blocking import BlockingScheduler
-from constance import config
 from django.conf import settings as main_settings
 from django.core.management.base import BaseCommand
 from django.db import connection, connections, transaction
 
 # from opds_catalog.settings import SCANNER_LOG, SCAN_SHED_DAY, SCAN_SHED_DOW, SCAN_SHED_HOUR, SCAN_SHED_MIN, LOGLEVEL, SCANNER_PID
 from opds_catalog import settings
+from opds_catalog.config import catalog_config
 from opds_catalog.models import Counter
 from opds_catalog.sopdscan import opdsScanner
 
@@ -37,7 +37,9 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        self.pidfile = os.path.join(main_settings.BASE_DIR, config.SOPDS_SCANNER_PID)
+        self.pidfile = os.path.join(
+            main_settings.BASE_DIR, catalog_config.SCANNER_PID_FILE
+        )
         action = options["command"]
         self.logger = logging.getLogger("")
         self.logger.setLevel(logging.DEBUG)
@@ -45,7 +47,7 @@ class Command(BaseCommand):
 
         if settings.LOGLEVEL != logging.NOTSET:
             # Создаем обработчик для записи логов в файл
-            fh = logging.FileHandler(config.SOPDS_SCANNER_LOG)
+            fh = logging.FileHandler(catalog_config.SCANNER_LOG_FILE)
             fh.setLevel(settings.LOGLEVEL)
             fh.setFormatter(formatter)
             self.logger.addHandler(fh)
@@ -99,10 +101,10 @@ class Command(BaseCommand):
         self.scan_is_active = False
 
     def update_shedule(self):
-        self.SCAN_SHED_DAY = config.SOPDS_SCAN_SHED_DAY
-        self.SCAN_SHED_DOW = config.SOPDS_SCAN_SHED_DOW
-        self.SCAN_SHED_HOUR = config.SOPDS_SCAN_SHED_HOUR
-        self.SCAN_SHED_MIN = config.SOPDS_SCAN_SHED_MIN
+        self.SCAN_SHED_DAY = catalog_config.SCAN_SHED_DAY
+        self.SCAN_SHED_DOW = catalog_config.SCAN_SHED_DOW
+        self.SCAN_SHED_HOUR = catalog_config.SCAN_SHED_HOUR
+        self.SCAN_SHED_MIN = catalog_config.SCAN_SHED_MIN
         self.stdout.write(
             "Reconfigure scheduled book-scan (min=%s, hour=%s, day_of_week=%s, day=%s)."
             % (
@@ -126,14 +128,14 @@ class Command(BaseCommand):
             del connections._connections.default
         settings.constance_update_all()
         if not (
-            self.SCAN_SHED_MIN == config.SOPDS_SCAN_SHED_MIN
-            and self.SCAN_SHED_HOUR == config.SOPDS_SCAN_SHED_HOUR
-            and self.SCAN_SHED_DOW == config.SOPDS_SCAN_SHED_DOW
-            and self.SCAN_SHED_DAY == config.SOPDS_SCAN_SHED_DAY
+            self.SCAN_SHED_MIN == catalog_config.SCAN_SHED_MIN
+            and self.SCAN_SHED_HOUR == catalog_config.SCAN_SHED_HOUR
+            and self.SCAN_SHED_DOW == catalog_config.SCAN_SHED_DOW
+            and self.SCAN_SHED_DAY == catalog_config.SCAN_SHED_DAY
         ):
             self.update_shedule()
-        if config.SOPDS_SCAN_START_DIRECTLY:
-            config.SOPDS_SCAN_START_DIRECTLY = False
+        if catalog_config.SCAN_START_DIRECTLY:
+            catalog_config.SCAN_START_DIRECTLY = False
             self.stdout.write(
                 "Startup scanning directly by SOPDS_SCAN_START_DIRECTLY flag."
             )
@@ -141,10 +143,10 @@ class Command(BaseCommand):
 
     def start(self):
         writepid(self.pidfile)
-        self.SCAN_SHED_DAY = config.SOPDS_SCAN_SHED_DAY
-        self.SCAN_SHED_DOW = config.SOPDS_SCAN_SHED_DOW
-        self.SCAN_SHED_HOUR = config.SOPDS_SCAN_SHED_HOUR
-        self.SCAN_SHED_MIN = config.SOPDS_SCAN_SHED_MIN
+        self.SCAN_SHED_DAY = catalog_config.SCAN_SHED_DAY
+        self.SCAN_SHED_DOW = catalog_config.SCAN_SHED_DOW
+        self.SCAN_SHED_HOUR = catalog_config.SCAN_SHED_HOUR
+        self.SCAN_SHED_MIN = catalog_config.SCAN_SHED_MIN
         self.stdout.write(
             "Startup scheduled book-scan (min=%s, hour=%s, day_of_week=%s, day=%s)."
             % (
@@ -206,7 +208,7 @@ def daemonize():
     os.umask(0)
 
     std_in = open("/dev/null", "r")
-    std_out = open(config.SOPDS_SCANNER_LOG, "a+")
+    std_out = open(catalog_config.SCANNER_LOG_FILE, "a+")
     os.dup2(std_in.fileno(), sys.stdin.fileno())
     os.dup2(std_out.fileno(), sys.stdout.fileno())
     os.dup2(std_out.fileno(), sys.stderr.fileno())

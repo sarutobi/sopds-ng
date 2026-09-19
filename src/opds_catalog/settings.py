@@ -1,6 +1,6 @@
 import logging
 
-# from constance import config
+# from opds_catalog.config import catalog_config
 from constance.signals import config_updated
 from django.conf import settings
 
@@ -8,6 +8,8 @@ from django.conf import settings
 from django.db.backends.signals import connection_created
 from django.dispatch import receiver
 from django.utils import translation
+
+from opds_catalog.config import catalog_config
 
 loglevels = {
     "debug": logging.DEBUG,
@@ -19,17 +21,13 @@ loglevels = {
 }
 NOZIP_FORMATS = ["epub", "mobi"]
 
-VERSION = getattr(settings, "VERSION", "develop")
-TITLE = getattr(settings, "SOPDS_TITLE", "SimpleOPDS NG")
-SUBTITLE = getattr(
-    settings,
-    "SOPDS_SUBTITLE",
-    f"SimpleOPDS Catalog new generation by www.sopds-ng.ru. Version {VERSION}",
-)
-ICON = getattr(settings, "SOPDS_ICON", "/static/images/favicon.ico")
-THUMB_SIZE = 300
+VERSION = catalog_config.VERSION
+TITLE = catalog_config.TITLE
+SUBTITLE = catalog_config.SUBTITLE
+ICON = catalog_config.ICON
+THUMB_SIZE = catalog_config.THUMB_SIZE
 
-loglevel = getattr(settings, "SOPDS_LOGLEVEL", "info")
+loglevel = catalog_config.LOGLEVEL
 if loglevel.lower() in loglevels:
     LOGLEVEL = loglevels[loglevel.lower()]
 else:

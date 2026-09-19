@@ -1,11 +1,11 @@
 import logging
 import os
 
-from constance import config
 from django.conf import settings as main_settings
 from django.core.management.base import BaseCommand
 
 from opds_catalog import settings
+from opds_catalog.config import catalog_config
 from opds_catalog.models import Book
 
 
@@ -24,7 +24,9 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        self.pidfile = os.path.join(main_settings.BASE_DIR, config.SOPDS_SCANNER_PID)
+        self.pidfile = os.path.join(
+            main_settings.BASE_DIR, catalog_config.SCANNER_PID_FILE
+        )
         action = options["command"]
         self.logger = logging.getLogger("")
         self.logger.setLevel(logging.DEBUG)
@@ -32,7 +34,7 @@ class Command(BaseCommand):
 
         if settings.LOGLEVEL != logging.NOTSET:
             # Создаем обработчик для записи логов в файл
-            fh = logging.FileHandler(config.SOPDS_SCANNER_LOG)
+            fh = logging.FileHandler(catalog_config.SCANNER_LOG_FILE)
             fh.setLevel(settings.LOGLEVEL)
             fh.setFormatter(formatter)
             self.logger.addHandler(fh)

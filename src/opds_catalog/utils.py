@@ -14,9 +14,9 @@ from typing import Any
 from zipfile import ZipInfo
 
 import chardet
-from constance import config
 from django.conf import settings
 
+from opds_catalog.config import catalog_config
 from opds_catalog.constants import CAT_INP, CAT_NORMAL, CAT_ZIP
 from opds_catalog.models import Book
 
@@ -106,7 +106,7 @@ def get_lang_name(lang: str) -> str:
 
 def getFileName(book: Book) -> str:
     """Формирует название файла для сохранения книги в латинице."""
-    if config.SOPDS_TITLE_AS_FILENAME:
+    if catalog_config.TITLE_AS_FILENAME:
         transname = translit(book.title + "." + book.format)
     else:
         transname = translit(book.filename)
@@ -117,7 +117,7 @@ def getFileName(book: Book) -> str:
 def get_fs_book_path(book: Book) -> str:
     """Формирует полный путь в файловой системе библиотеки для файла книги."""
     logger.info(f"Create file path for book {book.id}")
-    path = os.path.join(config.SOPDS_ROOT_LIB, book.path)
+    path = os.path.join(catalog_config.ROOT_LIB, book.path)
     if book.cat_type == CAT_INP:
         logger.info("Book has been placed in INP/INPX catalog")
         # Убираем из пути INPX и INP файл
@@ -234,9 +234,9 @@ def getFileDataConv(book, convert_type):
     dlfilename = f"{n}.{convert_type}"
 
     if convert_type == "epub":
-        converter_path = config.SOPDS_FB2TOEPUB
+        converter_path = catalog_config.FB2_TO_EPUB_PATH
     elif convert_type == "mobi":
-        converter_path = config.SOPDS_FB2TOMOBI
+        converter_path = catalog_config.FB2_TO_MOBI_PATH
     else:
         fo.close()
         return None
@@ -244,8 +244,8 @@ def getFileDataConv(book, convert_type):
         fo.close()
         return None
 
-    tmp_fb2_path = os.path.join(config.SOPDS_TEMP_DIR, book.filename)
-    tmp_conv_path = os.path.join(config.SOPDS_TEMP_DIR, dlfilename)
+    tmp_fb2_path = os.path.join(catalog_config.TEMP_DIR, book.filename)
+    tmp_conv_path = os.path.join(catalog_config.TEMP_DIR, dlfilename)
     fw = open(tmp_fb2_path, "wb")
     fw.write(fo.read())
     fw.close()

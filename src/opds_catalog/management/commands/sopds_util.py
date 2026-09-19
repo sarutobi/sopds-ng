@@ -9,7 +9,7 @@ from opds_catalog.db_utils import clear_all, clear_genres, pg_optimize
 from opds_catalog.models import Counter
 from opds_catalog.services import scanner
 
-# from constance import config
+# from opds_catalog.config import catalog_config
 
 
 class Command(BaseCommand):

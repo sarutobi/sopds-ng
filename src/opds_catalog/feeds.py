@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from constance import config
 from django.contrib.syndication.views import Feed
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import HttpRequest
@@ -20,6 +19,7 @@ from django.utils.translation import gettext as _
 
 from book_tools.format.mimetype import Mimetype
 from opds_catalog import settings
+from opds_catalog.config import catalog_config
 from opds_catalog.services import (
     SearchType,
     authors_services,
@@ -384,7 +384,7 @@ class SOPDSBaseFeed(Feed):
             )
 
         # Ссылки на конвертацию в другой формат
-        if (config.SOPDS_FB2TOEPUB != "") and (book["format"] == "fb2"):
+        if (catalog_config.FB2_TO_EPUB_PATH != "") and (book["format"] == "fb2"):
             enclosure.append(
                 opdsEnclosure(
                     reverse(
@@ -395,7 +395,7 @@ class SOPDSBaseFeed(Feed):
                     "http://opds-spec.org/acquisition/open-access",
                 )
             )
-        if (config.SOPDS_FB2TOMOBI != "") and (book["format"] == "fb2"):
+        if (catalog_config.FB2_TO_MOBI_PATH != "") and (book["format"] == "fb2"):
             enclosure.append(
                 opdsEnclosure(
                     reverse(
@@ -440,7 +440,7 @@ class MainFeed(SOPDSBaseFeed):
                 "title": _("By authors"),
                 "link": (
                     "opds_catalog:lang_authors"
-                    if config.SOPDS_ALPHABET_MENU
+                    if catalog_config.ALPHABET_MENU_ENABLED
                     else "opds_catalog:nolang_authors"
                 ),
                 "descr": _("Authors: %(authors)s."),
@@ -451,7 +451,7 @@ class MainFeed(SOPDSBaseFeed):
                 "title": _("By titles"),
                 "link": (
                     "opds_catalog:lang_books"
-                    if config.SOPDS_ALPHABET_MENU
+                    if catalog_config.ALPHABET_MENU_ENABLED
                     else "opds_catalog:nolang_books"
                 ),
                 "descr": _("Books: %(books)s."),
@@ -474,7 +474,7 @@ class MainFeed(SOPDSBaseFeed):
                     "title": _("By series"),
                     "link": (
                         "opds_catalog:lang_series"
-                        if config.SOPDS_ALPHABET_MENU
+                        if catalog_config.ALPHABET_MENU_ENABLED
                         else "opds_catalog:nolang_series"
                     ),
                     "descr": _("Series: %(series)s."),
@@ -483,7 +483,7 @@ class MainFeed(SOPDSBaseFeed):
             )
         # TODO: Сюда мы можем попасть либо если выключена авторизация либо если
         # авторизация включена и пользователь авторизован.
-        if config.SOPDS_AUTH and self.request.user.is_authenticated:
+        if catalog_config.AUTH_ENABLED and self.request.user.is_authenticated:
             mainitems.append(
                 {  # ty: ignore
                     "id": 6,
@@ -550,7 +550,7 @@ class CatalogsFeed(SOPDSBaseFeed):
             else catalog_services.get_root()
         )
         items, pager_data = catalog_services.paginated_catalog_content(
-            root_cat, page_num, config.SOPDS_MAXITEMS
+            root_cat, page_num, catalog_config.MAX_ITEMS
         )
 
         return items, root_cat, pager_data
@@ -692,7 +692,7 @@ class SearchBooksFeed(SOPDSBaseFeed):
         return "%s | %s (%s)" % (
             settings.TITLE,
             _("Books found"),
-            _("doubles hide") if config.SOPDS_DOUBLES_HIDE else _("doubles show"),
+            _("doubles hide") if catalog_config.DOUBLES_HIDE else _("doubles show"),
         )
 
     def get_object(
@@ -887,7 +887,7 @@ class SearchAuthorsFeed(SOPDSBaseFeed):
 
         authors = authors_services.search_authors_with_counts(searchtype, searchterms)
 
-        paginator = Paginator(authors, config.SOPDS_MAXITEMS)
+        paginator = Paginator(authors, catalog_config.MAX_ITEMS)
         try:
             page = paginator.page(page_num)
         except (EmptyPage, PageNotAnInteger):
@@ -983,7 +983,7 @@ class SearchSeriesFeed(SOPDSBaseFeed):
 
         series = series_services.search_series(searchtype, searchterms, self.author_id)
 
-        paginator = Paginator(series, config.SOPDS_MAXITEMS)
+        paginator = Paginator(series, catalog_config.MAX_ITEMS)
         try:
             page = paginator.page(page_num)
         except (EmptyPage, PageNotAnInteger):
@@ -1138,7 +1138,7 @@ class BooksFeed(SOPDSBaseFeed):
     def item_link(self, item):
         """Построение ссылок на дальнейшую навигацию."""
         title_full = len(item["sid"]) < item["l"]
-        if item["cnt"] >= config.SOPDS_SPLITITEMS and not title_full:
+        if item["cnt"] >= catalog_config.SPLIT_ITEMS_THRESHOLD and not title_full:
             return reverse(
                 "opds_catalog:chars_books",
                 kwargs={"lang_code": self.lang_code, "chars": item["sid"]},
@@ -1205,7 +1205,7 @@ class AuthorsFeed(SOPDSBaseFeed):
         :rtype: str
         """
         last_name_full = len(item["sid"]) < item["template_length"]
-        if (item["cnt"] >= config.SOPDS_SPLITITEMS) and not last_name_full:
+        if (item["cnt"] >= catalog_config.SPLIT_ITEMS_THRESHOLD) and not last_name_full:
             return reverse(
                 "opds_catalog:chars_authors",
                 kwargs={"lang_code": self.lang_code, "chars": item["sid"]},
@@ -1273,7 +1273,7 @@ class SeriesFeed(SOPDSBaseFeed):
         :rtype: str
         """
         series_full = len(item["sid"]) < item["l"]
-        if item["cnt"] >= config.SOPDS_SPLITITEMS and not series_full:
+        if item["cnt"] >= catalog_config.SPLIT_ITEMS_THRESHOLD and not series_full:
             return reverse(
                 "opds_catalog:chars_series",
                 kwargs={"lang_code": self.lang_code, "chars": item["sid"]},

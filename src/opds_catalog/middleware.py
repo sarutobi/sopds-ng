@@ -1,7 +1,5 @@
 # import base64
 
-from constance import config
-
 # from django.contrib import auth
 # from django.http import HttpResponse
 from django.middleware.cache import (
@@ -9,6 +7,8 @@ from django.middleware.cache import (
 )
 from django.utils import translation
 from django.utils.deprecation import MiddlewareMixin
+
+from opds_catalog.config import catalog_config
 
 # class BasicAuthMiddleware(object):
 #     """Если включена авторизация в каталоге, а клиент по каким то причинам
@@ -28,7 +28,7 @@ from django.utils.deprecation import MiddlewareMixin
 #         return response
 #
 #     def process_request(self, request):
-#         if not config.SOPDS_AUTH:
+#         if not catalog_config.AUTH_ENABLED:
 #             return
 #
 #         try:
@@ -58,7 +58,7 @@ class SOPDSLocaleMiddleware(MiddlewareMixin):
     """Устанавливаем локаль сервера для всех запросов"""
 
     def process_request(self, request):
-        request.LANG = config.SOPDS_LANGUAGE
+        request.LANG = catalog_config.CURRENT_LANGUAGE
         translation.activate(request.LANG)
         request.LANGUAGE_CODE = request.LANG
 
