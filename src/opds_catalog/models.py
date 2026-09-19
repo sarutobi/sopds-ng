@@ -135,11 +135,12 @@ class bauthor(models.Model):
     book = models.ForeignKey("Book", db_index=True, on_delete=models.CASCADE)
     author = models.ForeignKey("Author", db_index=True, on_delete=models.CASCADE)
 
-
-#    class Meta:
-#        index_together = [
-#            ["book", "author"],
-#        ]
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["book", "author"], name="unique_book_author"
+            ),
+        ]
 
 
 class Genre(models.Model):
@@ -159,6 +160,11 @@ class bgenre(models.Model):
 
     book = models.ForeignKey("Book", db_index=True, on_delete=models.CASCADE)
     genre = models.ForeignKey("Genre", db_index=True, on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["book", "genre"], name="unique_book_genre"),
+        ]
 
 
 class Series(models.Model):
@@ -185,11 +191,10 @@ class bseries(models.Model):
     ser = models.ForeignKey("Series", db_index=True, on_delete=models.CASCADE)
     ser_no = models.IntegerField(null=False, default=0)
 
-
-#    class Meta:
-#        index_together = [
-#            ["book", "ser"],
-#        ]
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["book", "ser"], name="unique_book_series"),
+        ]
 
 
 class bookshelf(models.Model):
