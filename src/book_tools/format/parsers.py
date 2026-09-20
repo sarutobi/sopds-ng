@@ -6,13 +6,12 @@ import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Any
+from typing import Any, Optional
 
 from lxml import etree
 from lxml.etree import _Element
 
 from book_tools.exceptions import FB2StructureException
-from book_tools.format.fb2sax import fb2parser
 from book_tools.format.util import strip_symbols
 
 logger = logging.getLogger(__name__)
@@ -59,6 +58,7 @@ class EbookMetaParser(ABC):
         Returns:
             bytes: аннотация если есть
             None: если аннотации нет
+
         """
         ...
 
@@ -90,6 +90,7 @@ class EbookMetaParser(ABC):
         Returns:
             dict[str,str]: словарь, в котором содержится информация о названии серии и номер книги в серии
             None: если книга не входит в серию
+
         """
         ...
 
@@ -139,16 +140,30 @@ class FB2(EbookMetaParser):
         """
         # Инициализация полей объекта
         super().__init__(file)
-        self._etree: etree._ElementTree
+        self._etree: Optional[etree._ElementTree] = None
         self._namespaces: dict[str, str] = {}
         self._log = logging.getLogger(str(self.__class__))
         self.parse()
 
     def parse(self):
         """Парсинг полученного файла."""
+        self._etree = None
         try:
             self._file.seek(0, 0)
-            self._etree = etree.parse(self._file)
+            data = self._file.read()
+            try:
+                self._etree = etree.parse(BytesIO(data))
+            except Exception:
+                for encoding in ("utf-8", "cp1251"):
+                    try:
+                        self._etree = etree.parse(
+                            BytesIO(data.decode(encoding).encode("utf-8"))
+                        )
+                        break
+                    except Exception:
+                        continue
+                if self._etree is None:
+                    raise FB2StructureException("the file is not a valid XML")
         except Exception as e:
             self._log.exception(e)
             raise FB2StructureException(f"The file is not a valid XML: {e}")
@@ -307,94 +322,6 @@ class FB2(EbookMetaParser):
         return None
 
 
-class FB2sax(EbookMetaParser):
-    """
-    SAX парсер для книг FB2
-
-    Deprecation warning: парсер объявляется устаревшим в связи
-    с реализацией парсера на основе lxml.
-    """
-
-    def __init__(self, file, original_filename):
-        self._log = logging.getLogger()
-        self.fb2parser = fb2parser(1)
-        file.seek(0, 0)
-        self.fb2parser.parse(file)
-        if self.fb2parser.parse_error != 0:
-            raise FB2StructureException(
-                "FB2sax parse error (%s)" % self.fb2parser.parse_errormsg
-            )
-
-    def extract_cover(self):
-        if len(self.fb2parser.cover_image.cover_data) > 0:
-            try:
-                s = self.fb2parser.cover_image.cover_data
-                content = base64.b64decode(s)
-                return content
-            except Exception:
-                return None
-        return None
-
-    def extract_cover_memory(self):
-        return self.extract_cover()
-
-    @property
-    def title(self):
-        res = ""
-        if len(self.fb2parser.book_title.getvalue()) > 0:
-            res = self.fb2parser.book_title.getvalue()[0].strip(strip_symbols)
-        return res
-
-    @property
-    def docdate(self):
-        res = self.fb2parser.docdate.getattr("value") or ""
-        if len(res) == 0 and len(self.fb2parser.docdate.getvalue()) > 0:
-            res = self.fb2parser.docdate.getvalue()[0].strip()
-        return res
-
-    @property
-    def authors(self):
-        for idx, author in enumerate(self.fb2parser.author_last.getvalue()):
-            last_name = author.strip(strip_symbols)
-            first_name = self.fb2parser.author_first.getvalue()[idx].strip(
-                strip_symbols
-            )
-            yield (" ".join([first_name, last_name]), last_name)
-
-    @property
-    def language_code(self):
-        res = ""
-        if len(self.fb2parser.lang.getvalue()) > 0:
-            res = self.fb2parser.lang.getvalue()[0].strip(strip_symbols)
-        return res
-
-    @property
-    def tags(self):
-        for genre in self.fb2parser.genre.getvalue():
-            yield genre.lower().strip(strip_symbols)
-
-    @property
-    def series_info(self):
-        if len(self.fb2parser.series.attrss) > 0:
-            s = self.fb2parser.series.attrss[0]
-            ser_name = s.get("name")
-            if ser_name:
-                title = ser_name.strip(strip_symbols)
-                index = s.get("number", "0").strip(strip_symbols)
-
-                return {"title": title, "index": index}
-        return None
-
-    @property
-    def description(self):
-        res = ""
-        if len(self.fb2parser.annotation.getvalue()) > 0:
-            res = "\n".join(self.fb2parser.annotation.getvalue())
-            # if len(res) > 0:
-            return res
-        return None
-
-
 class EpubParser(EbookMetaParser):
     def __init__(self, file: BytesIO):
         self.file = file
@@ -516,7 +443,6 @@ class EpubParser(EbookMetaParser):
 
         Возвращаемое значение:
             bytes | None: Байты изображения обложки или None, если обложка отсутствует.
-
         """
         # Запросы для получения обложки
         cover_queries: list[str] = [

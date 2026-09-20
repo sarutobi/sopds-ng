@@ -5,7 +5,6 @@ from types import MappingProxyType
 
 import pytest
 
-from book_tools.format.fb2sax import fb2tag
 from book_tools.format.parsers import EbookMetaParser, EpubParser
 from tests.book_tools.format.helpers import Author, fb2_book_fabric
 
@@ -94,27 +93,12 @@ def invalid_epub(get_file_content, zipped_fb2) -> BytesIO:
 
 
 @pytest.fixture
-def test_tag() -> fb2tag:
-    """Создаёт объект fb2tag с путём (description, title-info, author, first-name).
-
-    Применяется в тестах разбора FB2-тегов.
-
-    :scope: function
-    :returns: fb2tag
-    :rtype: fb2tag
-    """
-    # TODO: перенести фикстуру в пакет тестов fb2sax
-    return fb2tag(("description", "title-info", "author", "first-name"))
-
-
-@pytest.fixture
 def fb2_params() -> MappingProxyType:
     """Параметры для построения FB2 книги (immutable).
 
     Возвращает ``MappingProxyType`` (неизменяемое dict-подобное представление)
     со всеми полями по умолчанию: ``title``, ``authors``, ``genres``, ``lang``,
     ``docdate``, ``annotation``, ``series_name``, ``series_no``, ``correct``.
-
     Для создания книги с кастомными параметрами используйте ``build_fb2_book()``
     напрямую или переопределите фикстуру в своём conftest.py.
 

@@ -7,12 +7,11 @@ import re
 import time
 import zipfile
 
-# from django.db import transaction
 from django.utils.translation import gettext as _
 
 from book_tools.format import create_bookfile
 from book_tools.format.util import strip_symbols
-from opds_catalog import fb2parse, inpx_parser
+from opds_catalog import inpx_parser
 from opds_catalog.config import catalog_config
 from opds_catalog.constants import CAT_INP, CAT_INPX, CAT_NORMAL, CAT_ZIP
 from opds_catalog.services import scanner
@@ -20,9 +19,6 @@ from opds_catalog.services import scanner
 
 class opdsScanner:
     def __init__(self, logger=None):
-        self.fb2parser = None
-        self.init_parser()
-
         if logger:
             self.logger = logger
         else:
@@ -44,10 +40,6 @@ class opdsScanner:
         self.bad_books = 0
         self.books_in_archives = 0
 
-    def init_parser(self) -> None:
-        # FIXME: Указан фиксированный парсер
-        self.fb2parser = fb2parse.fb2parser(False)
-
     def log_options(self) -> None:
         """Вывод в лог параметров контекста запуска сканера"""
         # TODO: Вынести это в вызывающий код
@@ -61,8 +53,6 @@ class opdsScanner:
             self.logger.debug("fb2tomobi = %s" % catalog_config.FB2_TO_MOBI_PATH)
         if catalog_config.TEMP_DIR is not None:
             self.logger.debug("temp_dir = %s" % catalog_config.TEMP_DIR)
-        if catalog_config.FB2_SAX_ENABLED is not None:
-            self.logger.info("FB2SAX = %s" % catalog_config.FB2_SAX_ENABLED)
 
     def log_stats(self) -> None:
         """Вывод в лог статистики работы сканера"""

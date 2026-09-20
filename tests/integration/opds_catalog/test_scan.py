@@ -24,10 +24,9 @@ class TestBookScaner(object):
     test_mobi = "robin_cook.mobi"
     test_zip = "books.zip"
 
-    @pytest.mark.parametrize("fb2sax", [True, False])
+    @pytest.mark.parametrize("fb2sax", [False])
     def test_processfile_fb2(self, fb2sax):
         """Тестирование процедуры processfile (извлекает метаданные из книги FB2 и помещает в БД)"""
-        config.SOPDS_FB2SAX = fb2sax
         clear_all()
         scanner = opdsScanner()
         scanner.processfile(
@@ -68,10 +67,9 @@ class TestBookScaner(object):
         assert book.genres.get(genre="antique").subsection == "antique"
         assert getFileData(book) is not None
 
-    @pytest.mark.parametrize("fb2sax", [True, False])
+    @pytest.mark.parametrize("fb2sax", [False])
     def test_processfile_fb2zip(self, fb2sax):
         """Тестирование процедуры processfile (извлекает метаданные из книги FB2 и помещает в БД)"""
-        config.SOPDS_FB2SAX = fb2sax
         clear_all()
         scanner = opdsScanner()
         scanner.processzip(

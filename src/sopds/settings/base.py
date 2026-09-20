@@ -284,7 +284,7 @@ LANGUAGE_NAMES = {
     "FI": _("Finnish"),
     "FR": _("French"),
     "HR": _("Chroatian"),
-    "CU": _("Church Slavonic"),
+    "CU": _("Church slavonic"),
     "CS": _("Czech"),
     "CV": _("Chuvash"),
     "SV": _("Swedish"),
@@ -336,10 +336,9 @@ CONSTANCE_CONFIG = OrderedDict(
             ),
         ),
         (
-            "SOPDS_FB2SAX",
-            (True, _("This flag activate SAX Parser for FB2 instead of lxml.xpath")),
+            "SOPDS_ZIPSCAN",
+            (True, _("This flag activate zip files scanning")),
         ),
-        ("SOPDS_ZIPSCAN", (True, _("This flag activate zip files scanning"))),
         (
             "SOPDS_ZIPCODEPAGE",
             ("cp866", _("Set codepage for filenames inside zipfile")),
@@ -462,7 +461,6 @@ CONSTANCE_CONFIG_FIELDSETS = {
         "SOPDS_NOCOVER_PATH",
     ),
     "3. Scanner Options": (
-        "SOPDS_FB2SAX",
         "SOPDS_ZIPSCAN",
         "SOPDS_ZIPCODEPAGE",
         "SOPDS_INPX_ENABLE",

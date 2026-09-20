@@ -14,7 +14,7 @@ class TestConstance:  # integration
         out = StringIO()
         call_command("constance", "list", stdout=out)
         out.seek(0)
-        assert out.getvalue().count("\n") == 37
+        assert out.getvalue().count("\n") == 36
         out.close()
 
     def test_constance_set_get_attr(self) -> None:

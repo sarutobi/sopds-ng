@@ -2,9 +2,7 @@ from io import BytesIO
 
 import pytest
 
-from book_tools.format.fb2 import (
-    FB2,
-)
+from book_tools.format.parsers import FB2
 from book_tools.mime_detector import (
     EPUBContentValidator,
     FB2ContentValidator,
@@ -19,8 +17,12 @@ from book_tools.services import (
 def test_fb2_metadata_service_returns_the_same(fb2_book_from_fs) -> None:
     """Тест сервиса метаданных книги в формате fb2"""
     actual = create_bookfile_service(fb2_book_from_fs, "Test Book")
-    expected = FB2(fb2_book_from_fs, "Test Book")
-    assert actual == expected
+    expected = FB2(fb2_book_from_fs)
+    # Сравниваем ключевые поля метаданных, а не объектное тождество
+    assert actual.title == expected.title
+    assert actual.language_code == expected.language_code
+    assert actual.docdate == expected.docdate
+    assert actual.tags == expected.tags
 
 
 def test_fb2_metadata_service_returns_the_same_zipped(

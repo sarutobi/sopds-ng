@@ -14,7 +14,6 @@ from .fixture_book_tools import (
     epub_parser,
     fb2_params,
     invalid_epub,
-    test_tag,
     virtual_fb2_book,
 )
 from .fixture_django import (

@@ -86,10 +86,6 @@ class SopdsConfig:
     def FB2_TO_MOBI_PATH(self) -> str:
         return constance_config.SOPDS_FB2TOMOBI
 
-    @property
-    def FB2_SAX_ENABLED(self) -> bool:
-        return constance_config.SOPDS_FB2SAX
-
     # --- Логика каталогов и поиска ---
     @property
     def TITLE_AS_FILENAME(self) -> bool:
