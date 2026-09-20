@@ -128,7 +128,7 @@ def findauthor(full_name: str) -> list[Author]:
 
 def addbauthor(book: Book, author: Author):
     """Связь книги с автором."""
-    bauthor(book=book, author=author).save()
+    bauthor.objects.get_or_create(book=book, author=author)
 
 
 def addgenre(genre: str) -> Genre:
@@ -147,7 +147,7 @@ def addgenre(genre: str) -> Genre:
 
 def addbgenre(book: Book, genre: Genre):
     """Связь книги с жанром."""
-    bgenre(book=book, genre=genre).save()
+    bgenre.objects.get_or_create(book=book, genre=genre)
 
 
 def addseries(ser: str) -> Series:
@@ -164,7 +164,7 @@ def addseries(ser: str) -> Series:
 
 def addbseries(book: Book, ser: Series, ser_no: int):
     """Связь книги с серией."""
-    bseries(book=book, ser=ser, ser_no=ser_no).save()
+    bseries.objects.get_or_create(book=book, ser=ser, ser_no=ser_no)
 
 
 def archive_skip(arcpath: str, arcsize: int, depth: int = 0) -> int:

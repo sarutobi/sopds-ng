@@ -189,16 +189,16 @@ class opdsScanner:
             self.books_in_archives += 1
             self.logger.debug("Book " + rel_path_current + "/" + name + " Added ok.")
 
-            for a in meta_data[inpx_parser.sAuthor]:
+            for a in set(meta_data[inpx_parser.sAuthor]):
                 author = scanner.addauthor(a.replace(",", " "))
                 scanner.addbauthor(book, author)
 
-            for g in meta_data[inpx_parser.sGenre]:
+            for g in set(meta_data[inpx_parser.sGenre]):
                 scanner.addbgenre(
                     book, scanner.addgenre(g.lower().strip(strip_symbols))
                 )
 
-            for s in meta_data[inpx_parser.sSeries]:
+            for s in set(meta_data[inpx_parser.sSeries]):
                 ser = scanner.addseries(s.strip())
                 scanner.addbseries(book, ser, 0)
 
@@ -330,12 +330,13 @@ class opdsScanner:
                         self.logger.info(
                             f"Store authors metadata for {name} in database"
                         )
+                        # Дедупликация авторов (список словарей)
+                        seen_authors = []
                         for a in book_data.authors:
                             author_name = a.get("name", _("Unknown author")).strip(
                                 strip_symbols
                             )
                             # Если в имени автора нет запятой, то фамилию переносим из конца в начало
-                            # FIXME: информация об авторе не должна трансформироваться
                             if author_name and author_name.find(",") < 0:
                                 author_names = author_name.split()
                                 author_name = " ".join(
@@ -344,16 +345,16 @@ class opdsScanner:
                                         " ".join(author_names[:-1]),
                                     ]
                                 )
-                            self.logger.debug(f"Author: {author_name}")
-                            author = scanner.addauthor(author_name)
-                            self.logger.debug(f"Link {book} to {author}")
-                            scanner.addbauthor(book, author)
+                            if author_name not in seen_authors:
+                                seen_authors.append(author_name)
+                                author = scanner.addauthor(author_name)
+                                scanner.addbauthor(book, author)
                         self.logger.info("Authors metadata stored succesfully")
 
                         self.logger.info(
                             f"Store genres metadata for {name} in database"
                         )
-                        for genre in book_data.tags:
+                        for genre in set(book_data.tags):
                             scanner.addbgenre(
                                 book,
                                 scanner.addgenre(genre.lower().strip(strip_symbols)),
