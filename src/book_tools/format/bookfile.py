@@ -1,7 +1,7 @@
 import os
 from abc import ABCMeta, abstractmethod
 
-from book_tools.format.util import minify_cover, normalize_string
+from book_tools.format.util import normalize_string
 
 
 class BookFile(object):
@@ -25,15 +25,6 @@ class BookFile(object):
 
     def __exit__(self, kind, value, traceback):
         self.close()
-
-    def extract_cover(self, working_dir):
-        cover, minified = self.extract_cover_internal(working_dir)
-        if cover and not minified:
-            minify_cover(os.path.join(working_dir, cover))
-        return cover
-
-    def extract_cover_internal(self, working_dir):
-        return (None, False)
 
     def extract_cover_memory(self):
         return None
@@ -72,12 +63,6 @@ class BookFile(object):
             text = text.strip()
             if text:
                 self.tags.append(text)
-
-    def get_encryption_info(self):
-        return {}
-
-    def repair(self, working_dir):
-        pass
 
     def __eq__(self, other) -> bool:
         if not (isinstance(other, BookFile)):
