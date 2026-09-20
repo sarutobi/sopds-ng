@@ -15,7 +15,7 @@ from django.http import (
 )
 from PIL import Image
 
-from book_tools.format import create_bookfile, mime_detector
+from book_tools.format import create_bookfile
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2
 from opds_catalog import constants, settings, utils
@@ -53,7 +53,7 @@ def Download(request, book_id, zip_flag):
         content_type = Mimetype.FB2_ZIP if book.format == "fb2" else Mimetype.ZIP
     else:
         dlfilename = transname
-        content_type = mime_detector.fmt(book.format)
+        content_type = Mimetype.mime_by_format(book.format)
 
     logger.debug(f"Filename: {dlfilename}")
     logger.debug(f"Content type: {content_type}")
@@ -191,7 +191,7 @@ def ConvertFB2(request, book_id, convert_type):
         raise Http404
     if not converter_path:
         raise Http404
-    content_type = mime_detector.fmt(convert_type)
+    content_type = Mimetype.mime_by_format(convert_type)
 
     if book.cat_type == constants.CAT_NORMAL:
         tmp_fb2_path = None

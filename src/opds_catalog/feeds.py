@@ -345,7 +345,7 @@ class SOPDSBaseFeed(Feed):
         return item["title"]
 
     def book_enclosure(self, book) -> list[opdsEnclosure]:
-        mime = Mimetype.mime_by_type(book["format"])
+        mime = Mimetype.mime_by_format(book["format"])
         mimezip = Mimetype.FB2_ZIP if mime == Mimetype.FB2 else "%s+zip" % mime
 
         enclosure: list[opdsEnclosure] = [

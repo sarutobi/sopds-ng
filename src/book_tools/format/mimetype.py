@@ -15,7 +15,7 @@ class Mimetype:
     TEXT = "text/plain"
     RTF = "text/rtf"
 
-    suffix_mime_mapper: dict[str, str] = {
+    FORMAT_MIME_MAP: dict[str, str] = {
         "xml": XML,
         "fb2": FB2,
         "epub": EPUB,
@@ -30,6 +30,13 @@ class Mimetype:
     }
 
     @staticmethod
-    def mime_by_type(type: str) -> str:
-        """Получение полного mime-type по закодированному."""
-        return Mimetype.suffix_mime_mapper[type] or Mimetype.OCTET_STREAM
+    def mime_by_format(fmt: str) -> str:
+        """Получение MIME-типа по строке формата (без точки)."""
+        return Mimetype.FORMAT_MIME_MAP.get(fmt.lower(), Mimetype.OCTET_STREAM)
+
+    @staticmethod
+    def mime_by_suffix(ext: str) -> str:
+        """Получение MIME-типа по суффиксу (с точкой)."""
+        # Убираем точку для поиска в FORMAT_MIME_MAP
+        fmt = ext.lower().lstrip(".")
+        return Mimetype.FORMAT_MIME_MAP.get(fmt, Mimetype.OCTET_STREAM)

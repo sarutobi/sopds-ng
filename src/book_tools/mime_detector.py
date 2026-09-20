@@ -20,25 +20,6 @@ from .format.mimetype import Mimetype
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Suffix → MIME mapping
-# ---------------------------------------------------------------------------
-
-_SUFFIX_MIME_MAP: dict[str, str] = {
-    ".fb2": Mimetype.FB2,
-    ".epub": Mimetype.EPUB,
-    ".mobi": Mimetype.MOBI,
-    ".pdf": Mimetype.PDF,
-    ".doc": Mimetype.MSWORD,
-    ".docx": Mimetype.MSWORD,
-    ".djvu": Mimetype.DJVU,
-    ".txt": Mimetype.TEXT,
-    ".rtf": Mimetype.RTF,
-    ".xml": Mimetype.XML,
-    ".zip": Mimetype.ZIP,
-}
-
-
-# ---------------------------------------------------------------------------
 # Base class for content-based validators
 # ---------------------------------------------------------------------------
 
@@ -248,7 +229,7 @@ def detect_by_suffix(original_filename: str) -> str | None:
     """Определяет MIME-тип по суффиксу имени файла.
 
     Сначала проверяет составное расширение .fb2.zip,
-    затем ищет суффикс в _SUFFIX_MIME_MAP.
+    затем ищет суффикс в Mimetype.mime_by_suffix.
 
     Returns:
         MIME-тип (строка) или None, если суффикс не распознан.
@@ -261,7 +242,8 @@ def detect_by_suffix(original_filename: str) -> str | None:
         return Mimetype.FB2_ZIP
 
     _, ext = os.path.splitext(name_lower)
-    return _SUFFIX_MIME_MAP.get(ext)
+    mime = Mimetype.mime_by_suffix(ext)
+    return mime if mime != Mimetype.OCTET_STREAM else None
 
 
 # ---------------------------------------------------------------------------
