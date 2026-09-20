@@ -6,7 +6,6 @@ from tempfile import mkstemp
 
 from lxml import etree
 
-from book_tools.format.aes import encrypt
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.util import list_zip_file_infos, normalize_string
@@ -388,57 +387,6 @@ class EPub(BookFile):
             tree.write(pfile, pretty_print=True)
         zip_file.write(path, arcname=filename)
 
-    def __add_encryption_section(self, index, root, uri, content_id):
-        # See http://www.marlin-community.com/files/marlin-EPUB-extension-v1.0.pdf
-        # section 4.2.1
-        key_name = EPub.CONTENT_ID_PREFIX + content_id
-
-        enc_data = etree.SubElement(
-            root,
-            etree.QName(EPub.Namespace.ENCRYPTION, "EncryptedData"),
-            Id="ED%d" % index,
-        )
-        etree.SubElement(
-            enc_data,
-            etree.QName(EPub.Namespace.ENCRYPTION, "EncryptionMethod"),
-            Algorithm=EPub.Namespace.ENCRYPTION + "aes128-cbc",
-        )
-        key_info = etree.SubElement(
-            enc_data, etree.QName(EPub.Namespace.DIGITAL_SIGNATURE, "KeyInfo")
-        )
-        key_name_tag = etree.SubElement(
-            key_info, etree.QName(EPub.Namespace.DIGITAL_SIGNATURE, "KeyName")
-        )
-        key_name_tag.text = key_name
-        cipher_data = etree.SubElement(
-            enc_data, etree.QName(EPub.Namespace.ENCRYPTION, "CipherData")
-        )
-        etree.SubElement(
-            cipher_data,
-            etree.QName(EPub.Namespace.ENCRYPTION, "CipherReference"),
-            URI=uri,
-        )
-
-    def __create_encryption_file(
-        self, zip_file, working_dir, encrypted_files, content_id
-    ):
-        namespaces = {
-            None: EPub.Namespace.CONTAINER,
-            "enc": EPub.Namespace.ENCRYPTION,
-            "ds": EPub.Namespace.DIGITAL_SIGNATURE,
-        }
-        root = etree.Element(
-            etree.QName(EPub.Namespace.CONTAINER, "encryption"), nsmap=namespaces
-        )
-        tree = etree.ElementTree(root)
-
-        index = 1
-        for filename in encrypted_files:
-            self.__add_encryption_section(index, root, filename, content_id)
-            index += 1
-
-        self.__save_tree(zip_file, EPub.Entry.ENCRYPTION, tree, working_dir)
-
     def __create_rights_file(self, zip_file, working_dir):
         namespaces = {None: EPub.Namespace.MARLIN}
         root = etree.Element(
@@ -458,67 +406,6 @@ class EPub(BookFile):
             rights_issuer, etree.QName(EPub.Namespace.MARLIN, "URL")
         ).text = EPub.TOKEN_URL
         self.__save_tree(zip_file, EPub.Entry.RIGHTS, tree, working_dir)
-
-    def encrypt(self, key, content_id, working_dir, files_to_keep=None):
-        if self.get_encryption_info():
-            raise Exception(
-                "Cannot encrypt file %s, it is already encrypted" % self.file.name
-            )
-
-        if not files_to_keep:
-            files_to_keep = [
-                EPub.Entry.MANIFEST,
-                EPub.Entry.METADATA,
-                EPub.Entry.CONTAINER,
-            ]
-            files_to_keep += [self.root_filename]
-            files_to_keep += [info["filename"] for info in self.cover_fileinfos]
-
-        self.__zip_file.extractall(path=working_dir)
-
-        fd, new_epub = mkstemp(dir=working_dir, suffix=".epub")
-        os.close(fd)
-        with zipfile.ZipFile(new_epub, "w", zipfile.ZIP_DEFLATED) as zip_file:
-            zip_file.writestr(EPub.Entry.MIMETYPE, Mimetype.EPUB, zipfile.ZIP_STORED)
-            encrypted_files = []
-            for entry in [
-                info.filename
-                for info in list_zip_file_infos(self.__zip_file)
-                if info.filename != EPub.Entry.MIMETYPE
-            ]:
-                path = os.path.join(working_dir, entry)
-                if entry in files_to_keep:
-                    zip_file.write(path, arcname=entry)
-                else:
-                    encrypt(os.path.join(working_dir, entry), key, working_dir)
-                    encrypted_files.append(entry)
-                    zip_file.write(
-                        path, arcname=entry, compress_type=zipfile.ZIP_STORED
-                    )
-            self.__create_encryption_file(
-                zip_file, working_dir, encrypted_files, content_id
-            )
-            self.__create_rights_file(zip_file, working_dir)
-        shutil.move(new_epub, self.path)
-        self.close()
-        self.__initialize()
-
-    def repair(self, working_dir):
-        self.__zip_file.extractall(path=working_dir)
-
-        fd, new_epub = mkstemp(dir=working_dir, suffix=".epub")
-        os.close(fd)
-        with zipfile.ZipFile(new_epub, "w", zipfile.ZIP_DEFLATED) as zip_file:
-            zip_file.writestr(EPub.Entry.MIMETYPE, Mimetype.EPUB, zipfile.ZIP_STORED)
-            for entry in [
-                info.filename
-                for info in list_zip_file_infos(self.__zip_file)
-                if info.filename != EPub.Entry.MIMETYPE
-            ]:
-                zip_file.write(os.path.join(working_dir, entry), arcname=entry)
-        shutil.move(new_epub, self.path)
-        self.close()
-        self.__initialize()
 
     def extract_cover_internal(self, working_dir):
         if len(self.cover_fileinfos) == 0:
