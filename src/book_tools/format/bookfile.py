@@ -1,12 +1,9 @@
 import os
-from abc import ABCMeta, abstractmethod
 
 from book_tools.format.util import normalize_string
 
 
-class BookFile(object):
-    __metaclass__ = ABCMeta
-
+class BookFile:
     def __init__(self, file, original_filename, mimetype):
         self.file = file
         self.mimetype = mimetype
