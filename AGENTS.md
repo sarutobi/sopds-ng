@@ -30,6 +30,7 @@
 ## Git
 - Conventional Commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
 - Ветки: `dev` — разработка, `main` — стабильный релиз
+- Комментарии к коммиту на русском языке
 
 ## Commands
 | Команда | Описание |
