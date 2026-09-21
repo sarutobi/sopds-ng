@@ -46,7 +46,7 @@ def get_parser(mimetype: str) -> Callable:
 
 
 # ---------------------------------------------------------------------------
-# BookMetadata → BookFile converter
+# BookMetadata -> BookFile converter
 # ---------------------------------------------------------------------------
 
 
@@ -168,8 +168,7 @@ def parse_fb2_zip(file_obj, original_filename: str) -> BookMetadata:
             raise FB2StructureException("Incorrect fb2 zip archive!")
         fn = z.namelist()[0]
         with z.open(fn, "r") as d:
-            content = BytesIO()
-            content.write(d.read())
+            content = BytesIO(d.read())
     content.seek(0)
     return parse_fb2(content, fn)
 
@@ -308,7 +307,7 @@ def create_bookfile_service(data: BytesIO, original_filename: str) -> BookFile:
     logger.debug(f"Content size: {len(data.getvalue())}")
     mimetype = detect_mime_service(data, original_filename)
 
-    # Normalise FB2_ZIP → FB2 для поиска парсера и распаковываем ZIP
+    # Normalise FB2_ZIP -> FB2 для поиска парсера и распаковываем ZIP
     content_data: BytesIO
     content_mimetype: str
     if mimetype == Mimetype.FB2_ZIP:
@@ -320,8 +319,7 @@ def create_bookfile_service(data: BytesIO, original_filename: str) -> BookFile:
                 raise FB2StructureException("Incorrect fb2 zip archive!")
             fn = z.namelist()[0]
             with z.open(fn, "r") as d:
-                content_data = BytesIO()
-                content_data.write(d.read())
+                content_data = BytesIO(d.read())
         content_data.seek(0)
     else:
         content_mimetype = mimetype
