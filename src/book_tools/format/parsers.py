@@ -143,6 +143,7 @@ class FB2(EbookMetaParser):
         self._etree: Optional[etree._ElementTree] = None
         self._namespaces: dict[str, str] = {}
         self._log = logging.getLogger(str(self.__class__))
+        self._metadata_cache: dict[str, Any] = {}
         self.parse()
 
     def parse(self):
