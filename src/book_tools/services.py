@@ -5,6 +5,7 @@ from datetime import date
 from io import BytesIO
 from typing import Callable, Optional
 
+from .dto import Author, BookMetadata, Cover, Series
 from .exceptions import (
     EpubStructureException,
     FB2StructureException,
@@ -13,7 +14,6 @@ from .exceptions import (
     UnsupportedFormatError,
 )
 from .format.bookfile import BookFile
-from .format.ebook_parsers.dto import Author, BookMetadata, Cover, Series
 from .format.epub import EPub as EPubOld
 from .format.mimetype import Mimetype
 from .format.parsers import FB2, EpubParser

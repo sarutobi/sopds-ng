@@ -1,4 +1,6 @@
-# dto.py — Data Transfer Objects для передачи данных между парсерами
+"""
+Data Transfer Objects для метаданных электронных книг.
+"""
 
 from dataclasses import dataclass, field
 from datetime import date
