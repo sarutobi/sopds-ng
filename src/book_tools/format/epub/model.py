@@ -44,9 +44,6 @@ class EPub(BookFile):
         self._zip_file = zipfile.ZipFile(self.file)
         self.issues = []
         try:
-            if self._zip_file.testzip():
-                raise EPub.StructureException("broken zip archive")
-
             infos = self._zip_file.infolist()
             if len(infos) == 0:
                 raise EPub.StructureException("empty zip archive")
@@ -80,10 +77,12 @@ class EPub(BookFile):
 
     def _etree_from_entry(self, info):
         with self._zip_file.open(info) as entry:
-            data = entry.read(1048576)
             try:
-                return etree.fromstring(data)
+                return etree.parse(entry).getroot()
             except Exception:
+                # Fallback: try decoding manually if XML declaration is missing or wrong
+                entry.seek(0)
+                data = entry.read()
                 for encoding in ("utf-8", "cp1251"):
                     try:
                         return etree.fromstring(data.decode(encoding))
