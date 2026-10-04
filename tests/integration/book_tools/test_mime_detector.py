@@ -5,7 +5,7 @@ from io import BytesIO
 
 import pytest
 
-from book_tools.exceptions import UnsupportedFileType, UnsupportedFormatException
+from book_tools.exceptions import UnsupportedFileType, UnsupportedFormatError
 from book_tools.format import create_bookfile
 from book_tools.format.mimetype import Mimetype
 from book_tools.mime_detector import (

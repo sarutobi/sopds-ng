@@ -6,11 +6,11 @@ from io import BytesIO
 from typing import Callable, Optional
 
 from .exceptions import (
-    EbookParserException,
     EpubStructureException,
     FB2StructureException,
+    ParserError,
     UnsupportedFileType,
-    UnsupportedFormatException,
+    UnsupportedFormatError,
 )
 from .format.bookfile import BookFile
 from .format.ebook_parsers.dto import Author, BookMetadata, Cover, Series
@@ -37,11 +37,11 @@ def register_parser(mimetype: str, parser_fn: Callable) -> None:
 def get_parser(mimetype: str) -> Callable:
     """Look up a parser by mimetype.
 
-    Raises UnsupportedFormatException if no parser is registered.
+    Raises UnsupportedFormatError if no parser is registered.
     """
     parser = _parsers.get(mimetype)
     if parser is None:
-        raise UnsupportedFormatException(f"No parser registered for {mimetype}")
+        raise UnsupportedFormatError(f"No parser registered for {mimetype}")
     return parser
 
 
@@ -220,7 +220,7 @@ def parse_mobi(file_obj, original_filename: str) -> BookMetadata:
     try:
         bm = BookMobi(file_obj)
     except Exception as e:
-        raise EbookParserException(f"mobi parsing failed: {e}") from e
+        raise ParserError(f"mobi parsing failed: {e}") from e
 
     title = bm["title"] or original_filename
 
@@ -327,7 +327,7 @@ def create_bookfile_service(data: BytesIO, original_filename: str) -> BookFile:
 
     try:
         parser_fn = get_parser(content_mimetype)
-    except UnsupportedFormatException as e:
+    except UnsupportedFormatError as e:
         raise UnsupportedFileType(content_mimetype, original_filename) from e
 
     metadata = parser_fn(content_data, original_filename)

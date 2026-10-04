@@ -6,6 +6,7 @@ from tempfile import mkstemp
 
 from lxml import etree
 
+from book_tools.exceptions import ParserError
 from book_tools.format.bookfile import BookFile
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.util import list_zip_file_infos, normalize_string
@@ -41,7 +42,7 @@ class EPub(BookFile):
     ALGORITHM_EMBEDDING = "http://www.idpf.org/2008/embedding"
     ALGORITHM_AES128 = Namespace.ENCRYPTION + "aes128-cbc"
 
-    class StructureException(Exception):
+    class StructureException(ParserError):
         def __init__(self, message):
             Exception.__init__(self, "ePub verification failed: " + message)
 

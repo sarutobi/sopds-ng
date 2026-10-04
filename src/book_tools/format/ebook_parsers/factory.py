@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from book_tools.exceptions import UnsupportedFormatException
+from book_tools.exceptions import UnsupportedFormatError
 from book_tools.format.ebook_parsers.base import EbookParser
 
 
@@ -37,5 +37,5 @@ class ParserFactory:
         """
         ext = file_path.suffix.lower()
         if ext not in cls._parsers:
-            raise UnsupportedFormatException(f"Неподдерживаемый формат: {ext}")
+            raise UnsupportedFormatError(f"Неподдерживаемый формат: {ext}")
         return cls._parsers[ext]()
