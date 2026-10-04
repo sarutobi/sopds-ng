@@ -114,7 +114,7 @@
 15. ~~**[book_tools] P2-9: `mime_by_type` KeyError вместо fallback**~~ (DONE) → `mime_by_type`/`suffix_mime_mapper` заменены на `mime_by_format`/`FORMAT_MIME_MAP` через `.get(..., OCTET_STREAM)`; KeyError закрыт; commit `6634ba0`. (ID: P2-9)
 16. ~~**[book_tools] P0-7: Двойная/тройная распаковка FB2_ZIP в памяти**~~ (DONE/ABANDONED) → Фаза 1 (DONE): лишняя копия устранена (`BytesIO(d.read())` в `create_bookfile_service` и `parse_fb2_zip`). Фаза 2 (ABANDONED): попытка внедрить стриминг (`iterparse`) для метаданных была отклонена из-за высокого риска потери данных, проблем с вложенностью XML и несовместимости с перекодировкой CP1251. Выигрыш в памяти признан незначительным по сравнению с риском нарушения корректности парсинга. (ID: P0-7)
 17. ~~**[book_tools] Иерархия исключений не соответствует ТЗ**~~ (DONE) → создана иерархия BookToolsError $\rightarrow$ ParserError $\rightarrow$ UnsupportedFormatError в `exceptions.py`; обновлены все raise и импорты. (ID: P1-13)
-18. **[book_tools] EPub монолит 547 строк** → разбить на компоненты (ТЗ 3.3/3.8). (ID: подтверждённый техдолг)
+18. ~~**[book_tools] EPub монолит 547 строк**~~ (DONE) → рефакторинг в пакет `src/book_tools/format/epub/` с разделением на `model`, `metadata`, `cover` и `encryption`. (ID: подтверждённый техдолг)
 19. **[book_tools] `ebook_parsers` пакет недостроен и не используется** → подключить или удалить. (ID: подтверждённый техдолг)
 20. **[book_tools] LRU-кэш метаданных (path, mtime)** → ТЗ-parsers 3.5. (ID: подтверждённый техдолг)
 21. **[book_tools] Потоковая обработка больших файлов** → отсутствует. (ID: подтверждённый техдолг)
