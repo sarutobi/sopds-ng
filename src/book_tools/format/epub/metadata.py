@@ -3,6 +3,8 @@
 """
 
 import os
+import zipfile
+from typing import Any
 
 from lxml import etree
 
@@ -11,13 +13,15 @@ from book_tools.format.util import normalize_string
 
 
 class EPubMetadataParser:
-    def __init__(self, epub):
+    def __init__(self, epub: Any) -> None:
         self.epub = epub
 
-    def parse(self, tree, root_info):
+    def parse(
+        self, tree: etree._Element, root_info: zipfile.ZipInfo
+    ) -> dict[str, str | list[str] | dict[str, str | None]]:
         namespaces = {"opf": Namespace.OPF, "dc": Namespace.DUBLIN_CORE}
 
-        metadata = {}
+        metadata: dict[str, str | list[str] | dict[str, str | None]] = {}
 
         # Title
         res = tree.xpath("/opf:package/opf:metadata/dc:title", namespaces=namespaces)

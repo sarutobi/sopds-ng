@@ -7,6 +7,7 @@ import shutil
 import urllib.parse
 import zipfile
 from tempfile import mkstemp
+from typing import Any, BinaryIO
 
 from lxml import etree
 
@@ -28,21 +29,21 @@ class EPub(BookFile):
     ALGORITHM_AES128 = Namespace.ENCRYPTION + "aes128-cbc"
 
     class StructureException(ParserError):
-        def __init__(self, message):
+        def __init__(self, message: str) -> None:
             Exception.__init__(self, "ePub verification failed: " + message)
 
-    def __init__(self, file, original_filename):
+    def __init__(self, file: BinaryIO, original_filename: str) -> None:
         BookFile.__init__(self, file, original_filename, Mimetype.EPUB)
-        self.root_filename = None
-        self.cover_fileinfos = []
+        self.root_filename: str | None = None
+        self.cover_fileinfos: list[dict[str, str]] = []
 
-        self._zip_file = None
+        self._zip_file: zipfile.ZipFile | None = None
         self.__initialize()
 
-    def __initialize(self):
+    def __initialize(self) -> None:
         self.file.seek(0, 0)
         self._zip_file = zipfile.ZipFile(self.file)
-        self.issues = []
+        self.issues: list[int] = []
         try:
             infos = self._zip_file.infolist()
             if len(infos) == 0:
@@ -68,14 +69,18 @@ class EPub(BookFile):
             self.close()
             raise EPub.StructureException(str(error))
 
-    def close(self):
+    def close(self) -> None:
         if self._zip_file:
             self._zip_file.close()
 
-    def __exit__(self, kind, value, traceback):
+    def __exit__(
+        self, kind: str | None, value: Any | None, traceback: Any | None
+    ) -> None:
         self.close()
 
-    def _etree_from_entry(self, info):
+    def _etree_from_entry(self, info: str | zipfile.ZipInfo) -> etree._Element:
+        if self._zip_file is None:
+            raise EPub.StructureException("Zip file is not open")
         with self._zip_file.open(info) as entry:
             try:
                 return etree.parse(entry).getroot()
@@ -88,11 +93,10 @@ class EPub(BookFile):
                         return etree.fromstring(data.decode(encoding))
                     except Exception:
                         continue
-                raise EPub.StructureException(
-                    "'" + info.filename + "' is not a valid XML"
-                )
+                filename = info.filename if isinstance(info, zipfile.ZipInfo) else info
+                raise EPub.StructureException("'" + filename + "' is not a valid XML")
 
-    def __extract_metainfo(self):
+    def __extract_metainfo(self) -> None:
         root_info = self.__get_root_info()
         self.root_filename = root_info.filename
         tree = self._etree_from_entry(root_info)
@@ -123,7 +127,9 @@ class EPub(BookFile):
         cover_finder = EPubCoverFinder(self)
         self.cover_fileinfos = cover_finder.find_cover(tree, prefix)
 
-    def __get_root_info(self):
+    def __get_root_info(self) -> zipfile.ZipInfo:
+        if self._zip_file is None:
+            raise EPub.StructureException("Zip file is not open")
         try:
             container_info = self._zip_file.getinfo(Entry.CONTAINER)
         except Exception:
@@ -153,17 +159,19 @@ class EPub(BookFile):
 
         raise EPub.StructureException("OPF entry not found")
 
-    def get_encryption_info(self):
+    def get_encryption_info(self) -> dict[str, str | list[str] | None]:
         handler = EPubEncryptionHandler(self)
         return handler.get_encryption_info()
 
-    def __save_tree(self, zip_file, filename, tree, working_dir):
+    def __save_tree(
+        self, zip_file: zipfile.ZipFile, filename: str, tree: Any, working_dir: str
+    ) -> None:
         path = os.path.join(working_dir, filename)
         with open(path, "w") as pfile:
             tree.write(pfile, pretty_print=True)
         zip_file.write(path, arcname=filename)
 
-    def __create_rights_file(self, zip_file, working_dir):
+    def __create_rights_file(self, zip_file: zipfile.ZipFile, working_dir: str) -> None:
         namespaces = {None: Namespace.MARLIN}
         root = etree.Element(etree.QName(Namespace.MARLIN, "Marlin"), nsmap=namespaces)
         tree = etree.ElementTree(root)
@@ -177,11 +185,12 @@ class EPub(BookFile):
         ).text = self.TOKEN_URL
         self.__save_tree(zip_file, Entry.RIGHTS, tree, working_dir)
 
-    def extract_cover_internal(self, working_dir):
+    def extract_cover_internal(self, working_dir: str) -> tuple[str | None, bool]:
         if len(self.cover_fileinfos) == 0:
             return (None, False)
         name = self.cover_fileinfos[-1]["filename"]
-        self._zip_file.extract(name, path=working_dir)
+        if self._zip_file:
+            self._zip_file.extract(name, path=working_dir)
         split = [part for part in name.split("/") if part]
         if len(split) > 1:
             shutil.move(
@@ -190,14 +199,16 @@ class EPub(BookFile):
             shutil.rmtree(os.path.join(working_dir, split[0]))
         return (split[-1] if len(split) > 0 else None, False)
 
-    def extract_cover_memory(self):
+    def extract_cover_memory(self) -> bytes | None:
         if len(self.cover_fileinfos) == 0:
             return None
         name = self.cover_fileinfos[-1]["filename"]
-        content = self._zip_file.open(name).read()
-        return content
+        if self._zip_file:
+            content = self._zip_file.open(name).read()
+            return content
+        return None
 
-    def parse_book_data(self, file, original_filename) -> BookFile:
+    def parse_book_data(self, file: BinaryIO, original_filename: str) -> BookFile:
         book_file = BookFile(file, original_filename, Mimetype.EPUB)
         book_file.title = self.title or original_filename
         book_file.description = self.description

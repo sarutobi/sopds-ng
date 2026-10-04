@@ -13,6 +13,7 @@ import zipfile
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from io import BytesIO
+from typing import BinaryIO
 from xml.parsers.expat import ParserCreate
 
 from .format.mimetype import Mimetype
@@ -34,7 +35,7 @@ class MimetypeValidator(ABC):
         self.mimetype = mimetype
 
     @abstractmethod
-    def is_valid(self, content) -> bool:
+    def is_valid(self, content: BinaryIO) -> bool:
         """Проверяет, соответствует ли содержимое файла данному MIME-типу.
 
         Args:
@@ -57,10 +58,10 @@ class MobiContentValidator(MimetypeValidator):
     Работает как с BytesIO, так и с raw fd (read/seek, не getvalue).
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(Mimetype.MOBI)
 
-    def is_valid(self, content) -> bool:
+    def is_valid(self, content: BinaryIO) -> bool:
         content.seek(0)
         try:
             raw = content.read(68)
@@ -74,10 +75,10 @@ class MobiContentValidator(MimetypeValidator):
 class EPUBContentValidator(MimetypeValidator):
     """Проверка EPUB: ZIP → чтение entry mimetype, сравнение строки."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(Mimetype.EPUB)
 
-    def is_valid(self, content) -> bool:
+    def is_valid(self, content: BinaryIO) -> bool:
         content.seek(0)
         try:
             with zipfile.ZipFile(content) as zf:
@@ -95,10 +96,10 @@ class FB2ContentValidator(MimetypeValidator):
     Использует xml.parsers.expat.ParserCreate для поиска корневого тега.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(Mimetype.FB2)
 
-    def is_valid(self, content) -> bool:
+    def is_valid(self, content: BinaryIO) -> bool:
         content.seek(0)
         try:
             raw = content.read(4096)
@@ -114,10 +115,10 @@ class FB2ContentValidator(MimetypeValidator):
 class PDFContentValidator(MimetypeValidator):
     """Проверка PDF: первые 5 байт == '%PDF-'."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(Mimetype.PDF)
 
-    def is_valid(self, content) -> bool:
+    def is_valid(self, content: BinaryIO) -> bool:
         content.seek(0)
         try:
             raw = content.read(5)
@@ -131,10 +132,10 @@ class PDFContentValidator(MimetypeValidator):
 class DJVUContentValidator(MimetypeValidator):
     """Проверка DJVU: FORM-заголовок с DJVU/DJVM идентификатором."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(Mimetype.DJVU)
 
-    def is_valid(self, content) -> bool:
+    def is_valid(self, content: BinaryIO) -> bool:
         content.seek(0)
         try:
             raw = content.read(12)
@@ -150,10 +151,10 @@ class DJVUContentValidator(MimetypeValidator):
 class FB2ZipContentValidator(MimetypeValidator):
     """Проверка FB2+ZIP: ZIP → извлечение → expat (первые 4 КБ)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(Mimetype.FB2_ZIP)
 
-    def is_valid(self, content) -> bool:
+    def is_valid(self, content: BinaryIO) -> bool:
         content.seek(0)
         try:
             with zipfile.ZipFile(content) as zf:
@@ -198,7 +199,7 @@ def _check_fb2_root(raw: bytes) -> bool:
     """
     root_tag: list[str | None] = [None]
 
-    def start_element(name: str, attrs: dict) -> None:
+    def start_element(name: str, attrs: dict[str, str]) -> None:
         root_tag[0] = name
         raise StopIteration()
 
@@ -251,7 +252,7 @@ def detect_by_suffix(original_filename: str) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def detect_mime_service(file, original_filename: str) -> str:
+def detect_mime_service(file: BinaryIO, original_filename: str) -> str:
     """Двухфазное определение MIME-типа файла.
 
     Phase 1 (suffix):  определение по суффиксу имени файла.

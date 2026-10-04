@@ -2,18 +2,20 @@
 Анализ шифрования EPUB.
 """
 
+from typing import Any
+
 from lxml import etree
 
 from book_tools.format.epub.constants import Entry, Namespace
 
 
 class EPubEncryptionHandler:
-    def __init__(self, epub):
+    def __init__(self, epub: Any) -> None:
         self.epub = epub
 
-    def get_encryption_info(self):
-        UNKNOWN_ENCRYPTION = {"method": "unknown"}
-        algo = None
+    def get_encryption_info(self) -> dict[str, str | list[str] | None]:
+        UNKNOWN_ENCRYPTION: dict[str, str | list[str] | None] = {"method": "unknown"}
+        algo: str | None = None
 
         if self._contains_entry(Entry.ENCRYPTION):
             try:
@@ -26,7 +28,9 @@ class EPubEncryptionHandler:
                     "/c:encryption/e:EncryptedData/e:EncryptionMethod",
                     namespaces=namespaces,
                 )
-                algorithms = list(set([r.get("Algorithm") for r in res]))
+                algorithms = list(
+                    set([r.get("Algorithm") for r in res if r.get("Algorithm")])
+                )
                 if len(algorithms) != 1:
                     return {"method": "multi", "ids": algorithms}
                 if algorithms[0] == self.epub.ALGORITHM_EMBEDDING:
@@ -68,15 +72,15 @@ class EPubEncryptionHandler:
 
         return {}
 
-    def _contains_entry(self, name):
+    def _contains_entry(self, name: str) -> bool:
         try:
             self.epub._zip_file.getinfo(name)
             return True
         except KeyError:
             return False
 
-    def _extract_content_ids(self):
-        content_ids = set()
+    def _extract_content_ids(self) -> list[str]:
+        content_ids: set[str] = set()
         try:
             tree = self.epub._etree_from_entry(Entry.ENCRYPTION)
             ns = {
@@ -88,7 +92,7 @@ class EPubEncryptionHandler:
                 "/c:encryption/e:EncryptedData/d:KeyInfo/d:KeyName", namespaces=ns
             )
             for node in res:
-                key_name = node.text  # Fixed index error here (res[0] -> node)
+                key_name = node.text
                 if key_name and key_name.startswith(self.epub.CONTENT_ID_PREFIX):
                     content_ids.add(key_name[len(self.epub.CONTENT_ID_PREFIX) :])
         except Exception:

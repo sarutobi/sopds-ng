@@ -23,7 +23,7 @@ class FB2StructureException(ParserError):
 class EpubStructureException(ParserError):
     """Исключение при парсинге epub."""
 
-    def __init__(self, message):
+    def __init__(self, message: str | Exception) -> None:
         super().__init__(f"ePub verification failed: {message}")
 
 

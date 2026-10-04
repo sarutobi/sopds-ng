@@ -3,7 +3,7 @@ import logging
 import zipfile
 from datetime import date
 from io import BytesIO
-from typing import Callable, Optional
+from typing import Any, BinaryIO, Callable, Optional
 
 from .dto import Author, BookMetadata, Cover, Series
 from .exceptions import (
@@ -26,15 +26,17 @@ logger = logging.getLogger(__name__)
 # Parser registry
 # ---------------------------------------------------------------------------
 
-_parsers: dict[str, Callable] = {}
+_parsers: dict[str, Callable[[BinaryIO, str], BookMetadata]] = {}
 
 
-def register_parser(mimetype: str, parser_fn: Callable) -> None:
+def register_parser(
+    mimetype: str, parser_fn: Callable[[BinaryIO, str], BookMetadata]
+) -> None:
     """Register a parser function for the given mimetype."""
     _parsers[mimetype] = parser_fn
 
 
-def get_parser(mimetype: str) -> Callable:
+def get_parser(mimetype: str) -> Callable[[BinaryIO, str], BookMetadata]:
     """Look up a parser by mimetype.
 
     Raises UnsupportedFormatError if no parser is registered.
@@ -52,7 +54,7 @@ def get_parser(mimetype: str) -> Callable:
 
 def book_metadata_to_bookfile(
     meta: BookMetadata,
-    file,
+    file: BinaryIO,
     original_filename: str,
     mimetype: str,
 ) -> BookFile:
@@ -101,7 +103,7 @@ def book_metadata_to_bookfile(
 # ---------------------------------------------------------------------------
 
 
-def parse_fb2(file_obj, original_filename: str) -> BookMetadata:
+def parse_fb2(file_obj: BinaryIO, original_filename: str) -> BookMetadata:
     """Parse FB2 file and return BookMetadata."""
     try:
         parser = FB2(file_obj)
@@ -114,7 +116,7 @@ def parse_fb2(file_obj, original_filename: str) -> BookMetadata:
 
 def _fb2_parser_to_metadata(
     parser: FB2,
-    file_obj,
+    file_obj: BinaryIO,
     original_filename: str,
 ) -> BookMetadata:
     """Convert an FB2 parser result to BookMetadata."""
@@ -161,7 +163,7 @@ def _fb2_parser_to_metadata(
     )
 
 
-def parse_fb2_zip(file_obj, original_filename: str) -> BookMetadata:
+def parse_fb2_zip(file_obj: BinaryIO, original_filename: str) -> BookMetadata:
     """Parse FB2 file stored inside a ZIP archive."""
     with zipfile.ZipFile(file_obj, "r") as z:
         if len(z.infolist()) != 1:
@@ -173,7 +175,7 @@ def parse_fb2_zip(file_obj, original_filename: str) -> BookMetadata:
     return parse_fb2(content, fn)
 
 
-def parse_epub(file_obj, original_filename: str) -> BookMetadata:
+def parse_epub(file_obj: BinaryIO, original_filename: str) -> BookMetadata:
     """Parse EPUB file and return BookMetadata (uses legacy EPub parser)."""
     try:
         with EPubOld(file_obj, original_filename) as epub:
@@ -215,7 +217,7 @@ def parse_epub(file_obj, original_filename: str) -> BookMetadata:
         raise EpubStructureException(str(e)) from e
 
 
-def parse_mobi(file_obj, original_filename: str) -> BookMetadata:
+def parse_mobi(file_obj: BinaryIO, original_filename: str) -> BookMetadata:
     """Parse MOBI file and return BookMetadata via BookMobi."""
     try:
         bm = BookMobi(file_obj)
@@ -260,7 +262,7 @@ def parse_mobi(file_obj, original_filename: str) -> BookMetadata:
     )
 
 
-def parse_dummy(file_obj, original_filename: str) -> BookMetadata:
+def parse_dummy(file_obj: BinaryIO, original_filename: str) -> BookMetadata:
     """Return minimal BookMetadata for unsupported formats."""
     return BookMetadata(
         title=original_filename,
