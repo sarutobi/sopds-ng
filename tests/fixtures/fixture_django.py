@@ -66,7 +66,10 @@ def load_db_data(django_db_setup, django_db_blocker):
     :yields: None
     """
     with django_db_blocker.unblock():
-        call_command("loaddata", "testdb.json")
+        call_command(
+            "loaddata",
+            "/home/valera/Workbench/SOPDS/sopds-ng/tests/opds_catalog/fixtures/testdb.json",
+        )
 
 
 @pytest.fixture

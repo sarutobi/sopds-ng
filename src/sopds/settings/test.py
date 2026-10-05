@@ -65,3 +65,6 @@ LOGGING = {
         },
     },
 }
+
+# Пути к фикстурам для тестов
+FIXTURE_DIRS = [os.path.join(BASE_DIR, "tests", "opds_catalog", "fixtures")]
