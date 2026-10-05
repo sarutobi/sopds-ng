@@ -29,8 +29,6 @@ class FB2Namespace(object):
 class EbookMetaParser(ABC):
     """Абстрактный класс парсера для электронной книги."""
 
-    ns_map = {"fb": FB2Namespace.FICTION_BOOK20, "l": FB2Namespace.XLINK}
-
     def __init__(self, file: BytesIO):
         self._file = file
 
@@ -118,7 +116,6 @@ class EbookMetaParser(ABC):
 class FB2(EbookMetaParser):
     """Базовый класс для извлечения метаданных из книг в формате FB2 с помощью lxml."""
 
-    # def __init__(self, file: BytesIO, original_filename: str, mimetype: str):
     def __init__(self, file: BytesIO):
         """Инициализация объекта.
 

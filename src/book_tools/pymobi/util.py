@@ -51,17 +51,3 @@ def decodeVarint(vint):
         vint >>= 8
         bitpos += 7
     return fint
-
-
-def encodeVarint(fint):
-    """backward-encoded Mobipocket variable-width integer."""
-    vint = 0
-    bitpos = 0
-    while bitpos < 32:
-        vint |= (fint & 0x7F) << bitpos
-        if fint < 127:
-            vint |= 0x80 << bitpos
-            break
-        fint >>= 7
-        bitpos += 8
-    return vint
