@@ -515,7 +515,6 @@ def LoginView(request):
             "type": "alert",
         }
         return handler403(request, args)
-    # return render(request, 'sopds_login.html', args)
 
 
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
