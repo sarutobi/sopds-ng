@@ -150,17 +150,17 @@ SEARCH_BOOK_REGISTRY: dict[str, SearchFunction] = {
 
 
 def search_book(
-    type: str, term: str, second_term: str | None = None, user=None
+    search_type: str, term: str, second_term: str | None = None, user=None
 ) -> QuerySet[Book]:
     """Формирование запроса на выборку книг (legacy API)."""
-    search_function = SEARCH_BOOK_REGISTRY.get(type)
+    search_function = SEARCH_BOOK_REGISTRY.get(search_type)
     if search_function is None:
-        raise ValueError(f"Search type '{type}' is not supported")
+        raise ValueError(f"Search type '{search_type}' is not supported")
     return search_function(catalog_config.AUTH_ENABLED, term, second_term, user)
 
 
 def search_book_with_metadata(
-    type: str, term: str, second_term: str | None = None, user=None
+    search_type: str, term: str, second_term: str | None = None, user=None
 ) -> SearchResult:
     """
     Формирование запроса на выборку книг и связанных с ним метаданных
@@ -169,29 +169,29 @@ def search_book_with_metadata(
     SOPDS_AUTH = catalog_config.AUTH_ENABLED
 
     # 1. Получаем базовый QuerySet через существующий реестр
-    books = search_book(type, term, second_term, user)
+    books = search_book(search_type, term, second_term, user)
 
     # 2. Определяем метаданные в зависимости от типа поиска
     breadcrumbs = [_("Books")]
     search_object = "title"
     is_bookshelf = False
 
-    if type in ("m", "b"):
+    if search_type in ("m", "b"):
         breadcrumbs.extend([_("Search by title"), term])
         search_object = "title"
-    elif type == "a":
+    elif search_type == "a":
         from opds_catalog.services import authors_services
 
         aname = authors_services.get_author_name(id=term)
         breadcrumbs.extend([_("Search by author"), aname])
         search_object = "author"
-    elif type == "s":
+    elif search_type == "s":
         from opds_catalog.services import series_services
 
         ser = series_services.get_series_name(term)
         breadcrumbs.extend([_("Search by series"), ser])
         search_object = "series"
-    elif type == "g":
+    elif search_type == "g":
         try:
             from opds_catalog.models import Genre
 
@@ -200,11 +200,11 @@ def search_book_with_metadata(
         except (Genre.DoesNotExist, ValueError):
             breadcrumbs.append(_("Search by genre"))
         search_object = "genre"
-    elif type == "u":
+    elif search_type == "u":
         breadcrumbs.extend([_("Bookshelf"), user.username if user else ""])
         search_object = "title"
         is_bookshelf = True
-    elif type == "d":
+    elif search_type == "d":
         try:
             book_id = to_int(term)
             mbook = Book.objects.only("title").get(id=book_id)
@@ -212,7 +212,7 @@ def search_book_with_metadata(
         except (Book.DoesNotExist, ValueError):
             breadcrumbs.append(_("Doubles"))
         search_object = "title"
-    elif type == "i":
+    elif search_type == "i":
         try:
             book_id = to_int(term)
             book = Book.objects.filter(id=book_id).first()
