@@ -66,7 +66,6 @@ class BookFile:
             return NotImplemented
 
         return (
-            # self.file.getvalue() == other.file.getvalue()
             self.mimetype == other.mimetype
             and self.original_filename == other.original_filename
             and self.title == other.title
@@ -78,7 +77,6 @@ class BookFile:
             and (sorted(self.tags) == sorted(other.tags))
             and self.series_info == other.series_info
             and self.language_code == other.language_code
-            # and (sorted(self.issues) == sorted(other.issues))
             and self.docdate == other.docdate
         )
 

@@ -10,9 +10,6 @@ import sys
 from collections import OrderedDict
 
 from book_tools.pymobi import compression
-
-# except:
-# from ordereddict import OrderedDict
 from book_tools.pymobi.util import decodeVarint, hexdump, toByte, toStr
 
 logger = logging.getLogger(__name__)

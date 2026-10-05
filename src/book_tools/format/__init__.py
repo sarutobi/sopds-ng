@@ -1,4 +1,3 @@
-# import magic
 import logging
 import os
 import zipfile
@@ -11,8 +10,6 @@ from book_tools.format.mimetype import Mimetype
 from book_tools.format.util import list_zip_file_infos
 from book_tools.mime_detector import detect_mime_service
 from book_tools.services import create_bookfile_service
-
-# from opds_catalog.config import catalog_config
 
 logger = logging.getLogger(__name__)
 
