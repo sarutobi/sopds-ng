@@ -730,7 +730,7 @@ class SearchBooksFeed(SOPDSBaseFeed):
         }
 
     def get_link_kwargs(self, obj):
-        """Дополнительные праметры ссылки."""
+        """Дополнительные параметры ссылки."""
         kwargs = {"searchtype": obj["searchtype"], "searchterms": obj["searchterms"]}
         if obj.get("searchterms0") is not None:
             kwargs["searchterms0"] = obj["searchterms0"]
@@ -792,7 +792,7 @@ class SearchBooksFeed(SOPDSBaseFeed):
         return self.book_enclosure(item)
 
     def item_extra_kwargs(self, item):
-        """Дополнительные праметры элемента фида."""
+        """Дополнительные параметры элемента фида."""
         return {
             "authors": item["authors"],
             "genres": item["genres"],
