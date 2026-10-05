@@ -23,7 +23,6 @@ class opdsScanner:
             self.logger = logger
         else:
             self.logger = logging.getLogger("scanner")
-            # self.logger.setLevel(logging.INFO)
         self.init_stats()
 
     def init_stats(self) -> None:
@@ -120,11 +119,6 @@ class opdsScanner:
                     self.logger.info("Process regular file {file}")
                     file_size = os.path.getsize(file)
                     self.processfile(name, full_path, file, None, 0, file_size)
-
-        # if catalog_config.DELETE_LOGICAL:
-        #    self.books_deleted=opdsdb.books_del_logical()
-        # else:
-        #    self.books_deleted=opdsdb.books_del_phisical()
 
         self.books_deleted = scanner.books_del_phisical()
 

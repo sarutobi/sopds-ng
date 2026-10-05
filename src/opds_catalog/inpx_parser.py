@@ -89,7 +89,6 @@ class Inpx:
 
         # здесь читаем список архивов в коллекции, если указано явно
         # эту информацию надо как-то использовать, чтобы протестировать наличие zip
-        # if 'archives.info' in filelist:
         #    self.inpx_archive = True
         #    self.inpx_arch_fnames = finpx.open('archives.info').readlines()
 

@@ -17,7 +17,6 @@ from opds_catalog.config import catalog_config
 #
 #     # header = "HTTP_AUTHORIZATION"
 #     #
-#     # def unauthed(self):
 #         response = HttpResponse(
 #             """<html><title>Auth required</title><body>
 #                                 <h1>Authorization Required</h1></body></html>""",
