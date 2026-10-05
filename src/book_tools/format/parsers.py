@@ -137,7 +137,7 @@ class FB2(EbookMetaParser):
         """
         # Инициализация полей объекта
         super().__init__(file)
-        self._etree: Optional[etree._ElementTree] = None
+        self._etree: etree._ElementTree | None = None
         self._namespaces: dict[str, str] = {}
         self._log = logging.getLogger(str(self.__class__))
         self._metadata_cache: dict[str, Any] = {}
