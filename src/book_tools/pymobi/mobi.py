@@ -167,7 +167,7 @@ class BookMobi(object):
     #. srcs record
     """
 
-    palmdb_format = [
+    palmdb_format = (
         ("name", "32s", 0),
         ("attributes", ">H", 32),
         ("version", ">H", 34),
@@ -183,8 +183,8 @@ class BookMobi(object):
         ("nextRecordListID", ">L", 72),
         ("numberOfRecords", ">H", 76),
         # recordInfoList = 8 * numberOfRecords ...
-    ]
-    palmdoc_format = [
+    )
+    palmdoc_format = (
         ("compression", ">H", 0),
         ("unused", ">H", 2),
         ("textLength", ">L", 4),
@@ -192,8 +192,8 @@ class BookMobi(object):
         ("recordSize", ">L", 10),
         ("currentPosition", ">L", 12),
         ("encryptionType", ">H", 12),
-    ]
-    mobi_format = [
+    )
+    mobi_format = (
         ("identifier", "4s", 16),
         ("headerLength", ">L", 20),
         ("mobiType", ">L", 24),
@@ -248,14 +248,7 @@ class BookMobi(object):
         ("indxRecordOffset", ">L", 244),
         ("unknown248", ">L", 248),
         ("unknown252", ">L", 252),
-    ]
-    header: OrderedDict = OrderedDict()
-    records: OrderedDict = OrderedDict()
-    palmdoc: OrderedDict = OrderedDict()
-    mobi: OrderedDict = OrderedDict()
-    mobi_exth: OrderedDict = OrderedDict()
-    book: OrderedDict = OrderedDict()
-    compression = None
+    )
 
     def __init__(self, file):
         if isinstance(file, str):
@@ -265,6 +258,12 @@ class BookMobi(object):
 
         self.f = f
         self.f.seek(0, 0)
+        self.header = OrderedDict()
+        self.records = OrderedDict()
+        self.palmdoc = OrderedDict()
+        self.mobi = OrderedDict()
+        self.mobi_exth = OrderedDict()
+        self.book = OrderedDict()
         # palm database header
         header = f.read(78)
         for key, u_fmt, offset in self.palmdb_format:
