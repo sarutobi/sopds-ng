@@ -18,7 +18,7 @@ from PIL import Image
 from book_tools.format import create_bookfile
 from book_tools.format.mimetype import Mimetype
 from book_tools.format.parsers import FB2
-from opds_catalog import constants, settings, utils
+from opds_catalog import constants, utils
 from opds_catalog.config import catalog_config
 from opds_catalog.decorators import sopds_auth_validate
 from opds_catalog.models import Book, bookshelf
@@ -230,11 +230,11 @@ def ConvertFB2(request, book_id, convert_type):
     try:
         if tmp_fb2_path:
             os.remove(tmp_fb2_path)
-    except:
+    except Exception:
         pass
     try:
         os.remove(tmp_conv_path)
-    except:
+    except Exception:
         pass
 
     return response

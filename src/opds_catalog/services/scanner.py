@@ -4,9 +4,7 @@ import logging
 import os
 from typing import Any
 
-from django.db import transaction
-
-from opds_catalog.constants import CAT_INP, CAT_INPX, CAT_NORMAL, CAT_ZIP
+from opds_catalog.constants import CAT_NORMAL
 from opds_catalog.models import (
     SIZE_AUTHOR_NAME,
     SIZE_BOOK_ANNOTATION,
@@ -21,12 +19,10 @@ from opds_catalog.models import (
     SIZE_GENRE,
     SIZE_GENRE_SUBSECTION,
     SIZE_SERIES,
-    SOPDS_LANG_CODE_OTHER,
     Author,
     Book,
     Catalog,
     Genre,
-    LangCodes,
     Series,
     bauthor,
     bgenre,

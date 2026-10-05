@@ -102,16 +102,11 @@ quote-style = "double"
 [tool.ruff.lint]
 select = ["F", "E", "I"]
 ignore = [
-    "E722",
     "E501",
     "E741",
     "E712",
     "E711",
-    "F401",
-    "F841",
     "F405",
-    "F821",
-    "F403",
 ]
 
 [tool.ruff.lint.per-file-ignores]

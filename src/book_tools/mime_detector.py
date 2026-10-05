@@ -11,8 +11,6 @@ import logging
 import os
 import zipfile
 from abc import ABC, abstractmethod
-from contextlib import suppress
-from io import BytesIO
 from typing import BinaryIO
 from xml.parsers.expat import ParserCreate
 

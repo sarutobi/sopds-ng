@@ -50,8 +50,6 @@ class TestLoginRateLimit:
 
     def test_different_ips_have_different_limits(self, rf, client, django_user):
         """Проверка, что лимиты считаются отдельно для разных IP."""
-        url = reverse("web:login")
-
         # Симулируем запросы с разных IP через изменение META
         # К сожалению, стандартный Django Client не позволяет легко менять IP в одном сеансе,
         # поэтому мы используем ручное создание запроса через RequestFactory или

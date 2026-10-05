@@ -1,17 +1,10 @@
 import logging
 import os
 import re
-import signal
 import sys
 
 from django.conf import settings as main_settings
-from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db import connection, connections
-from django.db.models import Q
-from django.utils import translation
-from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import InvalidToken
@@ -23,9 +16,8 @@ from telegram.ext import (
     filters,
 )
 
-from opds_catalog import dl, settings
+from opds_catalog import settings
 from opds_catalog.config import catalog_config
-from opds_catalog.models import Book
 from sopds_telebot.handlers.books import (
     handle_download_books,
     handle_get_book_file,

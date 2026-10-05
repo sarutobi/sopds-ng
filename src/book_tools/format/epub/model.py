@@ -4,9 +4,7 @@
 
 import os
 import shutil
-import urllib.parse
 import zipfile
-from tempfile import mkstemp
 from typing import Any, BinaryIO
 
 from lxml import etree
@@ -18,7 +16,6 @@ from book_tools.format.epub.cover import EPubCoverFinder
 from book_tools.format.epub.encryption import EPubEncryptionHandler
 from book_tools.format.epub.metadata import EPubMetadataParser
 from book_tools.format.mimetype import Mimetype
-from book_tools.format.util import list_zip_file_infos, normalize_string
 
 
 class EPub(BookFile):

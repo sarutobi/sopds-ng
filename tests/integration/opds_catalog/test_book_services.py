@@ -74,7 +74,7 @@ class TestBookServices:
 
     def test_find_books_by_template_with_lang_code(self, catalog):
         """Шаблон книг с фильтром по языку."""
-        book = Book.objects.create(
+        Book.objects.create(
             filename="test.fb2",
             path=".",
             format="fb2",

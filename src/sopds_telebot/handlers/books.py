@@ -2,10 +2,8 @@ import logging
 import re
 
 from django.utils.translation import gettext as _
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from opds_catalog import dl
-from opds_catalog.config import catalog_config
 from opds_catalog.models import Book
 from opds_catalog.services.book_services import filter_books
 from sopds_telebot.services.pager import BookPager
@@ -93,7 +91,7 @@ def handle_download_books(bot, update, command_ctx):
         try:
             book_id = int(book_id_set[0])
             book = Book.objects.get(id=book_id)
-        except:
+        except Exception:
             book = None
     else:
         book = None
@@ -130,7 +128,7 @@ def handle_get_book_file(bot, update, command_ctx):
         try:
             book_id = int(book_id_set[0])
             book = Book.objects.get(id=book_id)
-        except:
+        except Exception:
             book = None
     else:
         book = None

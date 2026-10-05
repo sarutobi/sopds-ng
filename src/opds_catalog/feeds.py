@@ -741,7 +741,6 @@ class SearchBooksFeed(SOPDSBaseFeed):
         return reverse("opds_catalog:searchbooks", kwargs=self.get_link_kwargs(obj))
 
     def feed_extra_kwargs(self, obj):
-        kwargs = self.get_link_kwargs(obj)
         prev_url, next_url = self.get_prev_next_urls("opds_catalog:searchbooks", obj)
         return {
             "searchTerm_url": "%s%s"

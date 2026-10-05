@@ -1,11 +1,10 @@
 # Сервисы для работы с электронными книгами
 import logging
 import zipfile
-from datetime import date
 from io import BytesIO
-from typing import Any, BinaryIO, Callable, Optional
+from typing import BinaryIO, Callable, Optional
 
-from .dto import Author, BookMetadata, Cover, Series
+from .dto import Author, BookMetadata, Series
 from .exceptions import (
     EpubStructureException,
     FB2StructureException,
@@ -16,7 +15,7 @@ from .exceptions import (
 from .format.bookfile import BookFile
 from .format.epub import EPub as EPubOld
 from .format.mimetype import Mimetype
-from .format.parsers import FB2, EpubParser
+from .format.parsers import FB2
 from .mime_detector import detect_mime_service
 from .pymobi.mobi import BookMobi
 

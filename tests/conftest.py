@@ -182,8 +182,7 @@ def empty_zip():
     :rtype: io.BytesIO
     """
     zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w") as zf:
-        # Не добавляем файлы
+    with zipfile.ZipFile(zip_buffer, "w") as _:
         pass
     zip_buffer.seek(0)
     return zip_buffer

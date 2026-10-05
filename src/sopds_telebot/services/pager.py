@@ -1,9 +1,6 @@
 import logging
 from typing import Any, Dict, List, Tuple
 
-from opds_catalog.config import catalog_config
-from opds_catalog.models import Book
-
 logger = logging.getLogger(__name__)
 
 

@@ -13,7 +13,7 @@ from book_tools.format import create_bookfile
 from book_tools.format.util import strip_symbols
 from opds_catalog import inpx_parser
 from opds_catalog.config import catalog_config
-from opds_catalog.constants import CAT_INP, CAT_INPX, CAT_NORMAL, CAT_ZIP
+from opds_catalog.constants import CAT_INP, CAT_INPX, CAT_ZIP
 from opds_catalog.services import scanner
 
 

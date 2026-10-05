@@ -2,13 +2,11 @@ import logging
 
 from django.contrib.auth import REDIRECT_FIELD_NAME, authenticate, login, logout
 from django.contrib.auth.decorators import user_passes_test
-from django.core.cache import cache
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotAllowed
+from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import redirect, render
 from django.template.context_processors import csrf
 from django.urls import reverse, reverse_lazy
-from django.utils.html import strip_tags
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
@@ -19,7 +17,6 @@ from opds_catalog.models import (
     Author,
     Book,
     Catalog,
-    Genre,
     Series,
     bookshelf,
     lang_menu,
@@ -33,7 +30,7 @@ from opds_catalog.services import (
 )
 from opds_catalog.services.catalog_services import DUMMY_CATALOG
 from opds_catalog.services.pagination_utils import paginator_to_dict
-from opds_catalog.utils import get_lang_name, to_int
+from opds_catalog.utils import to_int
 from sopds_web_backend.services import auth_services
 
 BREADCRUMBS = {

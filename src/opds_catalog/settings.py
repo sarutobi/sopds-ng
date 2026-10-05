@@ -2,10 +2,8 @@ import logging
 
 # from opds_catalog.config import catalog_config
 from constance.signals import config_updated
-from django.conf import settings
 
 # import os
-from django.db.backends.signals import connection_created
 from django.dispatch import receiver
 from django.utils import translation
 

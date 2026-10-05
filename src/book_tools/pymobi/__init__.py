@@ -4,5 +4,8 @@ __version__ = "0.1.3"
 __license__ = "GPLv3"
 
 
-from book_tools.pymobi.mobi import BookMobi
-from book_tools.pymobi.util import decodeVarint, hexdump, toByte, toStr
+from book_tools.pymobi.mobi import BookMobi as BookMobi
+from book_tools.pymobi.util import decodeVarint as decodeVarint
+from book_tools.pymobi.util import hexdump as hexdump
+from book_tools.pymobi.util import toByte as toByte
+from book_tools.pymobi.util import toStr as toStr

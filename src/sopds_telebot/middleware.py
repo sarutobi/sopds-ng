@@ -1,5 +1,3 @@
-import logging
-
 from django.contrib.auth.models import User
 from django.db import connection, connections
 from django.utils import translation

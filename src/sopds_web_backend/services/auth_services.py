@@ -1,7 +1,6 @@
 """Сервисы для управления аутентификацией и защитой."""
 
 from django.core.cache import cache
-from django.utils.translation import gettext as _
 
 # Конфигурация лимитов
 LOGIN_ATTEMPTS_LIMIT = 5

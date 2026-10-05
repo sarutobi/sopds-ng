@@ -4,10 +4,8 @@ from django.db import transaction
 
 # from django.db import connection
 # from django.conf import settings as main_settings
-from opds_catalog.constants import CAT_INP, CAT_NORMAL, CAT_ZIP
 from opds_catalog.db_utils import clear_all, clear_genres, pg_optimize
 from opds_catalog.models import Counter
-from opds_catalog.services import scanner
 
 # from opds_catalog.config import catalog_config
 

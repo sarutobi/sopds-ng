@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, NamedTuple, TypeVar
+from typing import Callable, NamedTuple, TypeVar
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
@@ -166,8 +166,6 @@ def search_book_with_metadata(
     Формирование запроса на выборку книг и связанных с ним метаданных
     (хлебные крошки, объект поиска).
     """
-    SOPDS_AUTH = catalog_config.AUTH_ENABLED
-
     # 1. Получаем базовый QuerySet через существующий реестр
     books = search_book(search_type, term, second_term, user)
 

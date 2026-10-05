@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.http import JsonResponse
-from django.urls import path, re_path
+from django.urls import re_path
 from django.views.decorators.csrf import csrf_exempt
 
 from opds_catalog.models import Author, Book, Genre, Series

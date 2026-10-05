@@ -6,13 +6,12 @@ import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Any, Optional
+from typing import Any
 
 from lxml import etree
 from lxml.etree import _Element
 
 from book_tools.exceptions import FB2StructureException
-from book_tools.format.util import strip_symbols
 
 logger = logging.getLogger(__name__)
 

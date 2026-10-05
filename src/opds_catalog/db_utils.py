@@ -2,8 +2,6 @@
 
 from django.db import connection
 
-from opds_catalog.models import Book
-
 
 def pg_optimize(verbose=False):
     """Оптимизация таблиц для Postgres."""

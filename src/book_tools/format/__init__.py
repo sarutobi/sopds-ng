@@ -1,14 +1,11 @@
 import logging
 import os
-import zipfile
-from contextlib import suppress
 from io import BytesIO
-from xml import sax
 
 from book_tools.format.bookfile import BookFile
-from book_tools.format.mimetype import Mimetype
-from book_tools.format.util import list_zip_file_infos
-from book_tools.mime_detector import detect_mime_service
+from book_tools.format.mimetype import Mimetype as Mimetype
+from book_tools.format.util import list_zip_file_infos as list_zip_file_infos
+from book_tools.mime_detector import detect_mime_service as detect_mime_service
 from book_tools.services import create_bookfile_service
 
 logger = logging.getLogger(__name__)

@@ -4,8 +4,6 @@
 
 from typing import Any
 
-from lxml import etree
-
 from book_tools.format.epub.constants import Entry, Namespace
 
 

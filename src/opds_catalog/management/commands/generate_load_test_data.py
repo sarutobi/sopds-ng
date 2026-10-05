@@ -14,7 +14,6 @@ import random
 from datetime import datetime, timezone
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
 
 from opds_catalog.models import (
     Author,
@@ -22,8 +21,6 @@ from opds_catalog.models import (
     Catalog,
     Counter,
     bauthor,
-    counter_allauthors,
-    counter_allbooks,
 )
 
 FIRST_NAMES = [

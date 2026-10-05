@@ -6,7 +6,6 @@ import logging
 
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Prefetch, QuerySet
-from django.utils.html import strip_tags
 
 from opds_catalog.models import Book, Catalog, bookshelf
 from opds_catalog.services import book_services

@@ -1,5 +1,3 @@
-import os
-
 from book_tools.format.util import normalize_string
 
 

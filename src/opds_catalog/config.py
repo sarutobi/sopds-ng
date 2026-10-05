@@ -12,8 +12,6 @@
         ...
 """
 
-from typing import Any
-
 from constance import config as constance_config
 from django.conf import settings
 

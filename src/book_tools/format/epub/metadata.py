@@ -2,7 +2,6 @@
 Извлечение метаданных из OPF файла EPUB.
 """
 
-import os
 import zipfile
 from typing import Any
 

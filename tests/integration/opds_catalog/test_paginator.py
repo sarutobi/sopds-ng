@@ -75,7 +75,6 @@ class TestPaginatedBookContent:
 
     def test_single_page(self, book_with_relations):
         """Одна книга — одна страница."""
-        books = Book.objects.all()
         items, paginator = book_services.paginated_book_content(
             Book.objects.order_by("id"), 1, True
         )

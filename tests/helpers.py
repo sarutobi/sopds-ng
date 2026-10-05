@@ -203,7 +203,6 @@ def opds_root_link(feed: _ElementTree) -> bool:
 def opds_link_profile_kind(feed: _ElementTree) -> bool:
     """Ссылки каталога должны включать профиль и вид."""
     for link in feed.findall(".//{*}link"):
-        rel = link.attrib["rel"] if "rel" in link.attrib.keys() else None
         ltype = link.attrib["type"] if "type" in link.attrib.keys() else None
         if ltype is not None and "application/atom+xml" in ltype:
             if "profile=opds-catalog" not in ltype:
