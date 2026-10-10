@@ -42,7 +42,10 @@ def sopds_processor(request):
                     "readtime": row.readtime,
                     "book_id": book.id,
                     "title": book.title,
-                    "authors": list(book.authors.values()),
+                    "authors": [
+                        {"id": a.id, "full_name": a.full_name}
+                        for a in book.authors.all()
+                    ],
                 }
                 result.append(p)
             args["bookshelf"] = result
