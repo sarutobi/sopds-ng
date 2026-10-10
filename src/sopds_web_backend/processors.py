@@ -53,8 +53,7 @@ def sopds_processor(request):
     # Формируем статистику по каталогу
     stats_data = list(Counter.obj.all().values())
     stats = {d["name"]: d["value"] for d in stats_data}
-    lastscan = [d["update_time"] for d in stats_data if d["name"] == "allbooks"]
-    stats["lastscan_date"] = lastscan[0] if lastscan else None
+    stats["lastscan_date"] = Counter.objects.get_lastscan()
     args["stats"] = stats
 
     # Поиск случайной книги
