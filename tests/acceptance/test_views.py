@@ -74,6 +74,11 @@ class TestHello:
 
 @pytest.mark.django_db
 class TestLoginView:
+    def setup_method(self):
+        from django.core.cache import cache
+
+        cache.clear()
+
     def test_get(self, client, counter_with_books) -> None:
         response = client.get(reverse("web:login"))
         assert response.status_code == 200
@@ -95,6 +100,59 @@ class TestLoginView:
         django_user.save()
         response = client.post(
             reverse("web:login"), {"username": "test", "password": "secret"}
+        )
+        assert response.status_code == 403
+
+    def test_rate_limiting(self, client, counter_with_books) -> None:
+        # Превышаем лимит (по умолчанию 5)
+        for _ in range(5):
+            client.post(reverse("web:login"), {"username": "test", "password": "wrong"})
+
+        response = client.post(
+            reverse("web:login"), {"username": "test", "password": "wrong"}
+        )
+        assert response.status_code == 429
+        assert "Too many login attempts" in response.content.decode()
+
+    def test_rate_limit_reset(self, client, django_user, counter_with_books) -> None:
+        # 3 неудачных попытки
+        for _ in range(3):
+            client.post(reverse("web:login"), {"username": "test", "password": "wrong"})
+
+        # Успешный вход
+        response = client.post(
+            reverse("web:login"), {"username": "test", "password": "secret"}
+        )
+        assert response.status_code == 302
+
+        # Проверяем, что счетчик сброшен (можно сделать еще 3 неудачных попытки без блокировки)
+        for _ in range(3):
+            response = client.post(
+                reverse("web:login"), {"username": "test", "password": "wrong"}
+            )
+            assert response.status_code == 403
+
+    def test_rate_limit_forwarded_ip(self, client, counter_with_books) -> None:
+        # Имитируем запрос через прокси
+        for _ in range(5):
+            client.post(
+                reverse("web:login"),
+                {"username": "test", "password": "wrong"},
+                HTTP_X_FORWARDED_FOR="1.2.3.4",
+            )
+
+        response = client.post(
+            reverse("web:login"),
+            {"username": "test", "password": "wrong"},
+            HTTP_X_FORWARDED_FOR="1.2.3.4",
+        )
+        assert response.status_code == 429
+
+        # Проверяем, что другой IP не заблокирован
+        response = client.post(
+            reverse("web:login"),
+            {"username": "test", "password": "wrong"},
+            HTTP_X_FORWARDED_FOR="5.6.7.8",
         )
         assert response.status_code == 403
 

@@ -66,6 +66,14 @@ class SopdsConfig:
     def MAX_ITEMS(self) -> int:
         return constance_config.SOPDS_MAXITEMS
 
+    @property
+    def LOGIN_ATTEMPTS_LIMIT(self) -> int:
+        return getattr(settings, "SOPDS_LOGIN_ATTEMPTS_LIMIT", 5)
+
+    @property
+    def LOGIN_ATTEMPTS_TIMEOUT(self) -> int:
+        return getattr(settings, "SOPDS_LOGIN_ATTEMPTS_TIMEOUT", 300)
+
     # --- Пути и Файловая система ---
     @property
     def ROOT_LIB(self) -> str:

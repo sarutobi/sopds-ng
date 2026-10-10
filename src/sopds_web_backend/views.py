@@ -398,11 +398,20 @@ def LoginView(request):
         return render(request, "sopds_login.html", args)
 
     # Rate limiting
-    ip = request.META.get("REMOTE_ADDR", "unknown")
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(",")[0].strip()
+    else:
+        ip = request.META.get("REMOTE_ADDR", "unknown")
+
     if auth_services.is_rate_limited(ip):
-        return HttpResponse(
-            _("Too many login attempts. Please try again later."), status=429
-        )
+        args["system_message"] = {
+            "text": _("Too many login attempts. Please try again later."),
+            "type": "alert",
+        }
+        response = render(request, "sopds_login.html", args)
+        response.status_code = 429
+        return response
 
     next_url = request.GET.get("next", reverse("web:main"))
 

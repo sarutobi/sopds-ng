@@ -2,9 +2,7 @@
 
 from django.core.cache import cache
 
-# Конфигурация лимитов
-LOGIN_ATTEMPTS_LIMIT = 5
-LOGIN_ATTEMPTS_TIMEOUT = 300  # 5 минут
+from opds_catalog.config import catalog_config
 
 
 def get_login_attempts_key(ip: str) -> str:
@@ -15,14 +13,14 @@ def get_login_attempts_key(ip: str) -> str:
 def is_rate_limited(ip: str) -> bool:
     """Проверяет, превышен ли лимит попыток входа для данного IP."""
     attempts = cache.get(get_login_attempts_key(ip), 0)
-    return attempts >= LOGIN_ATTEMPTS_LIMIT
+    return attempts >= catalog_config.LOGIN_ATTEMPTS_LIMIT
 
 
 def record_failed_attempt(ip: str) -> None:
     """Увеличивает счетчик неудачных попыток входа."""
     key = get_login_attempts_key(ip)
     attempts = cache.get(key, 0)
-    cache.set(key, attempts + 1, LOGIN_ATTEMPTS_TIMEOUT)
+    cache.set(key, attempts + 1, catalog_config.LOGIN_ATTEMPTS_TIMEOUT)
 
 
 def reset_attempts(ip: str) -> None:
