@@ -31,7 +31,7 @@ from opds_catalog.services import (
 from opds_catalog.services.catalog_services import DUMMY_CATALOG
 from opds_catalog.services.pagination_utils import paginator_to_dict
 from opds_catalog.utils import to_int
-from sopds_web_backend.services import auth_services
+from sopds_web_backend.services import auth_services, book_web_services
 
 BREADCRUMBS = {
     "m": [_("Books"), _("Search by title")],
@@ -80,54 +80,11 @@ def search_book_by_title_match(args):
 @sopds_login(url="web:login")
 def SearchBooksView(request):
     """Диспетчер для обработки параметров запроса книг."""
-    SOPDS_AUTH = catalog_config.AUTH_ENABLED
     args = {}
     args.update(csrf(request))
     if request.GET:
         args.update(_extract_input_parameters(request))
-
-        try:
-            search_res = book_services.search_book_with_metadata(
-                args["searchtype"],
-                args["searchterms"],
-                args["searchterms0"],
-                request.user,
-            )
-        except ValueError:
-            search_res = book_services.SearchResult(
-                queryset=Book.objects.none(),
-                breadcrumbs=[_("Books")],
-                search_object="title",
-            )
-
-        books = search_res.queryset
-        args["breadcrumbs"] = search_res.breadcrumbs
-        args["searchobject"] = search_res.search_object
-        args["isbookshelf"] = 1 if search_res.is_bookshelf else 0
-
-        page_num = to_int(args.get("page_num"), 1)
-        if page_num < 1:
-            page_num = 1
-        items, op = book_services.paginated_book_content(
-            books,
-            page_num,
-            search_doubles=(args["searchtype"] != "d"),
-            user=request.user,
-            auth_enabled=SOPDS_AUTH,
-        )
-
-        args["paginator"] = op
-        args["searchterms"] = args["searchterms"]
-        args["searchtype"] = args["searchtype"]
-        args["books"] = items
-        args["current"] = "search"
-        args["cache_id"] = "%s:%s:%s" % (
-            args["searchterms"],
-            args["searchtype"],
-            op["number"],
-        )
-
-        args["cache_t"] = 0 if search_res.is_bookshelf else catalog_config.CACHE_TIME
+        args.update(book_web_services.get_search_books_context(request, args))
 
     return render(request, "sopds_books.html", args)
 
