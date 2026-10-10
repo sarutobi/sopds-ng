@@ -7,12 +7,6 @@ SOPDS_ROOT="${SOPDS_ROOT:-/app}"
 DATA_ROOT="${DATA_ROOT:-$SOPDS_ROOT/data}"
 SECRET_KEY_FILE="${SECRET_KEY_FILE:-$DATA_ROOT/secret_key.txt}"
 
-# Проверка обязательных переменных
-if [ -z "${SOPDS_DB_PASSWORD}" ]; then
-    echo "FATAL: SOPDS_DB_PASSWORD не задан. Укажи в .env" >&2
-    exit 1
-fi
-
 mkdir -p "$DATA_ROOT/log"
 
 # Create key if not exists
