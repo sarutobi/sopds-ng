@@ -3,6 +3,21 @@
 from django.db import connection
 
 
+def ensure_pg_trgm_index():
+    """Установка расширения pg_trgm и создание GIN-индекса по названию книги.
+
+    Используется для ускорения поиска подстрок (ILIKE '%...%') по полю title.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute("select count(*) from pg_extension where extname='pg_trgm'")
+        row = cursor.fetchone()
+        if row and row[0] == 0:
+            cursor.execute("create extension pg_trgm")
+            cursor.execute(
+                "create index concurrently opds_catalog_book_title_gin_idx on opds_catalog_book using gin (title gin_trgm_ops)"
+            )
+
+
 def pg_optimize(verbose=False):
     """Оптимизация таблиц для Postgres."""
     if connection.vendor != "postgresql":
@@ -13,14 +28,7 @@ def pg_optimize(verbose=False):
     print("Start PostgreSql tables optimization...")
     with connection.cursor() as cursor:
         cursor.execute("alter table opds_catalog_book SET ( fillfactor = 100)")
-        cursor.execute("VACUUM FULL opds_catalog_book")
-        cursor.execute("select count(*) from pg_extension where extname='pg_trgm'")
-        row = cursor.fetchone()
-        if row and row[0] == 0:
-            cursor.execute("create extension pg_trgm")
-            cursor.execute(
-                "create index concurrently opds_catalog_book_title_gin_idx on opds_catalog_book using gin (title gin_trgm_ops)"
-            )
+    ensure_pg_trgm_index()
     print("PostgreSql tables internal structure optimized...")
 
 
