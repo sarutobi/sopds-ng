@@ -83,7 +83,7 @@ python -c "from django.core.management.utils import get_random_secret_key; print
 
 О структуре `SOPDS_ROOT`:
 
-- `data/.env` — конфигурация django-environ (читается приложением из `$SOPDS_ROOT/data/.env`, в Docker — `/app/data/.env`)
+- `data/.env` — конфигурация django-environ (читается приложением из `$SOPDS_ROOT/data/.env`, в Docker — `/app/data/.env`). Важно: значения `_FILE`-переменных (например, `SECRET_KEY_FILE`) открываются как пути — указывайте **абсолютные** пути (в Docker: `/app/data/secret_key.txt`, `/app/version.txt`)
 - `data/secret_key.txt` — секретный ключ Django (генерируется автоматически при запуске)
 - `data/db.sqlite3` — SQLite база данных (при `SOPDS_DB_ENGINE=sqlite`)
 - `data/log/` — файлы логирования
@@ -335,7 +335,7 @@ uv run python src/manage.py runserver 0.0.0.0:8000
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
 | `SECRET_KEY` | — | Секретный ключ Django (обязательно). Сгенерировать: `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"` |
-| `SECRET_KEY_FILE` | `$DATA_ROOT/secret_key.txt` | Путь к файлу с секретным ключом (используется FileAwareEnv). `$DATA_ROOT` = `$SOPDS_ROOT/data` |
+| `SECRET_KEY_FILE` | `$DATA_ROOT/secret_key.txt` | Путь к файлу с секретным ключом (используется FileAwareEnv). `$DATA_ROOT` = `$SOPDS_ROOT/data`. **Только абсолютный путь**: относительный путь открывается от рабочего каталога процесса и в Docker (`/app`) не находится. В Docker указывайте `/app/data/secret_key.txt` |
 | `DEBUG` | `False` | Режим отладки. В production всегда `False` |
 | `ALLOWED_HOSTS` | `.localhost, 127.0.0.1` | Список разрешённых доменов (через запятую) |
 | `DJANGO_SETTINGS_MODULE` | `sopds.settings.base` | Модуль настроек Django |
