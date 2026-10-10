@@ -45,13 +45,13 @@ class opdsScanner:
         self.logger.info(" ***** Starting sopds-scan...")
         self.logger.debug("OPTIONS SET")
         if catalog_config.ROOT_LIB is not None:
-            self.logger.debug("root_lib = %s" % catalog_config.ROOT_LIB)
+            self.logger.debug(f"root_lib = {catalog_config.ROOT_LIB}")
         if catalog_config.FB2_TO_EPUB_PATH is not None:
-            self.logger.debug("fb2toepub = %s" % catalog_config.FB2_TO_EPUB_PATH)
+            self.logger.debug(f"fb2toepub = {catalog_config.FB2_TO_EPUB_PATH}")
         if catalog_config.FB2_TO_MOBI_PATH is not None:
-            self.logger.debug("fb2tomobi = %s" % catalog_config.FB2_TO_MOBI_PATH)
+            self.logger.debug(f"fb2tomobi = {catalog_config.FB2_TO_MOBI_PATH}")
         if catalog_config.TEMP_DIR is not None:
-            self.logger.debug("temp_dir = %s" % catalog_config.TEMP_DIR)
+            self.logger.debug(f"temp_dir = {catalog_config.TEMP_DIR}")
 
     def log_stats(self) -> None:
         """Вывод в лог статистики работы сканера"""
