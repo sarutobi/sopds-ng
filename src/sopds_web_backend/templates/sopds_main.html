@@ -11,6 +11,7 @@
     <title>{{ app_title }} {% if breadcrumbs.0 %} / {{ breadcrumbs.0 }} {% endif %}</title>
     <link rel="stylesheet" type="text/css" href="{% static "css/app.css" %}">
     <link rel="stylesheet" type="text/css" href="{% static "css/sopds-htmx.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static "css/sopds-book-card.css" %}">
     <link rel="stylesheet" type="text/css" href="{% static "foundation-icons/foundation-icons.css" %}">
 </head>
 
@@ -90,5 +91,6 @@
   {% endspaceless %}
 
  {% block block-js %}{% endblock %}
+<script src="{% static "js/sopds-book-card.js" %}" defer></script>
 </body>
 </html>

@@ -69,52 +69,35 @@
             </div>
             <!-- Book cover && action links -->
             <div class="cell auto">
-                <!-- Tabs definition -->
-                <ul class="tabs" data-tabs id="book-data_{{b.id}}">
-                    <li class="tabs-title is-active"><a href="#info_{{b.id}}">{% trans "Information" %}</a></li>
-                    <li class="tabs-title">
-                      {% if b.annotation %}
-                      <a href="#annotation_{{b.id}}" area-selected="true">{% trans "Annotation" %}</a>
-                      {% else %}
-                      <a href="#info_{{b.id}}" area-selected="true">{% trans "No annotation" %}</a>
-                      {% endif %}
-                    </li>
-                </ul>
-
-                <div class="tabs-content" data-tabs-content="book-data_{{b.id}}">
-                    <!-- Annotation tab -->
-                    <div class="tabs-panel" id="annotation_{{b.id}}">
-                        <p style="font-size:80%;">{{ b.annotation }}</p>
-                    </div>
-                    <!-- Annotation tab -->
-                    <!-- Book information -->
-                    <div class="tabs-panel is-active" id="info_{{b.id}}">
-                        <div class="cell" style="font-size:70%">
-                            <b>{% trans "Book title:" %}</b> {{ b.title }} <br>
-                            <b>{% trans "Language:" %}</b> {{ b.lang }} <br>
-                            {% if b.authors %}
-                            <b>{% trans "Authors:" %}</b>{% for a in b.authors %} <a href="{% url "web:searchbooks" %}?searchtype=a&searchterms={{a.id}}">{{a.full_name}}</a>{% if not forloop.last %},{%endif%} {%endfor%}<br>
-                            {% endif %}
-                            {% if b.genres %}
-                            <b>{% trans "Genres:" %}</b>{% for g in b.genres %} <a href="{% url "web:searchbooks" %}?searchtype=g&searchterms={{g.id}}">{{g.subsection}}</a>{% if not forloop.last %},{%endif%} {%endfor%} <br>
-                            {% endif %}
-                            {% if b.series %}
-                            <b>{% trans "Series:" %}</b> {% for s in b.series %} <a href="{% url "web:searchbooks" %}?searchtype=s&searchterms={{s.id}}">{{s.ser}}</a>{% if not forloop.last %},{%endif%} {%endfor%} <br>
-                            <b>{% trans "No in Series:" %}</b> {% for s in b.ser_no %}{{s.ser_no}}{% if not forloop.last %},{%endif%} {%endfor%} <br>
-                            {% endif %}
-                            <b>{% trans "File:" %}</b> {{ b.path }}/{{ b.filename }} <br>
-                            <b>{% trans "File size:" %}</b> {{ b.filesize | filesizeformat }}<br>
-                            <b>{% trans "Changes date:" %}</b> {{ b.docdate }} <br>
-                            {% if b.doubles > 0 %}
-                            <b>{% trans "Doubles for book:" %}</b> <a href="{% url "web:searchbooks" %}?searchtype=d&searchterms={{b.id}}">{{ b.title }} ({{b.doubles}}шт.)</a><br>
-                            {% endif %}
-                            {% if b.readtime %}
-                            <b>{% trans "Read date:" %}</b> <i class="fi-clock"></i> <span class="label small">{{ b.readtime }}</span><br>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <!-- Book information -->
-                </div><!-- tabs -->
+                <div class="cell" style="font-size:70%">
+                    <b>{% trans "Book title:" %}</b> {{ b.title }} <br>
+                    <b>{% trans "Language:" %}</b> {{ b.lang }} <br>
+                    {% if b.authors %}
+                    <b>{% trans "Authors:" %}</b>{% for a in b.authors %} <a href="{% url "web:searchbooks" %}?searchtype=a&searchterms={{a.id}}">{{a.full_name}}</a>{% if not forloop.last %},{%endif%} {%endfor%}<br>
+                    {% endif %}
+                    {% if b.genres %}
+                    <b>{% trans "Genres:" %}</b>{% for g in b.genres %} <a href="{% url "web:searchbooks" %}?searchtype=g&searchterms={{g.id}}">{{g.subsection}}</a>{% if not forloop.last %},{%endif%} {%endfor%} <br>
+                    {% endif %}
+                    {% if b.series %}
+                    <b>{% trans "Series:" %}</b> {% for s in b.series %} <a href="{% url "web:searchbooks" %}?searchtype=s&searchterms={{s.id}}">{{s.ser}}</a>{% if not forloop.last %},{%endif%} {%endfor%} <br>
+                    <b>{% trans "No in Series:" %}</b> {% for s in b.ser_no %}{{s.ser_no}}{% if not forloop.last %},{%endif%} {%endfor%} <br>
+                    {% endif %}
+                    <b>{% trans "File:" %}</b> {{ b.path }}/{{ b.filename }} <br>
+                    <b>{% trans "File size:" %}</b> {{ b.filesize | filesizeformat }}<br>
+                    <b>{% trans "Changes date:" %}</b> {{ b.docdate }} <br>
+                    {% if b.doubles > 0 %}
+                    <b>{% trans "Doubles for book:" %}</b> <a href="{% url "web:searchbooks" %}?searchtype=d&searchterms={{b.id}}">{{ b.title }} ({{b.doubles}}шт.)</a><br>
+                    {% endif %}
+                    {% if b.readtime %}
+                    <b>{% trans "Read date:" %}</b> <i class="fi-clock"></i> <span class="label small">{{ b.readtime }}</span><br>
+                    {% endif %}
+                </div>
+                {% if b.annotation %}
+                <div class="sopds-annotation" style="font-size:70%">
+                    <div class="sopds-annotation-text">{{ b.annotation }}</div>
+                    <a href="#" class="sopds-annotation-toggle" data-label-more="{% trans "Show more" %}" data-label-less="{% trans "Show less" %}">{% trans "Show more" %}</a>
+                </div>
+                {% endif %}
             </div><!-- cell -->
         </div><!-- Card section -->
     </div><!-- Book card -->

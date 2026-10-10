@@ -1,0 +1,24 @@
+/* Карточка книги: метаданные и аннотация на одном экране */
+
+/* Аннотация свёрнута по умолчанию: 4 строки с плавным затуханием */
+.sopds-annotation-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-height: 6em; /* fallback для браузеров без line-clamp */
+}
+
+/* Раскрытое состояние */
+.sopds-annotation.expanded .sopds-annotation-text {
+  -webkit-line-clamp: unset;
+  max-height: none;
+}
+
+.sopds-annotation-toggle {
+  font-size: 90%;
+  display: none;
+}
+.sopds-annotation .sopds-annotation-toggle {
+  display: inline-block;
+}

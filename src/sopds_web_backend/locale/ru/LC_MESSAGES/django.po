@@ -395,6 +395,12 @@ msgstr "Учетная запись не активна!"
 msgid "User does not exist or the password is incorrect!"
 msgstr "Пользователь не существует или введен неправильный пароль!"
 
+msgid "Show more"
+msgstr "Показать полностью"
+
+msgid "Show less"
+msgstr "Свернуть"
+
 msgid "On bookshelf"
 msgstr "На книжной полке"
 
