@@ -132,9 +132,8 @@ def SearchBooksView(request):
     return render(request, "sopds_books.html", args)
 
 
-@vary_on_headers("HTTP_ACCEPT_LANGUAGE")
-@sopds_login(url="web:login")
-def SearchSeriesView(request):
+def _search_entities_view(request, entity_type: str):
+    """Общий обработчик для поиска авторов и серий."""
     args = {}
     args.update(csrf(request))
 
@@ -144,32 +143,32 @@ def SearchSeriesView(request):
         page_num = to_int(request.GET.get("page"), 1)
 
         try:
-            res = book_services.search_entities("series", searchtype, searchterms)
+            res = book_services.search_entities(entity_type, searchtype, searchterms)
         except ValueError:
+            from opds_catalog.models import Author, Series
+
+            model = Author if entity_type == "author" else Series
             res = book_services.EntitySearchResult(
-                queryset=Series.objects.none(),
-                breadcrumbs=[_("Series")],
-                search_object="series",
-                current_view="series",
+                queryset=model.objects.none(),
+                breadcrumbs=[_("Authors") if entity_type == "author" else _("Series")],
+                search_object=entity_type,
+                current_view="authors" if entity_type == "author" else "series",
             )
 
-        series_qs = res.queryset
-        paginator = Paginator(series_qs, catalog_config.MAX_ITEMS)
+        qs = res.queryset
+        paginator = Paginator(qs, catalog_config.MAX_ITEMS)
         try:
             page = paginator.page(page_num)
         except (EmptyPage, PageNotAnInteger):
             page = paginator.page(paginator.num_pages)
 
-        from opds_catalog.services.pagination_utils import paginator_to_dict
-
         items = [
             {
                 "id": row.id,
-                "ser": row.ser,
+                "full_name": getattr(row, "full_name", None),
+                "ser": getattr(row, "ser", None),
                 "lang_code": row.lang_code,
-                "book_count": row.count_book
-                if hasattr(row, "count_book")
-                else Book.objects.filter(series=row).count(),
+                "book_count": getattr(row, "book_count", 0),
             }
             for row in page.object_list
         ]
@@ -177,67 +176,30 @@ def SearchSeriesView(request):
         args["paginator"] = paginator_to_dict(page)
         args["searchterms"] = searchterms
         args["searchtype"] = searchtype
-        args["series"] = items
+        args[f"{'authors' if entity_type == 'author' else 'series'}"] = items
         args["searchobject"] = res.search_object
         args["current"] = "search"
         args["breadcrumbs"] = res.breadcrumbs
         args["cache_id"] = "%s:%s:%s" % (searchterms, searchtype, page.number)
         args["cache_t"] = catalog_config.CACHE_TIME
 
-    return render(request, "sopds_series.html", args)
+    return render(
+        request,
+        f"sopds_{'authors' if entity_type == 'author' else 'series'}.html",
+        args,
+    )
+
+
+@vary_on_headers("HTTP_ACCEPT_LANGUAGE")
+@sopds_login(url="web:login")
+def SearchSeriesView(request):
+    return _search_entities_view(request, "series")
 
 
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")
 @sopds_login(url="web:login")
 def SearchAuthorsView(request):
-    args = {}
-    args.update(csrf(request))
-
-    if request.GET:
-        searchtype = request.GET.get("searchtype", "m")
-        searchterms = request.GET.get("searchterms", "")
-        page_num = to_int(request.GET.get("page"), 1)
-
-        try:
-            res = book_services.search_entities("author", searchtype, searchterms)
-        except ValueError:
-            res = book_services.EntitySearchResult(
-                queryset=Author.objects.none(),
-                breadcrumbs=[_("Authors")],
-                search_object="author",
-                current_view="authors",
-            )
-
-        authors_qs = res.queryset
-        paginator = Paginator(authors_qs, catalog_config.MAX_ITEMS)
-        try:
-            page = paginator.page(page_num)
-        except (EmptyPage, PageNotAnInteger):
-            page = paginator.page(paginator.num_pages)
-
-        items = [
-            {
-                "id": row.id,
-                "full_name": row.full_name,
-                "lang_code": row.lang_code,
-                "book_count": row.book_count
-                if hasattr(row, "book_count")
-                else Book.objects.filter(authors=row).count(),
-            }
-            for row in page.object_list
-        ]
-
-        args["paginator"] = paginator_to_dict(page)
-        args["searchterms"] = searchterms
-        args["searchtype"] = searchtype
-        args["authors"] = items
-        args["searchobject"] = res.search_object
-        args["current"] = "search"
-        args["breadcrumbs"] = res.breadcrumbs
-        args["cache_id"] = "%s:%s:%s" % (searchterms, searchtype, page.number)
-        args["cache_t"] = catalog_config.CACHE_TIME
-
-    return render(request, "sopds_authors.html", args)
+    return _search_entities_view(request, "author")
 
 
 @vary_on_headers("HTTP_ACCEPT_LANGUAGE")

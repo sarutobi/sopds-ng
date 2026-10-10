@@ -496,7 +496,9 @@ def search_entities(
         search_object = "author"
         breadcrumbs = [_("Authors"), _("Search"), term]
         current_view = "authors"
-        queryset = queryset.order_by("search_full_name")
+        queryset = queryset.annotate(book_count=Count("book")).order_by(
+            "search_full_name"
+        )
 
     elif entity_type == "series":
         from opds_catalog.models import Series
@@ -513,7 +515,7 @@ def search_entities(
         search_object = "series"
         breadcrumbs = [_("Series"), _("Search"), term]
         current_view = "series"
-        queryset = queryset.order_by("search_ser")
+        queryset = queryset.annotate(book_count=Count("book")).order_by("search_ser")
     else:
         raise ValueError(f"Unsupported entity type: {entity_type}")
 
