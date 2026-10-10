@@ -21,7 +21,7 @@
   </button>
 </div>
 
- <a class="alert button small" data-open="ConfirmModal">{%  trans "Clear bookshelf" %}</a>
+ <a class="alert button small" data-open="ConfirmModal"><i class="fi-trash"></i> {%  trans "Clear bookshelf" %}</a>
  {% endif %}
 <!-- Bookshelf -->
 {% endspaceless %}
@@ -33,7 +33,7 @@
         <div class="sopds-book-card-divider">
             <b>{{ b.title }}</b>
             {% if isbookshelf %}
-            На книжной полке
+            <i class="fi-bookmark"></i> {% trans "On bookshelf" %}
             {% endif %}
         </div>
         <div class="card-section grid-x grid-margin-x">
@@ -62,7 +62,7 @@
                            hx-confirm="{% trans "Delete this book from bookshelf?" %}"
                            hx-target="#list-content"
                            hx-swap="outerHTML"
-                           hx-indicator="#page-indicator"><span class="secondary label small">&nbsp;{% trans "Delete from bookshelf" %}&nbsp;</span></a></i>
+                           hx-indicator="#page-indicator"><i class="fi-trash"></i>&nbsp;<span class="secondary label small">&nbsp;{% trans "Delete from bookshelf" %}&nbsp;</span></a></i>
                         {% endif %}
                     </div>
                 </div>
@@ -109,7 +109,7 @@
                             <b>{% trans "Doubles for book:" %}</b> <a href="{% url "web:searchbooks" %}?searchtype=d&searchterms={{b.id}}">{{ b.title }} ({{b.doubles}}шт.)</a><br>
                             {% endif %}
                             {% if b.readtime %}
-                            <b>{% trans "Read date:" %}</b> <span class="label small">{{ b.readtime }}</span><br>
+                            <b>{% trans "Read date:" %}</b> <i class="fi-clock"></i> <span class="label small">{{ b.readtime }}</span><br>
                             {% endif %}
                         </div>
                     </div>

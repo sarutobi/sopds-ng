@@ -395,6 +395,9 @@ msgstr "Учетная запись не активна!"
 msgid "User does not exist or the password is incorrect!"
 msgstr "Пользователь не существует или введен неправильный пароль!"
 
+msgid "On bookshelf"
+msgstr "На книжной полке"
+
 #~ msgid "Search books by author"
 #~ msgstr "Поиск книг по автору"
 
