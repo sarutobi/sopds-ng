@@ -243,7 +243,9 @@ def _build_book_item(row: Book, user=None, auth_enabled=False) -> dict:
     genres_list = [{"id": g.id, "subsection": g.subsection} for g in row.c_genres]
 
     # Объединяем серию и её номер в один список объектов
-    series_list = [{"ser": s.ser.ser, "no": s.ser_no} for s in row.c_ser_no]
+    series_list = [
+        {"id": s.ser_id, "ser": s.ser.ser, "no": s.ser_no} for s in row.c_ser_no
+    ]
 
     readtime = None
     if auth_enabled and hasattr(row, "c_bookshelf") and row.c_bookshelf:

@@ -39,20 +39,26 @@ def test_book_series_description_ordering(catalog):
     book.c_authors = []
     book.c_genres = []
 
-    # Создаем объекты, имитирующие bseries
+    # Создаем объекты, имитирующие bseries (с id серий, как в реальных объектах)
     class MockBSeries:
-        def __init__(self, ser_name, no):
+        def __init__(self, ser_id, ser_name, no):
+            self.ser_id = ser_id
             self.ser = type("obj", (object,), {"ser": ser_name})
             self.ser_no = no
 
     book.c_ser_no = [
-        MockBSeries("Series A", 10),
-        MockBSeries("Series B", 20),
-        MockBSeries("Series C", 30),
+        MockBSeries(s1.id, "Series A", 10),
+        MockBSeries(s2.id, "Series B", 20),
+        MockBSeries(s3.id, "Series C", 30),
     ]
 
     item = _build_book_item(book)
     description = book_description(item)
+
+    # Ссылка на серию в карточке требует id из данных
+    assert item["series"][0]["id"] == s1.id
+    assert item["series"][0]["ser"] == "Series A"
+    assert item["series"][0]["no"] == 10
 
     print("\n--- New Description ---")
     print(description)
