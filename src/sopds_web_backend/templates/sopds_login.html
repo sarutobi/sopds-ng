@@ -4,7 +4,7 @@
 {% block ext-body %}
 <div class="cell small-6 medium-4 large-3 small-offset-3 medium-offset-4 large-offset-4">
 
-<form method="post" sction='{% url "web:login" %}'>
+<form method="post" action='{% url "web:login" %}'>
 {% csrf_token %}
 <!--div class="row"-->
       <label>{% trans "Username" %}
