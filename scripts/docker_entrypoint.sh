@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export DJANGO_SETTINGS_MODULE='sopds.settings.base'
+#export DJANGO_SETTINGS_MODULE='sopds.settings.base'
 
 # В Docker SOPDS_ROOT = /app (WORKDIR в Dockerfile)
 SOPDS_ROOT="${SOPDS_ROOT:-/app}"
@@ -11,7 +11,7 @@ mkdir -p "$DATA_ROOT/log"
 
 # Create key if not exists
 if [ ! -f "$SECRET_KEY_FILE" ]; then
-    python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())' > "$SECRET_KEY_FILE"
+    python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())' >"$SECRET_KEY_FILE"
 fi
 
 # Collect statics files
