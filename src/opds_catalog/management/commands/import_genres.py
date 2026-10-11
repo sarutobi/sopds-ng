@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 from opds_catalog.services.genre_import import import_genres
 
 # Файл ищется в DATA_ROOT, при отсутствии используется встроенный в пакет
-PACKAGE_GLS = Path(__file__).resolve().parents[3] / "fixtures" / "genres_fb2.glst"
+PACKAGE_GLS = Path(__file__).resolve().parents[2] / "fixtures" / "genres_fb2.glst"
 
 
 def default_glst() -> Path:
