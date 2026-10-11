@@ -83,6 +83,19 @@ sudo -u sopds bash /opt/sopds-ng/app/deploy.sh
 
 > После deploy.sh укажите пароль БД вручную: `echo "SOPDS_DB_PASSWORD='ваш_пароль'" >> $DATA_ROOT/.env`
 
+## 6.1. Справочник жанров
+
+Без справочника жанров сканер помещает все жанры в раздел «Unknown genre».
+Загрузите его (ищется `$DATA_ROOT/genres_fb2.glst`, при отсутствии — встроенный в пакет):
+
+```bash
+cd /opt/sopds-ng/app
+sudo -u sopds DATA_ROOT="$DATA_ROOT" uv run python manage.py import_genres
+```
+
+Команда обновляет жанры по коду и безопасна для уже отсканированной БД.
+Подробнее — [deploy.md](deploy.md#8-справочник-жанров).
+
 ## 7. Создание суперпользователя
 
 ```bash
