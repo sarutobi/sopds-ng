@@ -58,13 +58,17 @@ def find_by_bookshelf(
     return Book.objects.filter(bookshelf__user=user).order_by("-bookshelf__readtime")
 
 
+# Сортировка для серийных поисков: номер в серии (книги без номера в конце), затем дата
+SERIES_ORDER_BY = ["bseries__ser_no", "-docdate"]
+
+
 def find_by_author_and_series(
     _: bool, author_id: str, series_id: str | None = None, __=None
 ) -> QuerySet[Book]:
     """Поиск книг по автору и серии."""
     return Book.objects.filter(
         authors=to_int(author_id), series=to_int(series_id)
-    ).order_by(*DEFAULT_ORDER_BY, "bseries__ser_no")
+    ).order_by(*SERIES_ORDER_BY)
 
 
 def find_book_doubles(
@@ -116,9 +120,7 @@ def find_books_by_series(
     _: bool, series_id: str, __: str | None = None, ___=None
 ) -> QuerySet[Book]:
     """Поиск книг по серии."""
-    return Book.objects.filter(series=to_int(series_id)).order_by(
-        *DEFAULT_ORDER_BY, "bseries__ser_no"
-    )
+    return Book.objects.filter(series=to_int(series_id)).order_by(*SERIES_ORDER_BY)
 
 
 def find_books_by_genre(
@@ -328,7 +330,11 @@ def paginated_book_content(
                 to_attr="c_bookshelf",
             )
         )
-    books = books.order_by(*DEFAULT_ORDER_BY).prefetch_related(*prefetch)
+    # Применяем сортировку по умолчанию только если поиск её ещё не задал
+    # (серийные поиски сортируются по номеру в серии, книжная полка — по времени чтения)
+    if not books.query.order_by:
+        books = books.order_by(*DEFAULT_ORDER_BY)
+    books = books.prefetch_related(*prefetch)
 
     django_paginator = Paginator(books, maxitems)
     page = django_paginator.page(page_num)
