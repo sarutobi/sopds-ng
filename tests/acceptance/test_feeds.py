@@ -126,8 +126,57 @@ class TestFeeds:  # acceptance
         assert response.status_code == 200
         assert "Логинов Святослав" in response.content.decode()
 
-    def test_search_genres(self) -> None:
-        pass
+    def test_alphabet_feeds_empty_titles(self, client, catalog):
+        """Проверка, что пустые названия книг/серий не приводят к 500 ошибке в алфавитных фидах."""
+        from opds_catalog.models import Author, Book, Series
+
+        # Создаем автора
+        author = Author.objects.create(
+            full_name="Test Author", search_full_name="TEST AUTHOR"
+        )
+
+        # Книга с пустым названием
+        Book.objects.create(
+            filename="empty.fb2",
+            path=".",
+            format="fb2",
+            search_title="",
+            title="",
+            catalog=catalog,
+        )
+
+        # Серия с пустым названием
+        series = Series.objects.create(ser="", search_ser="")
+
+        # Книга в пустой серии
+        book = Book.objects.create(
+            filename="series_empty.fb2",
+            path=".",
+            format="fb2",
+            search_title="Series Book",
+            title="Series Book",
+            catalog=catalog,
+        )
+        book.series.set([series])
+        book.authors.set([author])
+
+        # Проверяем фиды
+        # /opds/books/0/ (Cyrillic books)
+        response = client.get(reverse("opds:char_books", kwargs={"lang_code": 0}))
+        assert response.status_code == 200
+
+        # /opds/authors/0/ (Cyrillic authors)
+        response = client.get(reverse("opds:char_authors", kwargs={"lang_code": 0}))
+        assert response.status_code == 200
+
+        # /opds/series/0/ (Cyrillic series)
+        # В urls.py для серий используется opds:char_series (судя по всему)
+        # Давайте найдем правильный reverse name
+        try:
+            response = client.get(reverse("opds:char_series", kwargs={"lang_code": 0}))
+            assert response.status_code == 200
+        except Exception as e:
+            pytest.fail(f"Failed to access series alphabet feed: {e}")
 
     def test_lang_feed(self, client) -> None:
         response = client.get("/opds/books/")

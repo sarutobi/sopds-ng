@@ -1154,6 +1154,8 @@ class BooksFeed(SOPDSBaseFeed):
     def item_link(self, item):
         """Построение ссылок на дальнейшую навигацию."""
         title_full = len(item["sid"]) < item["l"]
+        if not item["sid"]:
+            return "#"
         if item["cnt"] >= catalog_config.SPLIT_ITEMS_THRESHOLD and not title_full:
             return reverse(
                 "opds_catalog:chars_books",
@@ -1221,6 +1223,8 @@ class AuthorsFeed(SOPDSBaseFeed):
         :rtype: str
         """
         last_name_full = len(item["sid"]) < item["template_length"]
+        if not item["sid"]:
+            return "#"
         if (item["cnt"] >= catalog_config.SPLIT_ITEMS_THRESHOLD) and not last_name_full:
             return reverse(
                 "opds_catalog:chars_authors",
@@ -1289,6 +1293,8 @@ class SeriesFeed(SOPDSBaseFeed):
         :rtype: str
         """
         series_full = len(item["sid"]) < item["l"]
+        if not item["sid"]:
+            return "#"
         if item["cnt"] >= catalog_config.SPLIT_ITEMS_THRESHOLD and not series_full:
             return reverse(
                 "opds_catalog:chars_series",
