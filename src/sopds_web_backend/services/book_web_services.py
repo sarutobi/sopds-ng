@@ -36,7 +36,7 @@ def get_search_books_context(request, params: dict) -> dict:
     items, op = book_services.paginated_book_content(
         books,
         page_num,
-        search_doubles=(params["searchtype"] != "d"),
+        search_doubles=(params["searchtype"] == "d"),
         user=request.user,
         auth_enabled=auth_enabled,
     )

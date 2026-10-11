@@ -718,7 +718,7 @@ class SearchBooksFeed(SOPDSBaseFeed):
         books = book_services.search_book(searchtype, st, st1, request.user)
 
         items, op = book_services.paginated_book_content(
-            books, page_num, searchtype != SearchType.DOUBLES
+            books, page_num, searchtype == SearchType.DOUBLES
         )
 
         return {

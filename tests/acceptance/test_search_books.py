@@ -120,35 +120,60 @@ class TestSearchBooksViewExtended:
         assert response.status_code == 200
         assert b"My Book" in response.content
 
-    def test_search_doubles(self, client, django_user, catalog):
+    def test_search_doubles_hiding(self, client, django_user, catalog):
+        """Проверка, что дубликаты скрываются в обычном поиске при включенной опции."""
         from opds_catalog.models import Author, Counter
 
         Counter.obj.create(name="allbooks", value=0)
         client.force_login(django_user)
-        b1 = Book.objects.create(
+
+        # Создаем одного автора
+        author = Author.objects.create(
+            full_name="Same Author", search_full_name="SAME AUTHOR"
+        )
+
+        # Создаем две идентичные книги
+        Book.objects.create(
             filename="t1.fb2",
             path=".",
             format="fb2",
-            search_title="Double",
-            title="Double",
+            search_title="Duplicate Book",
+            title="Duplicate Book",
             catalog=catalog,
         )
-        b2 = Book.objects.create(
+        Book.objects.create(
             filename="t2.fb2",
             path=".",
             format="fb2",
-            search_title="Double",
-            title="Double",
+            search_title="Duplicate Book",
+            title="Duplicate Book",
             catalog=catalog,
         )
-        a = Author.objects.create(full_name="SAME", search_full_name="SAME")
-        b1.authors.set([a])
-        b2.authors.set([a])
 
-        response = client.get(
-            reverse("web:searchbooks"), {"searchtype": "d", "searchterms": str(b1.id)}
-        )
-        assert response.status_code == 200
+        # Привязываем автора к обеим книгам
+        books = Book.objects.filter(title="Duplicate Book")
+        for b in books:
+            b.authors.set([author])
+
+        # Чтобы гарантированно включить скрытие дублей, пропатчим свойства в классе SopdsConfig.
+        # Так как это @property, мы заменяем его в словаре класса.
+        from opds_catalog.config import SopdsConfig
+
+        original_hide = SopdsConfig.DOUBLES_HIDE
+        SopdsConfig.DOUBLES_HIDE = property(lambda self: True)
+        try:
+            response = client.get(
+                reverse("web:searchbooks"),
+                {"searchtype": "m", "searchterms": "Duplicate"},
+            )
+            assert response.status_code == 200
+            content = response.content.decode()
+
+            # Проверяем количество карточек книг.
+            # При включенном скрытии дублей должна быть только одна карточка.
+            assert content.count('class="cell sopds-book-card"') == 1
+        finally:
+            SopdsConfig.DOUBLES_HIDE = original_hide
 
     def test_search_by_id(self, client, django_user, catalog):
         from opds_catalog.models import Counter
