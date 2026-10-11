@@ -63,7 +63,7 @@ def find_by_author_and_series(
 ) -> QuerySet[Book]:
     """Поиск книг по автору и серии."""
     return Book.objects.filter(
-        author_id=to_int(author_id), series_id=to_int(series_id)
+        authors=to_int(author_id), series=to_int(series_id)
     ).order_by(*DEFAULT_ORDER_BY, "bseries__ser_no")
 
 
