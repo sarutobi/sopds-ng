@@ -11,6 +11,7 @@ from django.db import connection, connections, transaction
 # from opds_catalog.settings import SCANNER_LOG, SCAN_SHED_DAY, SCAN_SHED_DOW, SCAN_SHED_HOUR, SCAN_SHED_MIN, LOGLEVEL, SCANNER_PID
 from opds_catalog import settings
 from opds_catalog.config import catalog_config
+from opds_catalog.db_utils import seed_constance_defaults
 from opds_catalog.models import Counter
 from opds_catalog.sopdscan import opdsScanner
 
@@ -93,6 +94,10 @@ class Command(BaseCommand):
 
         self.logger.debug("Creating scanner object")
         scanner = opdsScanner(logging.getLogger("scanner"))
+        # Материализуем строки constance до начала долгой транзакции скана:
+        # иначе первые вставки дефолтов попадут в нее и заблокируют
+        # веб-запросы, читающие те же ключи
+        seed_constance_defaults()
         with transaction.atomic():
             scanner.scan_all()
         self.logger.debug("Updating library statistics")
