@@ -194,7 +194,9 @@ class opdsScanner:
 
             for s in set(meta_data[inpx_parser.sSeries]):
                 ser = scanner.addseries(s.strip())
-                scanner.addbseries(book, ser, 0)
+                ser_no_str = meta_data[inpx_parser.sSerNo].strip()
+                ser_no = int(ser_no_str) if ser_no_str.isdigit() else 0
+                scanner.addbseries(book, ser, ser_no)
 
     def processinpx(self, name, full_path, file):
         self.logger.info(f"Start processing INPX file {name}")
