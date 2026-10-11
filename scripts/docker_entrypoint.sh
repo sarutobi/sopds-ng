@@ -20,5 +20,8 @@ python manage.py collectstatic --skip-checks --no-input
 # Run DB migrations
 python manage.py migrate --skip-checks --no-input
 
+# Import genres reference (idempotent, update_or_create by genre code)
+python manage.py import_genres --skip-checks || true
+
 # Run server
 gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
