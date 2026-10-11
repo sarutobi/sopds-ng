@@ -344,6 +344,7 @@ project.min.css
 vendors.js
 *.min.js
 *.min.js.map
+!**/static/**/*.min.js
 /static/webpack_bundles/
 webpack-stats.json
 
