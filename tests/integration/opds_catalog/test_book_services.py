@@ -45,8 +45,7 @@ class TestBookServices:
             "title": "Test Book",
             "annotation": "Test annotation",
             "authors": [{"full_name": "Author1"}],
-            "series": [{"ser": "Series1", "ser_no": 1}],
-            "ser_no": [],
+            "series": [{"ser": "Series1", "no": 1}],
             "genres": [{"subsection": "fantasy"}],
             "language": "ru",
             "filename": "testbook.fb2",
@@ -56,8 +55,7 @@ class TestBookServices:
         desc = book_services.book_description(book_data)
         assert "Test annotation" in desc
         assert "Author1" in desc
-        assert "Series1" in desc
-        # ser_no block is skipped because list is empty; "1" not expected
+        assert "Series1 (1)" in desc
 
     def test_paginated_book_content(self, book_with_relations):
         """Пагинация списка книг."""
@@ -142,13 +140,12 @@ class TestBookServices:
         book = book_with_relations
         book.c_authors = list(book.authors.all())
         book.c_genres = list(book.genres.all())
-        book.c_series = list(book.series.all())
         book.c_ser_no = list(book.bseries_set.all())
 
         item = book_services._build_book_item(book)
 
         assert isinstance(item, dict)
-        for key in ["authors", "genres", "series", "ser_no"]:
+        for key in ["authors", "genres", "series"]:
             assert isinstance(item[key], list)
             for val in item[key]:
                 assert isinstance(val, dict), (
@@ -161,8 +158,7 @@ class TestBookServices:
             "title": "Test",
             "annotation": "Annot",
             "authors": [{"full_name": "Author1"}],
-            "series": [{"ser": "Ser1"}],
-            "ser_no": [{"ser_no": 1}],
+            "series": [{"ser": "Ser1", "no": 1}],
             "genres": [{"subsection": "fantasy"}],
             "language": "ru",
             "filename": "test.fb2",
@@ -170,5 +166,4 @@ class TestBookServices:
             "docdate": "01.01.2016",
         }
         desc = book_services.book_description(book_data)
-        assert "Ser1" in desc
-        assert "1" in desc
+        assert "Ser1 (1)" in desc

@@ -13,7 +13,7 @@ from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 
 from opds_catalog.config import catalog_config
-from opds_catalog.models import Author, Book, bookshelf
+from opds_catalog.models import Author, Book, bookshelf, bseries
 from opds_catalog.services import SearchType
 from opds_catalog.services.pagination_utils import paginator_to_dict
 from opds_catalog.utils import get_lang_name, to_int
@@ -233,15 +233,15 @@ def _build_book_item(row: Book, user=None, auth_enabled=False) -> dict:
     Требует prefetch_related:
       - Prefetch('authors', to_attr='c_authors')
       - Prefetch('genres', to_attr='c_genres')
-      - Prefetch('series', to_attr='c_series')
-      - Prefetch('bseries_set', to_attr='c_ser_no')
+      - Prefetch('bseries_set', queryset=bseries.objects.select_related('ser').order_by('ser_no'), to_attr='c_ser_no')
     При auth_enabled дополнительно:
       - Prefetch('bookshelf_set', queryset=bookshelf.objects.filter(user=user), to_attr='c_bookshelf')
     """
     authors_list = [{"id": a.id, "full_name": a.full_name} for a in row.c_authors]
     genres_list = [{"id": g.id, "subsection": g.subsection} for g in row.c_genres]
-    series_list = [{"id": s.id, "ser": s.ser} for s in row.c_series]
-    ser_no_list = [{"ser_no": sn.ser_no} for sn in row.c_ser_no]
+
+    # Объединяем серию и её номер в один список объектов
+    series_list = [{"ser": s.ser.ser, "no": s.ser_no} for s in row.c_ser_no]
 
     readtime = None
     if auth_enabled and hasattr(row, "c_bookshelf") and row.c_bookshelf:
@@ -263,7 +263,6 @@ def _build_book_item(row: Book, user=None, auth_enabled=False) -> dict:
         "authors": authors_list,
         "genres": genres_list,
         "series": series_list,
-        "ser_no": ser_no_list,
         "readtime": readtime,
     }
 
@@ -315,8 +314,11 @@ def paginated_book_content(
     prefetch = [
         Prefetch("authors", to_attr="c_authors"),
         Prefetch("genres", to_attr="c_genres"),
-        Prefetch("series", to_attr="c_series"),
-        Prefetch("bseries_set", to_attr="c_ser_no"),
+        Prefetch(
+            "bseries_set",
+            queryset=bseries.objects.select_related("ser").order_by("ser_no"),
+            to_attr="c_ser_no",
+        ),
     ]
     if auth_enabled and user is not None:
         prefetch.append(
@@ -395,16 +397,8 @@ def book_description(item) -> str:
             )
         )
     if item["series"]:
-        s.append(
-            _("<b>Series: </b>%s<br/>") % ", ".join(s["ser"] for s in item["series"])
-        )
-    if item["ser_no"]:
-        s.append(
-            _(
-                "<b>No in Series: </b>%s<br/>"
-                % ", ".join(str(s["ser_no"]) for s in item["ser_no"])
-            )
-        )
+        series_info = ", ".join([f"{s['ser']} ({s['no']})" for s in item["series"]])
+        s.append(_("<b>Series: </b>%s<br/>") % series_info)
     s.append(
         _(
             f"<b>File: </b>{item['filename']}<br/><b>File size: </b>{item['filesize']}<br/><b>Changes date: </b>{item['docdate']}<br/>"
