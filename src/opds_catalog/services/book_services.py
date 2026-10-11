@@ -210,17 +210,14 @@ def search_book_with_metadata(
         except (Book.DoesNotExist, ValueError):
             breadcrumbs.append(_("Doubles"))
         search_object = "title"
-    elif search_type == "i":
-        try:
-            book_id = to_int(term)
-            book = Book.objects.filter(id=book_id).first()
-            if book:
-                breadcrumbs.append(book.title)
-            else:
-                pass  # Остается просто [_("Books")]
-        except ValueError:
-            pass
-        search_object = "title"
+    elif search_type == "as":
+        from opds_catalog.services import authors_services, series_services
+
+        # Для типа 'as' term - это author_id, second_term - это series_id
+        aname = authors_services.get_author_name(id=term)
+        ser = series_services.get_series_name(second_term)
+        breadcrumbs.extend([_("Search by author and series"), aname, ser])
+        search_object = "author"
 
     return SearchResult(
         queryset=books,

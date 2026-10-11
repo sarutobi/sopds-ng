@@ -50,7 +50,9 @@ class TestSearchBooksViewExtended:
         )
         assert response.status_code == 200
 
-    def test_search_by_series(self, client, django_user, catalog, series):
+    def test_search_by_author_and_series(
+        self, client, django_user, catalog, author, series
+    ):
         from opds_catalog.models import Counter
 
         Counter.obj.create(name="allbooks", value=0)
@@ -59,16 +61,24 @@ class TestSearchBooksViewExtended:
             filename="t1.fb2",
             path=".",
             format="fb2",
-            search_title="Series Book",
-            title="Series Book",
+            search_title="Author Series Book",
+            title="Author Series Book",
             catalog=catalog,
         )
+        book.authors.set([author])
         book.series.set([series])
+
+        # searchtype 'as' for author and series
         response = client.get(
             reverse("web:searchbooks"),
-            {"searchtype": "s", "searchterms": str(series.id)},
+            {
+                "searchtype": "as",
+                "searchterms": f"{author.id}",
+                "searchterms0": f"{series.id}",
+            },
         )
         assert response.status_code == 200
+        assert b"Author Series Book" in response.content
 
     def test_search_by_genre(self, client, django_user, catalog):
         from opds_catalog.models import Counter, Genre
