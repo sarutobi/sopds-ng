@@ -38,6 +38,7 @@ SOPDS_USE_HTTPS = env.bool("SOPDS_USE_HTTPS", default=False)
 VERSION = env("SOPDS_VERSION")
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[".localhost", "127.0.0.1"])
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 # SERVER_LOG_LEVEL
 SOPDS_SERVER_LOG_LEVEL = env("SOPDS_SERVER_LOG_LEVEL", default="WARNING")
@@ -178,6 +179,12 @@ STORAGES = {
     },
 }
 # Security settings
+# За reverse proxy доверять X-Forwarded-Proto в HTTPS-режиме:
+# без этого request.is_secure() = False и CSRF-проверка отклоняет запросы
+# с Origin: https://<домен> (Ошибка 403 при логине за прокси)
+SECURE_PROXY_SSL_HEADER = (
+    ("HTTP_X_FORWARDED_PROTO", "https") if SOPDS_USE_HTTPS else None
+)
 SECURE_SSL_REDIRECT = SOPDS_USE_HTTPS
 SESSION_COOKIE_SECURE = SOPDS_USE_HTTPS
 CSRF_COOKIE_SECURE = SOPDS_USE_HTTPS

@@ -365,6 +365,8 @@ uv run python src/manage.py runserver 0.0.0.0:8000
 | `SECRET_KEY_FILE` | `$DATA_ROOT/secret_key.txt` | Путь к файлу с секретным ключом (используется FileAwareEnv). `$DATA_ROOT` = `$SOPDS_ROOT/data`. **Только абсолютный путь**: относительный путь открывается от рабочего каталога процесса и в Docker (`/app`) не находится. В Docker указывайте `/app/data/secret_key.txt` |
 | `DEBUG` | `False` | Режим отладки. В production всегда `False` |
 | `ALLOWED_HOSTS` | `.localhost, 127.0.0.1` | Список разрешённых доменов (через запятую) |
+| `CSRF_TRUSTED_ORIGINS` | (пусто) | Доверенные origin для CSRF за reverse proxy, со схемой (через запятую) |
+| `SOPDS_USE_HTTPS` | `False` | HTTPS-режим: secure-cookies, HSTS и доверие к `X-Forwarded-Proto` |
 | `DJANGO_SETTINGS_MODULE` | `sopds.settings.base` | Модуль настроек Django |
 | `SOPDS_ROOT` | `/opt/sopds-ng` | Корневой каталог установки. `data/`, `scripts/`, `.venv/` — внутри |
 | `DATA_ROOT` | `$SOPDS_ROOT/data` | Каталог данных (.env, secret_key.txt, db.sqlite3, log/). По умолчанию — поддиректория `data` внутри SOPDS_ROOT |
@@ -532,6 +534,29 @@ server {
     }
 }
 ```
+
+#### HTTPS за reverse proxy (обязательно для логина)
+
+Если TLS терминируется на прокси (в приложение приходит HTTP с заголовком
+`X-Forwarded-Proto: https`), укажите в `.env`:
+
+```env
+SOPDS_USE_HTTPS=True
+ALLOWED_HOSTS='sopds.example.com'
+# Рекомендуется явно перечислить домены со схемой
+CSRF_TRUSTED_ORIGINS='https://sopds.example.com'
+```
+
+- `SOPDS_USE_HTTPS=True` включает доверие к заголовку `X-Forwarded-Proto`
+  (`SECURE_PROXY_SSL_HEADER`) — без него `request.is_secure()` возвращает `False`,
+  и проверка CSRF отклоняет форму логина с ошибкой 403
+  («Ошибка проверки CSRF. Запрос отклонён»).
+- `CSRF_TRUSTED_ORIGINS` — список origin со схемой, через запятую.
+- В этом же режиме включаются secure-cookies и HSTS.
+
+> **Безопасность:** порт приложения (8008) должен быть недоступен извне в обход
+> прокси, иначе злоумышленник сможет подделать заголовок `X-Forwarded-Proto`.
+> Для Docker используйте привязку к localhost: `ports: "127.0.0.1:8008:8008"`.
 
 ---
 
