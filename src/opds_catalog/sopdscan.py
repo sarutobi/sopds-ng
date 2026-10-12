@@ -194,6 +194,8 @@ class opdsScanner:
 
             for s in set(meta_data[inpx_parser.sSeries]):
                 ser = scanner.addseries(s.strip())
+                if ser is None:
+                    continue
                 ser_no_str = meta_data[inpx_parser.sSerNo].strip()
                 ser_no = int(ser_no_str) if ser_no_str.isdigit() else 0
                 scanner.addbseries(book, ser, ser_no)
@@ -358,8 +360,13 @@ class opdsScanner:
                         self.logger.info("Genres metadata stored successfully")
 
                         # FIXME: series_info определяется только по наличию названия серии, номер в серии устанавливается в 0 если не указан
-                        if book_data.series_info:
-                            ser = scanner.addseries(book_data.series_info["title"])
+                        ser_title = (
+                            book_data.series_info.get("title")
+                            if book_data.series_info
+                            else None
+                        )
+                        if ser_title:
+                            ser = scanner.addseries(ser_title)
                             ser_no = book_data.series_info["index"] or "0"
                             ser_no = int(ser_no) if ser_no.isdigit() else 0
                             scanner.addbseries(book, ser, ser_no)

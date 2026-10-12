@@ -217,7 +217,7 @@ class FB2(EbookMetaParser):
         seq_node = root.xpath(
             ".//fb:description/fb:title-info/fb:sequence", namespaces=self._namespaces
         )
-        if seq_node:
+        if seq_node and seq_node[0].get("name"):
             self._metadata_cache["series_info"] = {
                 "title": seq_node[0].get("name"),
                 "index": seq_node[0].get("number"),

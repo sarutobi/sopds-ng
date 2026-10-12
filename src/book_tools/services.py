@@ -77,7 +77,7 @@ def book_metadata_to_bookfile(
     for genre in meta.genres:
         book_file.__add_tag__(genre)
 
-    if meta.series is not None:
+    if meta.series is not None and meta.series.name:
         book_file.series_info = {
             "title": meta.series.name,
             "index": str(meta.series.series_no),

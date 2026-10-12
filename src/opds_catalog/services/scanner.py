@@ -146,8 +146,10 @@ def addbgenre(book: Book, genre: Genre):
     bgenre.objects.get_or_create(book=book, genre=genre)
 
 
-def addseries(ser: str) -> Series:
-    """Создание или получение серии."""
+def addseries(ser: str | None) -> Series | None:
+    """Создание или получение серии. Возвращает None для пустого названия."""
+    if not ser:
+        return None
     series, _ = Series.objects.get_or_create(
         ser=ser[:SIZE_SERIES],
         defaults={
