@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 import pytest
+from django.conf import settings
 from django.db import connection
 
 from opds_catalog.config import constance_config
@@ -31,7 +32,9 @@ def run_scan_benchmark(tmp_path, monkeypatch, benchmark_config):
     """
     Фикстура для проведения замера производительности полного цикла scan_all().
     """
+    settings.DEBUG = True
     # 1. Подготовка данных (N книг в INPX)
+
     books_count = benchmark_config["books_count"]
     records = [
         InpRecord(
@@ -82,6 +85,8 @@ def run_scan_benchmark(tmp_path, monkeypatch, benchmark_config):
     }
 
 
+@pytest.mark.benchmark
+@pytest.mark.benchmark
 @pytest.mark.django_db
 def test_scan_performance_baseline(run_scan_benchmark):
     """Запуск бенчмарка и верификация того, что он отработал."""
@@ -90,6 +95,8 @@ def test_scan_performance_baseline(run_scan_benchmark):
     assert results["first_pass"]["queries"] > 0
 
 
+@pytest.mark.benchmark
+@pytest.mark.benchmark
 @pytest.mark.django_db
 def test_benchmark_results_capture(run_scan_benchmark):
     """Запись результатов в baseline.md."""

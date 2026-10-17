@@ -1,16 +1,23 @@
+import os
+
 from .base import *  # noqa: F403
 
 DEBUG = False
 
+
 INTERNAL_IPS = ["127.0.0.1"]
 
 ROOT_URLCONF = "sopds.urls.test"
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "tmp/db.sqlite3",  # type: ignore[name-defined]
+
+# По умолчанию в тестах используем sqlite.
+# Переопределяем на postgres только если явно задано в окружении (для just postgres_tests)
+if os.environ.get("SOPDS_DB_ENGINE") != "postgres":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": str(BASE_DIR / "tmp/db.sqlite3"),
+        }
     }
-}
 
 # В тестах не запускается collectstatic, поэтому используем StaticFilesStorage без манифеста
 STORAGES = {

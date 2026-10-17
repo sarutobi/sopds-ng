@@ -38,7 +38,7 @@ dev = [
 minversion = "9.0"
 addopts = ["-ra", "-q"]
 
-testpaths = ["tests/unit", "tests/integration", "tests/acceptance"]
+testpaths = ["tests/unit", "tests/integration", "tests/acceptance", "tests/benchmarks"]
 pythonpath = [".", "src"]
 python_files = ["test_*.py", "*_test.py"]
 markers = [

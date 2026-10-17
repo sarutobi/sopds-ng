@@ -80,13 +80,13 @@ postgres_stop:
 # Wait for postgres to be ready
 [private]
 _postgres_wait:
-    @echo "Waiting for postgres..."
-    @sh -c 'for i in $$(seq 1 30); do \
-        if docker exec sopds-postgres-test pg_isready -U postgres 2>/dev/null; then \
-            echo "Postgres ready"; exit 0; \
-        fi; \
-        sleep 1; \
-    done; echo "Postgres not ready after 30s"; exit 1'
+	@echo "Waiting for postgres..."
+	@sh -c 'for i in $(seq 1 30); do \
+		if docker exec sopds-postgres-test pg_isready -U postgres >/dev/null 2>&1; then \
+			echo "Postgres ready"; exit 0; \
+		fi; \
+		sleep 1; \
+	done; echo "Postgres not ready after 30s"; exit 1'
 
 # Run postgres container
 postgres_start:
@@ -100,12 +100,11 @@ postgres_start:
 
 # Run postgres tests
 postgres_tests *args:
-    @CONTAINER_RUNNING=$$(docker ps -q -f name=sopds-postgres-test); \
-    if [ -z "$$CONTAINER_RUNNING" ]; then \
+    @if [ -z "$$(docker ps -q -f name=sopds-postgres-test)" ]; then \
         just postgres_start; \
-        trap 'just postgres_stop' EXIT; \
     fi
-    just _run pytest {{ args }}
+    uv run --env-file={{ invocation_directory() }}/.test.postgres.env pytest --ds={{ django_settings }} {{ args }}
+    just postgres_stop
 
 # ═══════════════════════════════════════════════
 # Docker — compose management
