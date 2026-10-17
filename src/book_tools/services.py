@@ -1,5 +1,6 @@
 # Сервисы для работы с электронными книгами
 import logging
+import os
 import zipfile
 from io import BytesIO
 from typing import BinaryIO, Callable, Optional
@@ -20,6 +21,11 @@ from .mime_detector import detect_mime_service
 from .pymobi.mobi import BookMobi
 
 logger = logging.getLogger(__name__)
+
+# Лимиты для предотвращения DoS (SEC-07)
+MAX_BOOK_SIZE = 100 * 1024 * 1024  # 100 MB
+MAX_ZIP_FILES = 1000
+MAX_COMPRESSION_RATIO = 100
 
 # ---------------------------------------------------------------------------
 # Parser registry
@@ -303,25 +309,73 @@ def create_bookfile_service(data: BytesIO, original_filename: str) -> BookFile:
     Raises:
         UnsupportedFileType — если для MIME-типа нет зарегистрированного парсера
         FB2StructureException
+        ValueError — если размер файла или архив превышают лимиты (SEC-07)
     """
     logger.info(f"Attempt to extract metadata from {original_filename}")
-    logger.debug(f"Content size: {len(data.getvalue())}")
+
+    # Проверка размера переданного потока (SEC-07)
+    if hasattr(data, "getbuffer"):
+        size = data.getbuffer().nbytes
+    else:
+        current_pos = data.tell()
+        data.seek(0, os.SEEK_END)
+        size = data.tell()
+        data.seek(current_pos)
+
+    if size > MAX_BOOK_SIZE:
+        raise ValueError(f"File size exceeds maximum limit ({MAX_BOOK_SIZE} bytes)")
+
+    logger.debug(f"Content size: {size}")
     mimetype = detect_mime_service(data, original_filename)
 
     # Normalise FB2_ZIP -> FB2 для поиска парсера и распаковываем ZIP
     content_data: BytesIO
     content_mimetype: str
-    if mimetype == Mimetype.FB2_ZIP:
-        content_mimetype = Mimetype.FB2
-        with zipfile.ZipFile(data, "r") as z:
-            if z.testzip():
-                raise FB2StructureException("corrupted zip archive")
-            if len(z.infolist()) != 1:
-                raise FB2StructureException("Incorrect fb2 zip archive!")
-            fn = z.namelist()[0]
-            with z.open(fn, "r") as d:
-                content_data = BytesIO(d.read())
-        content_data.seek(0)
+
+    # SEC-07: Общие проверки для всех ZIP-архивов
+    if mimetype in (Mimetype.FB2_ZIP, "application/zip"):
+        try:
+            with zipfile.ZipFile(data, "r") as z:
+                # Проверка количества файлов в архиве
+                if len(z.infolist()) > MAX_ZIP_FILES:
+                    raise ValueError(f"Too many files in archive (max {MAX_ZIP_FILES})")
+
+                if mimetype == Mimetype.FB2_ZIP:
+                    if z.testzip():
+                        raise FB2StructureException("corrupted zip archive")
+                    if len(z.infolist()) != 1:
+                        raise FB2StructureException("Incorrect fb2 zip archive!")
+
+                    fn = z.namelist()[0]
+                    info = z.getinfo(fn)
+
+                    # Проверка размера распакованного файла
+                    if info.file_size > MAX_BOOK_SIZE:
+                        raise ValueError(
+                            f"Uncompressed file size exceeds limit ({MAX_BOOK_SIZE} bytes)"
+                        )
+
+                    # Проверка коэффициента сжатия
+                    if info.compress_size > 0:
+                        ratio = info.file_size / info.compress_size
+                        if ratio > MAX_COMPRESSION_RATIO:
+                            raise ValueError(
+                                f"Compression ratio too high ({ratio:.1f} > {MAX_COMPRESSION_RATIO})"
+                            )
+
+                    with z.open(fn, "r") as d:
+                        content_data = BytesIO(d.read())
+                    content_mimetype = Mimetype.FB2
+                else:
+                    # Если это просто ZIP, но не FB2_ZIP, мы все равно проверяем лимиты,
+                    # но далее он упадет с UnsupportedFileType, что нормально.
+                    content_data = data
+                    content_mimetype = mimetype
+            content_data.seek(0)
+        except zipfile.BadZipFile:
+            # Если файл распознан как ZIP по расширению, но фактически не является ZIP-архивом
+            content_data = data
+            content_mimetype = mimetype
     else:
         content_mimetype = mimetype
         content_data = data

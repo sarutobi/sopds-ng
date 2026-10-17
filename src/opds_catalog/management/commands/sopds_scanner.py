@@ -98,6 +98,14 @@ class Command(BaseCommand):
         # иначе первые вставки дефолтов попадут в нее и заблокируют
         # веб-запросы, читающие те же ключи
         seed_constance_defaults()
+
+        # Прогрев кэша выполняется ВНЕ транзакции (design §4, ADR-005)
+        # Это позволяет избежать длительных read-lock в Postgres
+        self.logger.info("Warming up BookWriter cache outside transaction...")
+        from opds_catalog.services.snapshot import DbSnapshotSource
+
+        scanner.writer.warmup(DbSnapshotSource())
+
         with transaction.atomic():
             scanner.scan_all()
         self.logger.debug("Updating library statistics")

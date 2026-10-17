@@ -6,31 +6,22 @@ from typing import Any
 
 from opds_catalog.constants import CAT_NORMAL
 from opds_catalog.models import (
-    SIZE_AUTHOR_NAME,
-    SIZE_BOOK_ANNOTATION,
-    SIZE_BOOK_DOCDATE,
     SIZE_BOOK_FILENAME,
-    SIZE_BOOK_FORMAT,
-    SIZE_BOOK_LANG,
     SIZE_BOOK_PATH,
-    SIZE_BOOK_TITLE,
     SIZE_CAT_CATNAME,
     SIZE_CAT_PATH,
-    SIZE_GENRE,
-    SIZE_GENRE_SUBSECTION,
-    SIZE_SERIES,
-    Author,
     Book,
     Catalog,
-    Genre,
-    Series,
-    bauthor,
-    bgenre,
-    bseries,
 )
-from opds_catalog.utils import getlangcode, p
+from opds_catalog.services.book_writer import (
+    BookWriter,
+)
+from opds_catalog.utils import safe_log_str
 
 scan_logger = logging.getLogger("scanner")
+
+# Default writer for legacy API support
+_default_writer = BookWriter(logger=scan_logger)
 
 
 def findcat(cat_name: str) -> Catalog | None:
@@ -66,8 +57,8 @@ def addcattree(cat_name: str, archive: int = CAT_NORMAL, size: int = 0) -> Catal
 
 def findbook(name: str, path: str, setavail: int = 0) -> Book | None:
     """Поиск книги в БД по имени и пути."""
-    scan_logger.info(f"Checking book {name} metadata in database")
-    scan_logger.debug(f"Book path = {path}")
+    scan_logger.info(f"Checking book {safe_log_str(name)} metadata in database")
+    scan_logger.debug(f"Book path = {safe_log_str(path)}")
     try:
         book = Book.objects.get(
             filename=name[:SIZE_BOOK_FILENAME], path=path[:SIZE_BOOK_PATH]
@@ -82,115 +73,6 @@ def findbook(name: str, path: str, setavail: int = 0) -> Book | None:
         book.save()
 
     return book
-
-
-def addbook(
-    name, path, cat, exten, title, annotation, docdate, lang, size=0, archive=0
-) -> Book:
-    """Добавление книги в коллекцию.
-
-    .. deprecated:: 1.1.0
-       Используйте ``opds_catalog.services.book_writer.BookWriter.save_book``.
-    """
-    return Book.objects.create(
-        filename=name[:SIZE_BOOK_FILENAME],
-        path=path[:SIZE_BOOK_PATH],
-        catalog=cat,
-        filesize=size,
-        format=exten.lower()[:SIZE_BOOK_FORMAT],
-        title=title[:SIZE_BOOK_TITLE],
-        search_title=title.upper()[:SIZE_BOOK_TITLE],
-        annotation=p(annotation, SIZE_BOOK_ANNOTATION),
-        docdate=docdate[:SIZE_BOOK_DOCDATE],
-        lang=lang[:SIZE_BOOK_LANG],
-        cat_type=archive,
-        avail=2,
-        lang_code=getlangcode(title),
-    )
-
-
-def addauthor(full_name: str) -> Author:
-    """Создание или получение автора.
-
-    .. deprecated:: 1.1.0
-       Используйте ``opds_catalog.services.book_writer.BookWriter.save_book``.
-    """
-    author, _ = Author.objects.get_or_create(
-        full_name=full_name[:SIZE_AUTHOR_NAME],
-        defaults={
-            "search_full_name": full_name.upper()[:SIZE_AUTHOR_NAME],
-            "lang_code": getlangcode(full_name),
-        },
-    )
-    return author
-
-
-def findauthor(full_name: str) -> list[Author]:
-    """Поиск автора по полному имени."""
-    return list(Author.objects.filter(full_name=full_name[:SIZE_AUTHOR_NAME]))[:1]
-
-
-def addbauthor(book: Book, author: Author):
-    """Связь книги с автором.
-
-    .. deprecated:: 1.1.0
-       Используйте ``opds_catalog.services.book_writer.BookWriter.save_book``.
-    """
-    bauthor.objects.get_or_create(book=book, author=author)
-
-
-def addgenre(genre: str) -> Genre:
-    """Создание или получение жанра.
-
-    .. deprecated:: 1.1.0
-       Используйте ``opds_catalog.services.book_writer.BookWriter.save_book``.
-    """
-    # Здесь 'Unknown genre' захардкожен или должен быть из locale/constants
-    # Для совместимости с оригиналом используем заглушку или перенесем в constants
-    genre_obj, _ = Genre.objects.get_or_create(
-        genre=genre[:SIZE_GENRE],
-        defaults={
-            "section": "Unknown genre",
-            "subsection": genre[:SIZE_GENRE_SUBSECTION],
-        },
-    )
-    return genre_obj
-
-
-def addbgenre(book: Book, genre: Genre):
-    """Связь книги с жанром.
-
-    .. deprecated:: 1.1.0
-       Используйте ``opds_catalog.services.book_writer.BookWriter.save_book``.
-    """
-    bgenre.objects.get_or_create(book=book, genre=genre)
-
-
-def addseries(ser: str | None) -> Series | None:
-    """Создание или получение серии. Возвращает None для пустого названия.
-
-    .. deprecated:: 1.1.0
-       Используйте ``opds_catalog.services.book_writer.BookWriter.save_book``.
-    """
-    if not ser:
-        return None
-    series, _ = Series.objects.get_or_create(
-        ser=ser[:SIZE_SERIES],
-        defaults={
-            "search_ser": ser.upper()[:SIZE_SERIES],
-            "lang_code": getlangcode(ser),
-        },
-    )
-    return series
-
-
-def addbseries(book: Book, ser: Series, ser_no: int):
-    """Связь книги с серией.
-
-    .. deprecated:: 1.1.0
-       Используйте ``opds_catalog.services.book_writer.BookWriter.save_book``.
-    """
-    bseries.objects.get_or_create(book=book, ser=ser, ser_no=ser_no)
 
 
 def archive_skip(arcpath: str, arcsize: int, depth: int = 0) -> int:

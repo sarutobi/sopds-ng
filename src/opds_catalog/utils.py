@@ -2,7 +2,6 @@
 #
 # Вспомогательные функции
 #
-# import unicodedata
 import codecs
 import logging
 import os
@@ -19,6 +18,15 @@ from django.conf import settings
 from opds_catalog.config import catalog_config
 from opds_catalog.constants import CAT_INP, CAT_NORMAL, CAT_ZIP
 from opds_catalog.models import Book
+
+
+def safe_log_str(s: Any) -> str:
+    """Санитизация строки для логов: удаление переносов строк для предотвращения log injection."""
+    if s is None:
+        return "None"
+    res = str(s)
+    return res.replace("\n", " ").replace("\r", " ")
+
 
 logger = logging.getLogger(__name__)
 
