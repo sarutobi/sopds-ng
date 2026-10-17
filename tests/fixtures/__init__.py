@@ -49,4 +49,5 @@ from .fixture_real_book import (
     zipped_fb2,
     zipped_fb2_book_from_fs,
 )
+from .fixture_scanner_data import scanner_boundary_cases
 from .fixture_settings import fake_sopds_root_lib, test_rootlib

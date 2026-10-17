@@ -1,0 +1,134 @@
+{
+  "authors": [
+    {
+      "full_name": "Author",
+      "lang_code": "2",
+      "search_full_name": "AUTHOR"
+    },
+    {
+      "full_name": "Иванов  Иван",
+      "lang_code": "1",
+      "search_full_name": "ИВАНОВ  ИВАН"
+    }
+  ],
+  "bauthors": [
+    {
+      "author": 1,
+      "book": 1
+    },
+    {
+      "author": 2,
+      "book": 2
+    },
+    {
+      "author": 2,
+      "book": 3
+    }
+  ],
+  "bgenres": [
+    {
+      "book": 1,
+      "genre": 1
+    },
+    {
+      "book": 2,
+      "genre": 1
+    },
+    {
+      "book": 3,
+      "genre": 1
+    }
+  ],
+  "books": [
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "3",
+      "catalog": 4,
+      "docdate": "2023-01-01",
+      "filename": "book.fb2",
+      "filesize": "1024",
+      "format": "fb2",
+      "lang": "ru",
+      "lang_code": "2",
+      "path": "collection.inpx/books.inp/books.zip",
+      "search_title": "TEST BOOK",
+      "title": "Test Book"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "3",
+      "catalog": 4,
+      "docdate": "2023-01-01",
+      "filename": "book.FB2",
+      "filesize": "1024",
+      "format": "fb2",
+      "lang": "ru",
+      "lang_code": "2",
+      "path": "collection.inpx/books.inp/books.zip",
+      "search_title": "TEST BOOK",
+      "title": "Test Book"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "3",
+      "catalog": 4,
+      "docdate": "2023-01-01",
+      "filename": "book_raw.fb2",
+      "filesize": "1024",
+      "format": "fb2",
+      "lang": "ru",
+      "lang_code": "2",
+      "path": "collection.inpx/books.inp/books.zip",
+      "search_title": "TEST BOOK",
+      "title": "Test Book"
+    }
+  ],
+  "bseries": [],
+  "catalogs": [
+    {
+      "cat_name": ".",
+      "cat_size": "0",
+      "cat_type": "0",
+      "parent": null,
+      "path": "."
+    },
+    {
+      "cat_name": "collection.inpx",
+      "cat_size": "365",
+      "cat_type": "2",
+      "parent": 1,
+      "path": "collection.inpx"
+    },
+    {
+      "cat_name": "books.inp",
+      "cat_size": "1244",
+      "cat_type": "2",
+      "parent": 2,
+      "path": "collection.inpx/books.inp"
+    },
+    {
+      "cat_name": "books.zip",
+      "cat_size": "0",
+      "cat_type": "3",
+      "parent": 3,
+      "path": "collection.inpx/books.inp/books.zip"
+    }
+  ],
+  "genres": [
+    {
+      "genre": "genre",
+      "section": "Unknown genre",
+      "subsection": "genre"
+    }
+  ],
+  "series": [],
+  "stats": {
+    "bad_books": 0,
+    "books_added": 3,
+    "books_in_archives": 3,
+    "books_skipped": 0
+  }
+}

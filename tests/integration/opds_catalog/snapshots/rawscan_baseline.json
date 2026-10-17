@@ -1,0 +1,402 @@
+{
+  "authors": [
+    {
+      "full_name": "1 Автор",
+      "lang_code": "3",
+      "search_full_name": "1 АВТОР"
+    },
+    {
+      "full_name": "2 Автор",
+      "lang_code": "3",
+      "search_full_name": "2 АВТОР"
+    },
+    {
+      "full_name": "АААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААА",
+      "lang_code": "1",
+      "search_full_name": "АААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААА"
+    },
+    {
+      "full_name": "Автор_!@ ",
+      "lang_code": "1",
+      "search_full_name": "АВТОР_!@ "
+    },
+    {
+      "full_name": "Бисмарк фон",
+      "lang_code": "1",
+      "search_full_name": "БИСМАРК ФОН"
+    },
+    {
+      "full_name": "Иванов, Иван",
+      "lang_code": "1",
+      "search_full_name": "ИВАНОВ, ИВАН"
+    },
+    {
+      "full_name": "Пушкин ",
+      "lang_code": "1",
+      "search_full_name": "ПУШКИН "
+    }
+  ],
+  "bauthors": [
+    {
+      "author": 1,
+      "book": 1
+    },
+    {
+      "author": 2,
+      "book": 2
+    },
+    {
+      "author": 3,
+      "book": 4
+    },
+    {
+      "author": 4,
+      "book": 5
+    },
+    {
+      "author": 5,
+      "book": 5
+    },
+    {
+      "author": 6,
+      "book": 6
+    },
+    {
+      "author": 7,
+      "book": 9
+    },
+    {
+      "author": 4,
+      "book": 15
+    },
+    {
+      "author": 5,
+      "book": 15
+    },
+    {
+      "author": 3,
+      "book": 16
+    },
+    {
+      "author": 2,
+      "book": 18
+    },
+    {
+      "author": 1,
+      "book": 19
+    }
+  ],
+  "bgenres": [],
+  "books": [
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "1",
+      "catalog": 2,
+      "docdate": "",
+      "filename": "book_R-1.fb2",
+      "filesize": "245",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": "archive.zip",
+      "search_title": "BOOK_R-1.FB2",
+      "title": "book_R-1.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-1.fb2",
+      "filesize": "245",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-1.FB2",
+      "title": "book_R-1.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-10.fb2",
+      "filesize": "183",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-10.FB2",
+      "title": "book_R-10.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-11.fb2",
+      "filesize": "237",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-11.FB2",
+      "title": "book_R-11.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-12.fb2",
+      "filesize": "183",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-12.FB2",
+      "title": "book_R-12.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-14.fb2",
+      "filesize": "183",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-14.FB2",
+      "title": "book_R-14.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-15.fb2",
+      "filesize": "483",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-15.FB2",
+      "title": "book_R-15.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "1",
+      "catalog": 2,
+      "docdate": "",
+      "filename": "book_R-2.fb2",
+      "filesize": "235",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": "archive.zip",
+      "search_title": "BOOK_R-2.FB2",
+      "title": "book_R-2.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-2.fb2",
+      "filesize": "235",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-2.FB2",
+      "title": "book_R-2.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "1",
+      "catalog": 2,
+      "docdate": "",
+      "filename": "book_R-3.fb2",
+      "filesize": "183",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": "archive.zip",
+      "search_title": "BOOK_R-3.FB2",
+      "title": "book_R-3.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-3.fb2",
+      "filesize": "183",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-3.FB2",
+      "title": "book_R-3.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "1",
+      "catalog": 2,
+      "docdate": "",
+      "filename": "book_R-4.fb2",
+      "filesize": "268",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": "archive.zip",
+      "search_title": "BOOK_R-4.FB2",
+      "title": "book_R-4.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-4.fb2",
+      "filesize": "268",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-4.FB2",
+      "title": "book_R-4.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "1",
+      "catalog": 2,
+      "docdate": "",
+      "filename": "book_R-5.fb2",
+      "filesize": "287",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": "archive.zip",
+      "search_title": "BOOK_R-5.FB2",
+      "title": "book_R-5.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-5.fb2",
+      "filesize": "287",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-5.FB2",
+      "title": "book_R-5.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-7.fb2",
+      "filesize": "183",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-7.FB2",
+      "title": "book_R-7.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-8.fb2",
+      "filesize": "183",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-8.FB2",
+      "title": "book_R-8.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-9.fb2",
+      "filesize": "183",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": ".",
+      "search_title": "BOOK_R-9.FB2",
+      "title": "book_R-9.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "0",
+      "catalog": 1,
+      "docdate": "",
+      "filename": "book_R-6.fb2",
+      "filesize": "217",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "1",
+      "path": ".",
+      "search_title": "С АННОТАЦИЕЙ",
+      "title": "С аннотацией"
+    }
+  ],
+  "bseries": [],
+  "catalogs": [
+    {
+      "cat_name": ".",
+      "cat_size": "0",
+      "cat_type": "0",
+      "parent": null,
+      "path": "."
+    },
+    {
+      "cat_name": "archive.zip",
+      "cat_size": "1740",
+      "cat_type": "1",
+      "parent": 1,
+      "path": "archive.zip"
+    }
+  ],
+  "genres": [],
+  "series": [],
+  "stats": {
+    "bad_books": 1,
+    "books_added": 19,
+    "books_in_archives": 5,
+    "books_skipped": 0
+  }
+}

@@ -353,3 +353,4 @@ docker-compose.override.yml
 
 !.gitea/
 data/
+.kiro/
