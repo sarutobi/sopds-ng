@@ -2,41 +2,33 @@
   "authors": [
     {
       "full_name": "Author",
-      "lang_code": "2",
+      "lang_code": "9",
       "search_full_name": "AUTHOR"
     },
     {
-      "full_name": "Иванов  Иван",
-      "lang_code": "1",
-      "search_full_name": "ИВАНОВ  ИВАН"
+      "full_name": "Иванов, Иван",
+      "lang_code": "9",
+      "search_full_name": "ИВАНОВ, ИВАН"
     }
   ],
   "bauthors": [
     {
-      "author": 1,
-      "book": 1
+      "author": "Иванов, Иван",
+      "book": "collection.inpx/books/books.zip"
     },
     {
-      "author": 2,
-      "book": 2
-    },
-    {
-      "author": 2,
-      "book": 3
+      "author": "Author",
+      "book": "collection.inpx/books/books.zip"
     }
   ],
   "bgenres": [
     {
-      "book": 1,
-      "genre": 1
+      "book": "collection.inpx/books/books.zip",
+      "genre": "genre"
     },
     {
-      "book": 2,
-      "genre": 1
-    },
-    {
-      "book": 3,
-      "genre": 1
+      "book": "collection.inpx/books/books.zip",
+      "genre": "genre"
     }
   ],
   "books": [
@@ -44,45 +36,30 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "3",
-      "catalog": 4,
+      "catalog": "collection.inpx/books/books.zip",
       "docdate": "2023-01-01",
-      "filename": "book.fb2",
+      "filename": "book",
       "filesize": "1024",
       "format": "fb2",
       "lang": "ru",
-      "lang_code": "2",
-      "path": "collection.inpx/books.inp/books.zip",
-      "search_title": "TEST BOOK",
+      "lang_code": "9",
+      "path": "collection.inpx/books/books.zip",
+      "search_title": "Test Book",
       "title": "Test Book"
     },
     {
       "annotation": "",
       "avail": "2",
       "cat_type": "3",
-      "catalog": 4,
+      "catalog": "collection.inpx/books/books.zip",
       "docdate": "2023-01-01",
-      "filename": "book.FB2",
+      "filename": "book_raw",
       "filesize": "1024",
       "format": "fb2",
       "lang": "ru",
-      "lang_code": "2",
-      "path": "collection.inpx/books.inp/books.zip",
-      "search_title": "TEST BOOK",
-      "title": "Test Book"
-    },
-    {
-      "annotation": "",
-      "avail": "2",
-      "cat_type": "3",
-      "catalog": 4,
-      "docdate": "2023-01-01",
-      "filename": "book_raw.fb2",
-      "filesize": "1024",
-      "format": "fb2",
-      "lang": "ru",
-      "lang_code": "2",
-      "path": "collection.inpx/books.inp/books.zip",
-      "search_title": "TEST BOOK",
+      "lang_code": "9",
+      "path": "collection.inpx/books/books.zip",
+      "search_title": "Test Book",
       "title": "Test Book"
     }
   ],
@@ -99,22 +76,29 @@
       "cat_name": "collection.inpx",
       "cat_size": "365",
       "cat_type": "2",
-      "parent": 1,
+      "parent": ".",
       "path": "collection.inpx"
     },
     {
       "cat_name": "books.inp",
       "cat_size": "1244",
       "cat_type": "2",
-      "parent": 2,
+      "parent": "collection.inpx",
       "path": "collection.inpx/books.inp"
+    },
+    {
+      "cat_name": "books",
+      "cat_size": "0",
+      "cat_type": "0",
+      "parent": "collection.inpx",
+      "path": "collection.inpx/books"
     },
     {
       "cat_name": "books.zip",
       "cat_size": "0",
       "cat_type": "3",
-      "parent": 3,
-      "path": "collection.inpx/books.inp/books.zip"
+      "parent": "collection.inpx/books",
+      "path": "collection.inpx/books/books.zip"
     }
   ],
   "genres": [
@@ -127,8 +111,8 @@
   "series": [],
   "stats": {
     "bad_books": 0,
-    "books_added": 3,
-    "books_in_archives": 3,
+    "books_added": 2,
+    "books_in_archives": 2,
     "books_skipped": 0
   }
 }

@@ -38,52 +38,52 @@
   ],
   "bauthors": [
     {
-      "author": 1,
-      "book": 1
+      "author": "Иванов, Иван",
+      "book": "archive.zip"
     },
     {
-      "author": 2,
-      "book": 2
+      "author": "Пушкин ",
+      "book": "archive.zip"
     },
     {
-      "author": 3,
-      "book": 4
+      "author": "Бисмарк фон",
+      "book": "archive.zip"
     },
     {
-      "author": 4,
-      "book": 5
+      "author": "1 Автор",
+      "book": "archive.zip"
     },
     {
-      "author": 5,
-      "book": 5
+      "author": "2 Автор",
+      "book": "archive.zip"
     },
     {
-      "author": 6,
-      "book": 6
+      "author": "АААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААА",
+      "book": "."
     },
     {
-      "author": 7,
-      "book": 9
+      "author": "Автор_!@ ",
+      "book": "."
     },
     {
-      "author": 4,
-      "book": 15
+      "author": "1 Автор",
+      "book": "."
     },
     {
-      "author": 5,
-      "book": 15
+      "author": "2 Автор",
+      "book": "."
     },
     {
-      "author": 3,
-      "book": 16
+      "author": "Бисмарк фон",
+      "book": "."
     },
     {
-      "author": 2,
-      "book": 18
+      "author": "Пушкин ",
+      "book": "."
     },
     {
-      "author": 1,
-      "book": 19
+      "author": "Иванов, Иван",
+      "book": "."
     }
   ],
   "bgenres": [],
@@ -92,7 +92,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "1",
-      "catalog": 2,
+      "catalog": "archive.zip",
       "docdate": "",
       "filename": "book_R-1.fb2",
       "filesize": "245",
@@ -107,7 +107,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-1.fb2",
       "filesize": "245",
@@ -122,7 +122,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-10.fb2",
       "filesize": "183",
@@ -137,7 +137,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-11.fb2",
       "filesize": "237",
@@ -152,7 +152,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-12.fb2",
       "filesize": "183",
@@ -167,7 +167,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-14.fb2",
       "filesize": "183",
@@ -182,7 +182,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-15.fb2",
       "filesize": "483",
@@ -197,7 +197,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "1",
-      "catalog": 2,
+      "catalog": "archive.zip",
       "docdate": "",
       "filename": "book_R-2.fb2",
       "filesize": "235",
@@ -212,7 +212,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-2.fb2",
       "filesize": "235",
@@ -227,7 +227,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "1",
-      "catalog": 2,
+      "catalog": "archive.zip",
       "docdate": "",
       "filename": "book_R-3.fb2",
       "filesize": "183",
@@ -242,7 +242,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-3.fb2",
       "filesize": "183",
@@ -257,7 +257,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "1",
-      "catalog": 2,
+      "catalog": "archive.zip",
       "docdate": "",
       "filename": "book_R-4.fb2",
       "filesize": "268",
@@ -272,7 +272,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-4.fb2",
       "filesize": "268",
@@ -287,7 +287,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "1",
-      "catalog": 2,
+      "catalog": "archive.zip",
       "docdate": "",
       "filename": "book_R-5.fb2",
       "filesize": "287",
@@ -302,7 +302,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-5.fb2",
       "filesize": "287",
@@ -317,7 +317,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-7.fb2",
       "filesize": "183",
@@ -332,7 +332,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-8.fb2",
       "filesize": "183",
@@ -347,7 +347,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-9.fb2",
       "filesize": "183",
@@ -362,7 +362,7 @@
       "annotation": "",
       "avail": "2",
       "cat_type": "0",
-      "catalog": 1,
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-6.fb2",
       "filesize": "217",
@@ -387,7 +387,7 @@
       "cat_name": "archive.zip",
       "cat_size": "1740",
       "cat_type": "1",
-      "parent": 1,
+      "parent": ".",
       "path": "archive.zip"
     }
   ],

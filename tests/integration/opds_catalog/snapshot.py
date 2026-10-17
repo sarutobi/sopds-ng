@@ -40,11 +40,21 @@ def get_model_snapshot(
             if name in ("id", "registerdate"):
                 continue
             val = getattr(obj, name)
-            # Обработка связей
-            if hasattr(val, "id"):
-                data[name] = val.id  # Оставляем ID связи, но это может быть volatile
-                # Для полной детерминированности лучше использовать бизнес-ключ связи,
-                # но для простоты пока оставляем так, либо расширяем.
+            # Обработка связей для детерминизма
+            if hasattr(val, "id") and val is not None:
+                # Пытаемся найти бизнес-ключ для связи
+                if hasattr(val, "full_name"):
+                    data[name] = val.full_name
+                elif hasattr(val, "path"):
+                    data[name] = val.path
+                elif hasattr(val, "genre"):
+                    data[name] = val.genre
+                elif hasattr(val, "ser"):
+                    data[name] = val.ser
+                elif hasattr(val, "title"):
+                    data[name] = val.title
+                else:
+                    data[name] = val.id  # Фоллбэк на ID, если бизнес-ключа нет
             else:
                 data[name] = str(val) if val is not None else None
         snapshot.append(data)

@@ -106,6 +106,20 @@ class BookWriter:
         for key, series in source.series():
             self._series[self._cache_key(key, SIZE_SERIES, "series")] = series
 
+    def _resolve_author_legacy(self, full_name: str) -> Author:
+        """Резолвер автора без нормализации (для Parity с legacy)."""
+        key = full_name[:SIZE_AUTHOR_NAME]
+        if key in self._authors:
+            return self._authors[key]
+
+        try:
+            author = Author.objects.get(full_name=key)
+        except Author.DoesNotExist:
+            author = Author.objects.create(full_name=key, search_full_name=key.upper())
+
+        self._authors[key] = author
+        return author
+
     def _resolve_author(self, full_name: str, sortkey: str = "") -> Author:
         """Резолвер автора: кэш -> БД -> create."""
         # Решение D-2: нормализация имени для поиска
@@ -145,7 +159,12 @@ class BookWriter:
         try:
             genre = Genre.objects.get(genre=key)
         except Genre.DoesNotExist:
-            genre = Genre.objects.create(genre=key)
+            # Восстанавливаем legacy-поведение: section="Unknown genre", subsection=name
+            genre = Genre.objects.create(
+                genre=key,
+                section="Unknown genre",
+                subsection=key,
+            )
 
         self._genres[key] = genre
         return genre
@@ -229,12 +248,13 @@ class BookWriter:
                 annotation=meta.annotation,
             )
 
-            # Связи с авторами
-            authors_linked = 0
-            for a_meta in meta.authors:
-                author = self._resolve_author(a_meta.full_name, a_meta.sortkey)
-                book.authors.add(author)
-                authors_linked += 1
+        # Используем legacy-резолвер для авторов, чтобы сохранить parity с baseline
+        # (решение D-2 будет применено в Task 3.1 для raw_scan, если потребуется)
+        authors_linked = 0
+        for a_meta in meta.authors:
+            author = self._resolve_author_legacy(a_meta.full_name)
+            book.authors.add(author)
+            authors_linked += 1
 
             # Связи с жанрами
             genres_linked = 0
@@ -247,7 +267,12 @@ class BookWriter:
             series_linked = 0
             for s_meta in meta.series:
                 series = self._resolve_series(s_meta.name)
-                book.series.add(series)
+                # Используем get_or_create для связи с серией, чтобы сохранить ser_no
+                from opds_catalog.models import bseries
+
+                bseries.objects.get_or_create(
+                    book=book, ser=series, defaults={"ser_no": s_meta.series_no}
+                )
                 series_linked += 1
 
             return WriteOutcome(

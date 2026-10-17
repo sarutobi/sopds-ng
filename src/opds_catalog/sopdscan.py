@@ -14,7 +14,9 @@ from book_tools.format.util import strip_symbols
 from opds_catalog import inpx_parser
 from opds_catalog.config import catalog_config
 from opds_catalog.constants import CAT_INP, CAT_INPX, CAT_ZIP
-from opds_catalog.services import scanner
+from opds_catalog.services import scanner, snapshot
+from opds_catalog.services.book_writer import BookWriter
+from opds_catalog.services.inpx_adapter import to_book_metadata
 
 
 class opdsScanner:
@@ -23,6 +25,7 @@ class opdsScanner:
             self.logger = logger
         else:
             self.logger = logging.getLogger("scanner")
+        self.writer = BookWriter(logger=self.logger)
         self.init_stats()
 
     def init_stats(self) -> None:
@@ -92,6 +95,11 @@ class opdsScanner:
         self.rel_path = None
 
         scanner.avail_check_prepare()
+
+        # Прогрев кэша перед началом сканирования (Task 2.1)
+        self.logger.info("Warming up BookWriter cache...")
+        self.writer.warmup(snapshot.DbSnapshotSource())
+
         self.logger.debug(f"ZipScan: {catalog_config.ZIP_SCAN_ENABLED}")
         for full_path, dirs, files in os.walk(
             catalog_config.ROOT_LIB, followlinks=True
@@ -132,17 +140,17 @@ class opdsScanner:
 
         :returns: 0 если файл требуется обработать, 1 если обработка не требуется
         """
-        self.rel_path = os.path.relpath(
+        rel_path = os.path.relpath(
             os.path.join(inpx, inp_file), catalog_config.ROOT_LIB
         )
 
         if catalog_config.INPX_SKIP_UNCHANGED and scanner.archive_skip(
-            self.rel_path, inp_size, depth=1
+            rel_path, inp_size, depth=1
         ):
             self.logger.info(f"INP metafile {inp_file} not changed, skipping.")
             result = 1
         else:
-            self.inp_cat = scanner.addcattree(self.rel_path, CAT_INPX, inp_size)
+            self.inp_cat = scanner.addcattree(rel_path, CAT_INPX, inp_size)
             self.logger.info(
                 f"INP metafile {inp_file} stored as catalog {self.inp_cat}"
             )
@@ -150,55 +158,48 @@ class opdsScanner:
 
         return result
 
-    def inpx_callback(self, inpx, inp, meta_data):
+    def inpx_callback(self, inpx, inp, meta_data, rel_path):
         self.logger.info(f"Append book {meta_data[inpx_parser.sTitle]} to database")
         name = "%s.%s" % (
             meta_data[inpx_parser.sFile],
             meta_data[inpx_parser.sExt],
         )
 
-        lang = meta_data[inpx_parser.sLang].strip(strip_symbols)
-        title = meta_data[inpx_parser.sTitle].strip(strip_symbols)
-        annotation = ""
-        docdate = meta_data[inpx_parser.sDate].strip(strip_symbols)
-
-        rel_path_current = os.path.join(self.rel_path, meta_data[inpx_parser.sFolder])
+        rel_path_current = os.path.join(rel_path, meta_data[inpx_parser.sFolder])
         self.logger.debug(f"Library book path is {rel_path_current}")
-        if scanner.findbook(name, rel_path_current, 1) is None:
-            self.logger.info(f"Book {name} is new, store to database")
-            cat = scanner.addcattree(rel_path_current, CAT_INP)
-            book = scanner.addbook(
-                name,
-                rel_path_current,
-                cat,
-                meta_data[inpx_parser.sExt],
-                title,
-                annotation,
-                docdate,
-                lang,
-                meta_data[inpx_parser.sSize],
-                CAT_INP,
-            )
+
+        # Используем BookWriter вместо legacy scanner.findbook/addbook
+        from opds_catalog.services.book_writer import FileSpec
+
+        file_spec = FileSpec(
+            path=rel_path_current,
+            filename=meta_data[inpx_parser.sFile],
+            rel_path=rel_path_current,
+            extension=meta_data[inpx_parser.sExt],
+            file_size=int(meta_data[inpx_parser.sSize])
+            if meta_data[inpx_parser.sSize]
+            else 0,
+        )
+
+        # Создаем метаданные через адаптер
+        meta = to_book_metadata(meta_data, rel_path)
+
+        # Создаем каталог для книги (в соответствии с legacy-логикой)
+        cat = scanner.addcattree(rel_path_current, CAT_INP)
+
+        outcome = self.writer.save_book(
+            meta,
+            file=file_spec,
+            catalog=cat,
+            cat_type=CAT_INP,
+        )
+
+        if outcome.created:
             self.books_added += 1
             self.books_in_archives += 1
-            self.logger.debug("Book " + rel_path_current + "/" + name + " Added ok.")
-
-            for a in set(meta_data[inpx_parser.sAuthor]):
-                author = scanner.addauthor(a.replace(",", " "))
-                scanner.addbauthor(book, author)
-
-            for g in set(meta_data[inpx_parser.sGenre]):
-                scanner.addbgenre(
-                    book, scanner.addgenre(g.lower().strip(strip_symbols))
-                )
-
-            for s in set(meta_data[inpx_parser.sSeries]):
-                ser = scanner.addseries(s.strip())
-                if ser is None:
-                    continue
-                ser_no_str = meta_data[inpx_parser.sSerNo].strip()
-                ser_no = int(ser_no_str) if ser_no_str.isdigit() else 0
-                scanner.addbseries(book, ser, ser_no)
+            self.logger.debug(f"Book {rel_path_current}/{name} Added ok.")
+        else:
+            self.logger.debug(f"Book {rel_path_current}/{name} already exists.")
 
     def processinpx(self, name, full_path, file):
         self.logger.info(f"Start processing INPX file {name}")
@@ -215,6 +216,34 @@ class opdsScanner:
             scanner.addcattree(rel_file, CAT_INPX, inpx_size)
             inpx = inpx_parser.Inpx(file, self.inpx_callback, self.inpskip_callback)
             # FIXME: Неизвестные атрибуты inpx_parser
+            inpx.INPX_TEST_ZIP = catalog_config.INPX_TEST_ZIP
+            inpx.INPX_TEST_FILES = catalog_config.INPX_TEST_FILES
+
+            # Обертка для передачи rel_path в callback (Task 2.1)
+            # Мы получаем rel_path из inpskip_callback, но Inpx.parse вызывает callback
+            # с фиксированным числом аргументов. Чтобы передать rel_path,
+            # мы можем либо использовать замыкание, либо модифицировать Inpx.parse.
+            # Но проще всего — обернуть callback.
+
+            # В Inpx.parse() вызывается append_callback(self.inpx_file, inp_name, meta_data)
+            # Нам нужно добавить четвертый аргумент.
+            # Поскольку we cannot easily change Inpx.parse without changing the class,
+            # we will use a wrapper that gets the current rel_path.
+
+            # Однако, в Inpx.parse() путь к текущему .inp файлу известен.
+            # Чтобы избежать зависимости от мутируемого self.rel_path,
+            # мы создаем локальный callback для каждого .inp файла.
+
+            def wrapped_callback(inpx_file, inp_name, meta_data):
+                # Вычисляем rel_path для текущего .inp файла
+                current_rel_path = os.path.relpath(
+                    os.path.join(inpx_file, inp_name), catalog_config.ROOT_LIB
+                )
+                return self.inpx_callback(
+                    inpx_file, inp_name, meta_data, current_rel_path
+                )
+
+            inpx = inpx_parser.Inpx(file, wrapped_callback, self.inpskip_callback)
             inpx.INPX_TEST_ZIP = catalog_config.INPX_TEST_ZIP
             inpx.INPX_TEST_FILES = catalog_config.INPX_TEST_FILES
             inpx.parse()
