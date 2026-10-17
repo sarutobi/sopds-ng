@@ -2,13 +2,13 @@
   "authors": [
     {
       "full_name": "Author",
-      "lang_code": "9",
-      "search_full_name": "AUTHOR"
+      "lang_code": "2",
+      "search_full_name": "Author"
     },
     {
       "full_name": "Иванов, Иван",
-      "lang_code": "9",
-      "search_full_name": "ИВАНОВ, ИВАН"
+      "lang_code": "1",
+      "search_full_name": "Иванов, Иван"
     }
   ],
   "bauthors": [
@@ -42,9 +42,9 @@
       "filesize": "1024",
       "format": "fb2",
       "lang": "ru",
-      "lang_code": "9",
+      "lang_code": "2",
       "path": "collection.inpx/books/books.zip",
-      "search_title": "Test Book",
+      "search_title": "TEST BOOK",
       "title": "Test Book"
     },
     {
@@ -57,9 +57,9 @@
       "filesize": "1024",
       "format": "fb2",
       "lang": "ru",
-      "lang_code": "9",
+      "lang_code": "2",
       "path": "collection.inpx/books/books.zip",
-      "search_title": "Test Book",
+      "search_title": "TEST BOOK",
       "title": "Test Book"
     }
   ],
@@ -113,6 +113,6 @@
     "bad_books": 0,
     "books_added": 2,
     "books_in_archives": 2,
-    "books_skipped": 0
+    "books_skipped": 12
   }
 }

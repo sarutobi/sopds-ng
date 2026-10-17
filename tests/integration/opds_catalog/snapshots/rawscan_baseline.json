@@ -3,12 +3,12 @@
     {
       "full_name": "1 Автор",
       "lang_code": "3",
-      "search_full_name": "1 АВТОР"
+      "search_full_name": "Автор, 1"
     },
     {
       "full_name": "2 Автор",
       "lang_code": "3",
-      "search_full_name": "2 АВТОР"
+      "search_full_name": "Автор, 2"
     },
     {
       "full_name": "АААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААААА",
@@ -18,22 +18,22 @@
     {
       "full_name": "Автор_!@ ",
       "lang_code": "1",
-      "search_full_name": "АВТОР_!@ "
+      "search_full_name": "Автор_!@"
     },
     {
       "full_name": "Бисмарк фон",
       "lang_code": "1",
-      "search_full_name": "БИСМАРК ФОН"
+      "search_full_name": "фон, Бисмарк"
     },
     {
       "full_name": "Иванов, Иван",
       "lang_code": "1",
-      "search_full_name": "ИВАНОВ, ИВАН"
+      "search_full_name": "Иванов, Иван"
     },
     {
       "full_name": "Пушкин ",
       "lang_code": "1",
-      "search_full_name": "ПУШКИН "
+      "search_full_name": "Пушкин"
     }
   ],
   "bauthors": [
