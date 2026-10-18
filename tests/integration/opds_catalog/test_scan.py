@@ -59,7 +59,7 @@ class TestBookScaner(object):
         assert book.authors.count() == 1
         assert (
             book.authors.get(full_name="Peters Ellis").search_full_name
-            == "PETERS ELLIS"
+            == "Ellis, Peters"
         )
 
         assert book.genres.count() == 1
@@ -102,7 +102,7 @@ class TestBookScaner(object):
         assert book.authors.count() == 1
         assert (
             book.authors.get(full_name="Peters Ellis").search_full_name
-            == "PETERS ELLIS"
+            == "Ellis, Peters"
         )
 
         assert book.genres.count() == 1
@@ -145,7 +145,7 @@ class TestBookScaner(object):
         assert book.authors.count() == 1
         assert (
             book.authors.get(full_name="Мирер Александр").search_full_name
-            == "МИРЕР АЛЕКСАНДР"
+            == "Александр, Мирер"
         )
 
         assert book.genres.count() == 1
@@ -184,7 +184,9 @@ class TestBookScaner(object):
         assert book.filesize == 542811
 
         assert book.authors.count() == 1
-        assert book.authors.get(full_name="Cook Robin").search_full_name == "COOK ROBIN"
+        assert (
+            book.authors.get(full_name="Cook Robin").search_full_name == "Robin, Cook"
+        )
 
     def test_processzip(self):
         """Тестирование процедуры processzip (извлекает метаданные из книг, помещенных в архив и помещает их БД)"""
@@ -212,7 +214,7 @@ class TestBookScaner(object):
         assert book.authors.count() == 1
         assert (
             book.authors.get(full_name="Логинов Святослав").search_full_name
-            == "ЛОГИНОВ СВЯТОСЛАВ"
+            == "Святослав, Логинов"
         )
 
         assert book.genres.count() == 1
@@ -225,7 +227,9 @@ class TestBookScaner(object):
         assert book.path == self.test_zip
         assert book.cat_type == 1
         assert book.title == "Китайски сладкиш с късметче"
-        assert book.authors.get(full_name="Фрич Чарлз").search_full_name == "ФРИЧ ЧАРЛЗ"
+        assert (
+            book.authors.get(full_name="Фрич Чарлз").search_full_name == "Чарлз, Фрич"
+        )
 
         book = Book.objects.get(filename="539273.fb2")
         assert book.filesize == 21722
@@ -234,7 +238,7 @@ class TestBookScaner(object):
         assert book.title == "Драконьи Услуги"
         assert (
             book.authors.get(full_name="Куприянов Денис").search_full_name
-            == "КУПРИЯНОВ ДЕНИС"
+            == "Денис, Куприянов"
         )
 
     def test_scanall(self):
