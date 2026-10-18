@@ -8,7 +8,8 @@
 4. [Конфигурация через .env](#конфигурация-через-env)
 5. [Production-запуск (Gunicorn)](#production-запуск-gunicorn)
 6. [Развёртывание на Raspberry Pi](#развёртывание-на-raspberry-pi)
-7. [Telegram Bot](#telegram-bot)
+7. [Настройка библиотеки книг](#настройка-библиотеки-книг)
+8. [Telegram Bot](#telegram-bot)
 
 ---
 
@@ -23,26 +24,20 @@
 
 **Структура деплоя (SOPDS_ROOT):**
 
-Проект использует `SOPDS_ROOT` — настраиваемый корневой каталог установки (по умолчанию `/opt/sopds-ng`).
+Проект использует `SOPDS_ROOT` — единый корневой каталог установки (по умолчанию `/opt/sopds-ng`).
 Все данные приложения (`.env`, `secret_key.txt`, `db.sqlite3`, `log/`) находятся в поддиректории `$SOPDS_ROOT/data/`.
 
 ```
 SOPDS_ROOT=/opt/sopds-ng (настраиваемый)
-├── app/              ← код (src/*)
+├── app/              ← код приложения (src/*)
 ├── data/             ← .env, secret_key.txt, db.sqlite3, log/
-├── scripts/          ← start_server.sh, check-systemd.sh
-├── .venv/
+├── scripts/          ← start_server.sh, deploy.sh, check-systemd.sh
+├── .venv/             ← виртуальное окружение (создается deploy.sh)
 ├── pyproject.toml
 ├── manage.py
 ├── base.env
 └── etc/systemd/system/sopds.service
 ```
-
-**Опционально:**
-
-- Docker Compose (входит в состав Docker Desktop или устанавливается отдельно)
-- Memcached / Redis (для кэширования)
-- Telegram Bot API Token (для интеграции с Telegram)
 
 ---
 
@@ -60,13 +55,14 @@ cd sopds-ng
 Скопируйте шаблон конфигурации в директорию данных:
 
 ```bash
+mkdir -p data
 cp base.env data/.env
 ```
 
-Отредактируйте `data/.env`. Минимально необходимые параметры:
+Отредактируйте `data/.env`. **Обязательные** параметры зависят от выбранной БД.
 
+**Для PostgreSQL:**
 ```env
-SECRET_KEY=<сгенерируйте случайную строку>
 SOPDS_DB_ENGINE=postgres
 SOPDS_DB_NAME=sopds
 SOPDS_DB_USER=postgres
@@ -75,62 +71,53 @@ SOPDS_DB_HOST=db
 SOPDS_DB_PORT=5432
 ```
 
-**Генерация SECRET_KEY:**
+**Примечание:** `SECRET_KEY` генерируется автоматически при первом запуске, если не задан явно.
 
-```bash
-python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-```
-
-О структуре `SOPDS_ROOT`:
-
-- `data/.env` — конфигурация django-environ (читается приложением из `$SOPDS_ROOT/data/.env`, в Docker — `/app/data/.env`). Важно: значения `_FILE`-переменных (например, `SECRET_KEY_FILE`) открываются как пути — указывайте **абсолютные** пути (в Docker: `/app/data/secret_key.txt`, `/app/version.txt`)
-- `data/secret_key.txt` — секретный ключ Django (генерируется автоматически при запуске)
-- `data/db.sqlite3` — SQLite база данных (при `SOPDS_DB_ENGINE=sqlite`)
-- `data/log/` — файлы логирования
+**О путях в Docker:**
+В образе используется стандарт `SOPDS_ROOT=/opt/sopds-ng`. 
+Пути в `.env` (например, `SECRET_KEY_FILE`) должны быть абсолютными: `/opt/sopds-ng/data/secret_key.txt`.
 
 ### 3. Использование готового образа (рекомендуется)
 
-Образы собираются автоматически из master и публикуются в [ghcr.io/sarutobi/sopds-ng](https://github.com/sarutobi/sopds-ng/pkgs/container/sopds-ng).
-Поддерживаются архитектуры amd64 и arm64 (единый multi-arch манифест).
+Образы публикуются в [ghcr.io/sarutobi/sopds-ng](https://github.com/sarutobi/sopds-ng/pkgs/container/sopds-ng).
 
-1. Скачайте `docker-compose.yml`, если ещё не сделали этого
-2. Замените секцию `build:` на `image: ghcr.io/sarutobi/sopds-ng:latest`:
+1. Скачайте `docker-compose.yml` со страницы [последнего релиза](https://github.com/sarutobi/sopds-ng/releases/latest):
+   ```bash
+   wget https://github.com/sarutobi/sopds-ng/releases/latest/download/docker-compose.yml
+   ```
 
-```yaml
-    image: ghcr.io/sarutobi/sopds-ng:latest
-    # build:  ← закомментируйте или удалите
-```
+2. Скачайте шаблон `.env` и подготовьте директорию данных:
+   ```bash
+   wget https://raw.githubusercontent.com/sarutobi/sopds-ng/master/base.env
+   mkdir -p data && cp base.env data/.env
+   # SECRET_KEY будет сгенерирован автоматически при первом запуске, если отсутствует в .env
+   ```
 
 3. Запустите:
+   ```bash
+   docker compose up -d
+   ```
 
-```bash
-docker compose up -d
-```
+### 4. Сборка и запуск (для разработчиков)
 
-Доступные теги:
-- `latest` или `master` — последняя версия из master
-- `sha-xxxxx` — конкретный коммит
-
-### 4. Сборка и запуск (кастомная сборка)
-
-Если нужна собственная сборка из исходников:
+Если вы клонировали репозиторий и хотите собрать образ локально:
 
 ```bash
 docker compose up -d --build
 ```
 
 Сервисы:
-- **web** — gunicorn на порту `8008`
+- **web** — gunicorn на порту `8080`
 - **db** — PostgreSQL 17
 
-**Что происходит при старте контейнера** (`scripts/docker_entrypoint.sh`):
+**Что происходит при старте контейнера** (`scripts/start_server.sh`):
 
-1. Проверка: задан ли `SOPDS_DB_PASSWORD` (без него — `FATAL` и останов)
-2. Создание `$DATA_ROOT/log/` (в Docker `$DATA_ROOT=/app/data`)
-3. Генерация `secret_key.txt` в `$DATA_ROOT/`, если файл отсутствует
-4. `collectstatic --skip-checks --no-input`
-5. `migrate --skip-checks --no-input`
-6. Запуск gunicorn
+1. Проверка обязательных переменных `SOPDS_ROOT` и `DATA_ROOT`.
+2. Создание `$DATA_ROOT/log/`.
+3. Генерация `secret_key.txt` в `$DATA_ROOT/`, если файл отсутствует.
+4. Применение миграций БД (`migrate`).
+5. Сборка статических файлов (`collectstatic`).
+6. Запуск gunicorn.
 
 ### 5. Проверка
 
@@ -139,7 +126,7 @@ docker compose up -d --build
 docker compose logs -f web
 
 # Проверка работоспособности
-curl http://localhost:8008/
+curl http://localhost:8080/
 ```
 
 ### 6. Создание суперпользователя
@@ -147,48 +134,6 @@ curl http://localhost:8008/
 ```bash
 docker compose exec web python manage.py createsuperuser
 ```
-
-### 7. Настройка пути к книгам
-
-По умолчанию книги монтируются из директории `./books` относительно корня проекта. Изменить можно через переменную `SOPDS_BOOK_PATH`:
-
-```bash
-export SOPDS_BOOK_PATH=/mnt/media/books
-docker compose up -d
-```
-
-После запуска настройте `SOPDS_ROOT_LIB` в админке Django:
-
-- Откройте `http://localhost:8008/admin/constance/config/`
-- Укажите абсолютный путь к директории с книгами (**внутри контейнера** — `/books/` для смонтированной директории)
-- Запустите сканирование: `docker compose exec web python manage.py sopds_scanner`
-
-### 8. Справочник жанров
-
-> В Docker-установке справочник загружается автоматически: `docker_entrypoint.sh`
-> выполняет `import_genres` при каждом старте контейнера (команда идемпотентна).
-> Этот шаг нужен только для bare-metal или если справочник не загрузился.
-
-Команда загружает справочник жанров из текстового файла формата glst
-(по умолчанию ищется `genres_fb2.glst` в `DATA_ROOT`, при отсутствии — встроенный
-в пакет `opds_catalog/fixtures/genres_fb2.glst`):
-
-```bash
-python manage.py import_genres
-```
-
-Обновление выполняется по коду жанра (update_or_create), поэтому безопасно
-для БД, уже отсканированной без справочника: привязки книг к жанрам не
-затрагиваются, исправляются только записи таблицы жанров. Жанры, отсутствующие
-в справочнике, остаются без изменений.
-
-Опции:
-
-| Опция | Описание |
-|-------|----------|
-| `glst_file` | Путь к glst-файлу (по умолчанию — `$DATA_ROOT/genres_fb2.glst`, фолбэк на встроенный) |
-| `--dry-run` | Не вносить изменения, только показать, что будет создано/обновлено |
-| `--dump-fixture` | После импорта перегенерировать `opds_catalog/fixtures/genre.json` |
 
 ---
 
@@ -204,174 +149,62 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ```bash
 # Скачайте релизный архив с GitHub
-# Замените v1.0.0 на актуальную версию
 VERSION=v1.0.0
 wget "https://github.com/sarutobi/sopds-ng/releases/download/${VERSION}/release_${VERSION#v}.tar.gz"
 
 # Распакуйте в целевой каталог
-mkdir -p /opt/sopds-ng/{app,data}
-tar -xzf "release_${VERSION#v}.tar.gz" -C /opt/sopds-ng/app
-cd /opt/sopds-ng/app
+sudo mkdir -p /opt/sopds-ng
+sudo tar -xzf "release_${VERSION#v}.tar.gz" -C /opt/sopds-ng
+sudo chown -R sopds:sopds /opt/sopds-ng
+cd /opt/sopds-ng
 ```
 
-### 3. Настройка окружения
+### 3. Запуск
 
-Задайте `SOPDS_ROOT` — корневой каталог установки (данные будут в `$SOPDS_ROOT/data/`):
+Рекомендуется использовать systemd-unit.
 
 ```bash
-export SOPDS_ROOT=/opt/sopds-ng
-mkdir -p "$SOPDS_ROOT/data"
+# 1. Установите unit-файл
+sudo cp /opt/sopds-ng/scripts/sopds.service /etc/systemd/system/sopds.service
+
+# 2. Активируйте и запустите
+sudo systemctl daemon-reload
+sudo systemctl enable sopds.service
+sudo systemctl start sopds.service
 ```
 
-Скопируйте и отредактируйте `.env`:
+По умолчанию сервер работает на порту `8080`.
+
+### 4. Проверка и администрирование
 
 ```bash
-cp base.env "$SOPDS_ROOT/data/.env"
-nano "$SOPDS_ROOT/data/.env"
+# Статус сервиса
+sudo systemctl status sopds.service
+
+# Логи (через journald)
+sudo journalctl -u sopds -f
+
+# Создание суперпользователя
+sudo -u sopds /opt/sopds-ng/.venv/bin/python /opt/sopds-ng/manage.py createsuperuser
 ```
-
-> **deploy.sh автоматизирует этот шаг:** скопирует base.env и подставит параметры
-> (SOPDS_ROOT, DB_ENGINE, DB_NAME, ALLOWED_HOSTS и др.) из переданных опций.
-> См. шаг 4.
-
-**Для SQLite** (без отдельного сервера БД):
-
-```env
-SOPDS_DB_ENGINE=sqlite
-```
-
-**Для PostgreSQL** (рекомендуется):
-
-```env
-SOPDS_DB_ENGINE=postgres
-SOPDS_DB_NAME=sopds
-SOPDS_DB_USER=postgres
-SOPDS_DB_PASSWORD=<пароль>
-SOPDS_DB_HOST=localhost
-SOPDS_DB_PORT=5432
-```
-
-**Для MySQL/MariaDB:**
-
-```env
-SOPDS_DB_ENGINE=mysql
-SOPDS_DB_NAME=sopds
-SOPDS_DB_USER=root
-SOPDS_DB_PASSWORD=<пароль>
-SOPDS_DB_HOST=localhost
-SOPDS_DB_PORT=3306
-```
-
-> Для MySQL требуется дополнительная зависимость: `uv pip install mysqlclient>=2.2`. На Debian/Ubuntu: `apt install default-libmysqlclient-dev`.
-
-### 4. Deploy (prepare environment)
-
-Одноразовый скрипт установки: зависимости, миграции, статика, secret_key.
-
-**Основной вариант (PostgreSQL с дефолтными путями):**
-
-```bash
-sudo -u sopds bash deploy.sh
-```
-
-**С параметрами (пример — SQLite, кастомный SOPDS_ROOT):**
-
-```bash
-sudo -u sopds bash deploy.sh \
-  -i /opt/sopds-ng \
-  --db-engine sqlite \
-  --time-zone Europe/Moscow \
-  --server-log-level INFO
-```
-
-**Все опции deploy.sh:**
-
-| Параметр | По умолчанию | Описание |
-|----------|-------------|----------|
-| `-i, --install-dir DIR` | `/opt/sopds-ng` | Корень установки (там же `.venv`) |
-| `-d, --data-root DIR` | `data` (→ `$INSTALL_DIR/data`) | Поддиректория данных относительно SOPDS_ROOT. Абсолютный — как есть, относительный — от INSTALL_DIR |
-| `--db-engine ENGINE` | `postgres` | `postgres`, `sqlite`, `mysql` |
-| `--db-name NAME` | (из .env) | Имя БД |
-| `--db-user USER` | (из .env) | Пользователь БД |
-| `--db-host HOST` | (из .env) | Хост БД |
-| `--db-port PORT` | (из .env) | Порт БД |
-| `--time-zone TZ` | `Europe/Moscow` | Часовой пояс |
-| `--allowed-hosts H` | (закомментирован) | Разрешённые хосты через запятую |
-| `--server-log-level LVL` | `WARNING` | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
-| `--debug` | — | Включить `DEBUG=True` |
-| `-DS, --django-settings MODULE` | `sopds.settings.base` | `DJANGO_SETTINGS_MODULE` |
-| `-n, --dry-run` | — | Показать что будет сделано без выполнения |
-
-**Что делает deploy.sh:**
-
-1. Создаёт `$DATA_ROOT/log/` и `$DATA_ROOT/static/`
-2. Копирует `base.env` → `.env` в DATA_ROOT (если .env не существует)
-3. Подставляет в .env переданные параметры (DB, ALLOWED_HOSTS, DEBUG и др.)
-4. `uv sync --frozen --no-group dev` — установка production-зависимостей
-5. Генерирует `secret_key.txt` в DATA_ROOT (если отсутствует)
-6. `collectstatic --skip-checks --no-input`
-7. `migrate --skip-checks --no-input`
-
-> После deploy.sh в `.env` остаётся пустой `SOPDS_DB_PASSWORD=''` — укажите пароль вручную.
-
-### 5. Dev-зависимости (опционально)
-
-Если нужны инструменты разработки (тесты, линтеры):
-
-```bash
-cd /opt/sopds-ng/app
-sudo -u sopds uv sync --frozen --group dev
-```
-
-### 6. Применение миграций (если deploy.sh не используется)
-
-```bash
-uv run python src/manage.py migrate --skip-checks --no-input
-```
-
-### 7. Сборка статики (если deploy.sh не используется)
-
-```bash
-uv run python src/manage.py collectstatic --skip-checks --no-input
-```
-
-### 8. Создание суперпользователя
-
-```bash
-uv run python src/manage.py createsuperuser
-```
-
-### 9. Запуск dev-сервера (для тестирования)
-
-```bash
-uv run python src/manage.py runserver 0.0.0.0:8000
-```
-
-Для production-запуска см. раздел [Production-запуск (Gunicorn)](#production-запуск-gunicorn).
 
 ---
 
 ## Конфигурация через .env
 
-Файл `.env` располагается в `$SOPDS_ROOT/data/.env` (в Docker — `/app/data/.env`, на bare-metal — путь, заданный через `export SOPDS_ROOT`).
-
-Поддерживаются следующие переменные:
+Файл `.env` располагается в `$SOPDS_ROOT/data/.env` (в Docker — `/opt/sopds-ng/data/.env`).
 
 ### Основные
 
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
-| `SECRET_KEY` | — | Секретный ключ Django (обязательно). Сгенерировать: `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"` |
-| `SECRET_KEY_FILE` | `$DATA_ROOT/secret_key.txt` | Путь к файлу с секретным ключом (используется FileAwareEnv). `$DATA_ROOT` = `$SOPDS_ROOT/data`. **Только абсолютный путь**: относительный путь открывается от рабочего каталога процесса и в Docker (`/app`) не находится. В Docker указывайте `/app/data/secret_key.txt` |
-| `DEBUG` | `False` | Режим отладки. В production всегда `False` |
-| `ALLOWED_HOSTS` | `.localhost, 127.0.0.1` | Список разрешённых доменов (через запятую) |
-| `CSRF_TRUSTED_ORIGINS` | (пусто) | Доверенные origin для CSRF за reverse proxy, со схемой (через запятую) |
-| `SOPDS_USE_HTTPS` | `False` | HTTPS-режим: secure-cookies, HSTS и доверие к `X-Forwarded-Proto` |
-| `DJANGO_SETTINGS_MODULE` | `sopds.settings.base` | Модуль настроек Django |
-| `SOPDS_ROOT` | `/opt/sopds-ng` | Корневой каталог установки. `data/`, `scripts/`, `.venv/` — внутри |
-| `DATA_ROOT` | `$SOPDS_ROOT/data` | Каталог данных (.env, secret_key.txt, db.sqlite3, log/). По умолчанию — поддиректория `data` внутри SOPDS_ROOT |
-| `TIME_ZONE` | `Europe/Moscow` | Часовой пояс |
-| `SOPDS_VERSION` | — | Версия проекта. Указать вручную: `SOPDS_VERSION=1.0.0RC1` |
+| `SECRET_KEY` | — | Секретный ключ Django. Если не задан, генерируется автоматически при старте. |
+| `DEBUG` | `False` | Режим отладки. В production всегда `False`. |
+| `SOPDS_USE_HTTPS` | `False` | HTTPS-режим: secure-cookies, HSTS и доверие к `X-Forwarded-Proto`. |
+| `SOPDS_VERSION` | — | Версия проекта (например, `1.0.0`). |
+| `SOPDS_SERVER_LOG_LEVEL` | `WARNING` | Уровень логирования (`DEBUG`, `INFO`, `WARNING`, `ERROR`). |
+| `ALLOWED_HOSTS` | `.localhost,127.0.0.1` | Список хостов, разделенных запятой. |
+| `CSRF_TRUSTED_ORIGINS` | — | Список доверенных origin для CSRF, разделенных запятой. |
 
 ### База данных
 
@@ -380,138 +213,26 @@ uv run python src/manage.py runserver 0.0.0.0:8000
 | `SOPDS_DB_ENGINE` | `postgres` | Движок БД: `postgres`, `sqlite` или `mysql` |
 | `SOPDS_DB_NAME` | — | Имя БД (только для postgres/mysql) |
 | `SOPDS_DB_USER` | — | Пользователь БД (только для postgres/mysql) |
-| `SOPDS_DB_PASSWORD` | — | Пароль БД (только для postgres/mysql). **Обязателен даже для SQLite в Docker** (проверка entrypoint) |
+| `SOPDS_DB_PASSWORD` | — | Пароль БД. **Обязателен даже для SQLite в Docker** |
 | `SOPDS_DB_HOST` | — | Хост БД (только для postgres/mysql) |
 | `SOPDS_DB_PORT` | — | Порт БД (только для postgres/mysql) |
-
-> Для SQLite путь БД всегда `$DATA_ROOT/db.sqlite3` (по умолчанию `$SOPDS_ROOT/data/db.sqlite3`). Переменная `SOPDS_DB_NAME` для SQLite игнорируется.
-
-### Сервер
-
-| Переменная | По умолчанию | Описание |
-|------------|-------------|----------|
-| `PORT` | `8008` | Порт для gunicorn |
-| `WEB_CONCURRENCY` | `cpu_count * 2 + 1` | Количество worker-процессов gunicorn |
-| `PYTHON_MAX_THREADS` | `2` | Количество потоков на worker (gthread) |
-| `WEB_TIMEOUT` | `120` | Таймаут worker'а (сек) |
-| `SOPDS_SERVER_LOG_LEVEL` | `WARNING` | Уровень логирования (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
-
-### Пути
-
-| Переменная | По умолчанию | Описание |
-|------------|-------------|----------|
-| `SOPDS_BOOK_PATH` | `./books` | Путь к директории с книгами **на хосте** (для Docker, через volume) |
-| `MEDIA_ROOT` | (настраивается) | Корень медиафайлов (обложки, загрузки) |
-| `STATIC_ROOT` | `BASE_DIR/static` | Корень статических файлов. `BASE_DIR = ...sopds-ng/src` |
 
 ---
 
 ## Production-запуск (Gunicorn)
 
-### Docker (рекомендуется)
+При запуске через systemd или вручную, используется Gunicorn.
 
+**Ручной запуск:**
 ```bash
-docker compose up -d --build
-```
-
-Контейнер автоматически запускает gunicorn через `scripts/docker_entrypoint.sh`:
-1. Создаёт `secret_key.txt` (если отсутствует)
-2. Выполняет `collectstatic`
-3. Выполняет `migrate`
-4. Запускает gunicorn
-
-### Bare-metal
-
-```bash
-uv run gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
+SOPDS_ROOT=/opt/sopds-ng /opt/sopds-ng/.venv/bin/gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
 ```
 
 Конфигурация gunicorn (`src/sopds/settings/gunicorn.py`):
-
-| Параметр | Значение | Источник |
-|----------|----------|----------|
-| **bind** | `0.0.0.0:8008` | `PORT` (env) |
-| **workers** | `cpu_count * 2 + 1` | `WEB_CONCURRENCY` (env) |
-| **worker_type** | `gthread` | — |
-| **threads** | `2` | `PYTHON_MAX_THREADS` (env) |
-| **timeout** | `120` | `WEB_TIMEOUT` (env) |
-
-### Systemd unit (рекомендуется)
-
-Полный юнит systemd с security hardening, логированием в journald и ресурсными лимитами:
-
-```ini
-[Unit]
-Description=SOPDS NG OPDS catalog server
-Documentation=https://github.com/sarutobi/sopds-ng
-After=network.target
-Wants=network.target
-
-[Service]
-Type=simple
-User=sopds
-Group=sopds
-WorkingDirectory=/opt/sopds-ng
-
-EnvironmentFile=-/opt/sopds-ng/data/.env
-Environment=SOPDS_ROOT=/opt/sopds-ng
-Environment=PYTHONDONTWRITEBYTECODE=1
-
-# Startup — через scripts/start_server.sh
-# Создает $SOPDS_ROOT/data/log, генерирует secret_key.txt, запускает gunicorn
-# ВНИМАНИЕ: migrate/collectstatic выполняются в deploy.sh (one-time)
-ExecStart=/opt/sopds-ng/scripts/start_server.sh
-
-Restart=on-failure
-RestartSec=5s
-
-NoNewPrivileges=yes
-PrivateTmp=yes
-ProtectSystem=strict
-ProtectHome=yes
-ReadWritePaths=/opt/sopds-ng/data
-
-LimitNOFILE=65535
-LimitNPROC=4096
-
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=sopds
-
-[Install]
-WantedBy=multi-user.target
-```
-
-#### Установка и запуск
-
-```bash
-# 1. Создайте системного пользователя
-sudo useradd -r sopds -d /opt/sopds-ng -s /usr/sbin/nologin
-
-# 2. Распакуйте релиз
-sudo mkdir -p /opt/sopds-ng/{app,data}
-sudo tar -xzf "release_${VERSION#v}.tar.gz" -C /opt/sopds-ng/app
-sudo chown -R sopds:sopds /opt/sopds-ng
-
-# 3. Deploy (prepare environment) — зависимости, .env, secret_key, migrate, collectstatic
-sudo -u sopds bash /opt/sopds-ng/app/deploy.sh
-
-# 4. Установите systemd unit
-sudo cp /opt/sopds-ng/app/etc/systemd/system/sopds.service /etc/systemd/system/sopds.service
-# или вручную создайте /etc/systemd/system/sopds.service из шаблона ниже
-
-# 5. Активируйте и запустите
-sudo systemctl daemon-reload
-sudo systemctl enable sopds.service
-sudo systemctl start sopds.service
-
-# 6. Проверьте статус
-sudo systemctl status sopds.service
-journalctl -u sopds -n 20 --no-pager
-```
-
-> **SOPDS_ROOT** в systemd unit обязателен — без него приложение будет искать `.env` в `/data/` (старое значение по умолчанию).
-> Логи приложения пишутся в journald — используйте `journalctl -u sopds -f` для просмотра.
+- **bind**: `0.0.0.0:8080` (или через переменную `PORT`)
+- **workers**: `cpu_count * 2 + 1` (или через `WEB_CONCURRENCY`)
+- **worker_type**: `gthread`
+- **threads**: `2` (или через `PYTHON_MAX_THREADS`)
 
 ### Nginx reverse proxy (рекомендуется)
 
@@ -521,12 +242,12 @@ server {
     server_name sopds.example.com;
 
     location /static/ {
-        alias /opt/sopds-ng/src/static/;
+        alias /opt/sopds-ng/data/static/;
         expires 30d;
     }
 
     location / {
-        proxy_pass http://127.0.0.1:8008;
+        proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -535,117 +256,60 @@ server {
 }
 ```
 
-#### HTTPS за reverse proxy (обязательно для логина)
-
-Если TLS терминируется на прокси (в приложение приходит HTTP с заголовком
-`X-Forwarded-Proto: https`), укажите в `.env`:
-
-```env
-SOPDS_USE_HTTPS=True
-ALLOWED_HOSTS='sopds.example.com'
-# Рекомендуется явно перечислить домены со схемой
-CSRF_TRUSTED_ORIGINS='https://sopds.example.com'
-```
-
-- `SOPDS_USE_HTTPS=True` включает доверие к заголовку `X-Forwarded-Proto`
-  (`SECURE_PROXY_SSL_HEADER`) — без него `request.is_secure()` возвращает `False`,
-  и проверка CSRF отклоняет форму логина с ошибкой 403
-  («Ошибка проверки CSRF. Запрос отклонён»).
-- `CSRF_TRUSTED_ORIGINS` — список origin со схемой, через запятую.
-- В этом же режиме включаются secure-cookies и HSTS.
-
-> **Безопасность:** порт приложения (8008) должен быть недоступен извне в обход
-> прокси, иначе злоумышленник сможет подделать заголовок `X-Forwarded-Proto`.
-> Для Docker используйте привязку к localhost: `ports: "127.0.0.1:8008:8008"`.
-
 ---
 
 ## Развёртывание на Raspberry Pi
 
-### Аппаратные требования
-
-- Raspberry Pi 3/4/5 (arm64)
-- 1 ГБ RAM (минимум), 2+ ГБ рекомендуется
-- Минимум 512 МБ свободного места на SD-карте/SSD
-
-### Docker на Raspberry Pi
-
+Для Raspberry Pi рекомендуется использовать SQLite для экономи экономии RAM и ограничить ресурсы Gunicorn:
+`WEB_CONCURRENCY=2` и `PYTHON_MAX_THREADS=4`.
 ```bash
-# Установка Docker (если не установлен)
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
-# Выйдите из сессии и зайдите заново (или выполните: newgrp docker)
-
-# Клонирование
-git clone https://github.com/sarutobi/sopds-ng.git
-cd sopds-ng
-
-# Настройка
-cp base.env data/.env
-# Отредактируйте data/.env — укажите SECRET_KEY
+sudo -u sopds bash deploy.sh --db-engine sqlite
+```
+```bash
+# Запуск с ограничением ресурсов
+WEB_CONCURRENCY=2 PYTHON_MAX_THREADS=4 \\
+  sudo -u sopds /opt/sopds-ng/.venv/bin/gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
 ```
 
-Образ `python:3.13-slim` поддерживает arm64 нативно. Эмуляция не требуется.
+---
 
-```bash
-docker compose up -d --build
-```
+## Настройка библиотеки книг
 
-### Bare-metal на Raspberry Pi
+Для того чтобы приложение видело ваши книги, необходимо выполнить два шага:
 
-```bash
-# Установка Python 3.13 через deadsnakes (если недоступен в репозитории)
-sudo apt update
-sudo apt install -y python3.13 python3.13-venv
+#### Шаг 1: Подготовка папки с книгами
+Укажите путь к папке с книгами.
 
-# Установка uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
+- **В Docker**: Используйте переменную `SOPDS_BOOK_PATH` в `docker-compose.yml` или `.env` для проброса папки с хоста в контейнер.
+  ```yaml
+  volumes:
+    - /mnt/media/books:/books:ro  # Слева — путь на хосте, справа — внутри контейнера
+  ```
+  В этом случае внутри контейнера путь к книгам будет `/books`.
 
-# Загрузка и распаковка релиза
-VERSION=v1.0.0
-wget "https://github.com/sarutobi/sopds-ng/releases/download/${VERSION}/release_${VERSION#v}.tar.gz"
-mkdir -p /opt/sopds-ng
-tar -xzf "release_${VERSION#v}.tar.gz" -C /opt/sopds-ng
-cd /opt/sopds-ng
+- **В Bare-metal**: Создайте папку с книгами (например, `/opt/sopds-ng/books`) и убедитесь, что у пользователя `sopds` есть права на её чтение:
+  ```bash
+  sudo mkdir -p /opt/sopds-ng/books
+  sudo chown -R sopds:sopds /opt/sopds-ng/books
+  ```
 
-# Deploy (prepare environment) — всё в одном шаге:
-# создание DATA_ROOT (→ $SOPDS_ROOT/data), .env из base.env, uv sync, secret_key, migrate, collectstatic
-sudo bash deploy.sh \
-  --db-engine sqlite \
-  --time-zone Europe/Moscow \
-  --server-log-level INFO
+#### Шаг 2: Настройка пути в админке Django
+После запуска сервера необходимо указать приложению, где именно искать корень библиотеки:
 
-# Запуск (с уменьшенным числом worker'ов)
-WEB_CONCURRENCY=2 PYTHON_MAX_THREADS=4 \
-  .venv/bin/gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
-```
+1. Зайдите в админку под суперпользователем: `http://your-host:8080/admin/`
+2. Перейдите в раздел **Constance** $\rightarrow$ **Config**.
+3. Найдите параметр `SOPDS_ROOT_LIB`.
+4. Введите абсолютный путь к папке с книгами:
+   - Для Docker: `/books` (или другой путь, указанный в volume).
+   - Для Bare-metal: `/opt/sopds-ng/books` (или ваш путь).
+5. Нажмите **Save**.
 
-**Рекомендации для Raspberry Pi:**
-
-1. Используйте SQLite вместо PostgreSQL — ниже потребление RAM
-2. Ограничьте `WEB_CONCURRENCY=2` (на 1–2 ГБ RAM)
-3. Отключите неиспользуемые модули (Telegram Bot, если не нужен)
-4. Используйте USB-накопитель или SSD для хранения книг вместо SD-карты
-5. Настройте swap (2 ГБ) при 1 ГБ RAM
+*Примечание: Приложение сканирует папку рекурсивно. Все книги в подпапках будут проиндексированы.*
 
 ---
 
 ## Telegram Bot
 
-После запуска настройте в админке Django (`http://your-host:8008/admin/constance/config/`):
-
-| Параметр | Описание |
-|----------|----------|
-| `SOPDS_TELEBOT_API_TOKEN` | Токен бота (получить у @BotFather) |
-| `SOPDS_TELEBOT_AUTH` | Включить аутентификацию (True/False) |
-| `SOPDS_TELEBOT_MAXITEMS` | Максимум элементов на странице |
-
-Эти настройки хранятся в БД (через django-constance), а не в `.env`.
-
-Плановое сканирование настраивается там же (раздел «Scanner Shedule»):
-- `SOPDS_SCAN_SHED_MIN` — минуты (cron-синтаксис)
-- `SOPDS_SCAN_SHED_HOUR` — часы (cron-синтаксис)
-- `SOPDS_SCAN_SHED_DAY` — дни (cron-синтаксис)
-- `SOPDS_SCAN_SHED_DOW` — дни недели (cron-синтаксис)
-
-По умолчанию: в полночь и в 12:00.
+Настройте в админке Django (`http://your-host:8080/admin/constance/config/`):
+- `SOPDS_TELEBOT_API_TOKEN` — токен бота от @BotFather.
+- `SOPDS_TELEBOT_AUTH` — включение аутентификации.

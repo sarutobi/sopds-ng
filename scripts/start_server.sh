@@ -1,34 +1,34 @@
-#!/usr/bin/env bash
-
-export DJANGO_SETTINGS_MODULE='sopds.settings.base'
-
-# Читаем SOPDS_ROOT из окружения, дефолт /opt/sopds-ng
-SOPDS_ROOT="${SOPDS_ROOT:-/opt/sopds-ng}"
-DATA_ROOT="${DATA_ROOT:-$SOPDS_ROOT/data}"
-SECRET_KEY_FILE="${SECRET_KEY_FILE:-$DATA_ROOT/secret_key.txt}"
+#!/bin/bash
+set -e
 
 # Проверка обязательных переменных
-if [ -z "${SOPDS_DB_PASSWORD}" ]; then
-    echo "FATAL: SOPDS_DB_PASSWORD не задан. Укажи в .env" >&2
+if [ -z "$SOPDS_ROOT" ]; then
+    echo "Error: SOPDS_ROOT environment variable is not set."
     exit 1
 fi
 
-mkdir -p "$DATA_ROOT/log"
-
-# Sync packages
-cd "$SOPDS_ROOT"
-uv sync --no-dev
-
-# Create key if not exists
-if [ ! -f "$SECRET_KEY_FILE" ]; then
-    uv run --no-dev python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())' > "$SECRET_KEY_FILE"
+if [ -z "$DATA_ROOT" ]; then
+    echo "Error: DATA_ROOT environment variable is not set."
+    exit 1
 fi
 
-# Collect statics files
-uv run --no-dev manage.py collectstatic --skip-checks --no-input
+# Создание директории логов, если она отсутствует
+mkdir -p "$DATA_ROOT/log/"
 
-# Run DB migrations
-uv run --no-dev manage.py migrate --skip-checks --no-input
+# Создание secret_key, если он отсутствует
+SECRET_KEY_FILE="${SECRET_KEY_FILE:-$DATA_ROOT/secret_key.txt}"
+if [ ! -f "$SECRET_KEY_FILE" ]; then
+    echo "Generating secret key..."
+    "$SOPDS_ROOT/.venv/bin/python" -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())' > "$SECRET_KEY_FILE"
+fi
 
-# Run server
-uv run --no-dev --env-file="$DATA_ROOT/.env" gunicorn --config="python:sopds.settings.gunicorn" sopds.wsgi
+# --- Подготовка БД и статики ---
+echo "Running database migrations..."
+"$SOPDS_ROOT/.venv/bin/python" manage.py migrate --no-input
+
+echo "Collecting static files..."
+"$SOPDS_ROOT/.venv/bin/python" manage.py collectstatic --no-input
+
+# Запуск Gunicorn
+echo "Starting Gunicorn..."
+exec "$SOPDS_ROOT/.venv/bin/gunicorn" --config="python:sopds.settings.gunicorn" sopds.wsgi

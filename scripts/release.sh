@@ -1,43 +1,51 @@
-#!/usr/bin/env bash
+#!/bin/bash
+set -e
 
-version=$(<./version.txt)
-echo "Создание релиза $version"
+# Определение версии
+VERSION=$(cat version.txt 2>/dev/null || echo "1.0.0")
+echo "Building release artifacts for version ${VERSION}..."
 
-echo "Подготовка"
-rm -rf build/*
-mkdir -p build/release/app
-mkdir -p build/release/scripts
+# Папка сборки
+BUILD_DIR="build"
+mkdir -p "$BUILD_DIR"
 
-echo "Копирование"
-# Код в app/
-cp -r ./src/* build/release/app/
+# 1. Сборка bare-metal архива
+echo "Creating bare-metal archive..."
+REL_NAME="release_${VERSION#v}"
+# Копируем всё, кроме ненужных папок
+tar -czf "$BUILD_DIR/${REL_NAME}.tar.gz" \
+    --exclude="build" \
+    --exclude=".git" \
+    --exclude=".venv" \
+    --exclude="tests" \
+    --exclude="data" \
+    --exclude="__pycache__" \
+    .
 
-# Корневые файлы
-cp LICENSE build/release/
-cp pyproject.toml build/release/
-cp src/manage.py build/release/
-cp base.env build/release/
-cp version.txt build/release/
+# 2. Генерация Docker Compose для пользователей
+echo "Generating docker-compose.yml for release..."
+# Используем python для корректной трансформации YAML
+python3 -c "
+import yaml
+import sys
 
-# Скрипты
-cp scripts/start_server.sh build/release/scripts/
+try:
+    with open('docker-compose.yml', 'r') as f:
+        config = yaml.safe_load(f)
+    
+    # Убираем build, ставим image
+    if 'services' in config and 'web' in config['services']:
+        web = config['services']['web']
+        if 'build' in web:
+            del web['build']
+        web['image'] = 'ghcr.io/sarutobi/sopds-ng:latest'
+    
+    with open('$BUILD_DIR/docker-compose.yml', 'w') as f:
+        yaml.dump(config, f, sort_keys=False)
+except Exception as e:
+    print(f'Error: {e}')
+    sys.exit(1)
+"
 
-echo "Очистка"
-rm -rf build/release/app/inpx
-find build/release/app -type f -name "*.pyc" -delete
-find build/release/app -type d -name "__pycache__" -delete
-
-echo "Копирование systemd unit"
-mkdir -p build/release/etc/systemd/system
-cp scripts/sopds.service build/release/etc/systemd/system/
-cp scripts/check-systemd.sh build/release/scripts/
-chmod +x build/release/scripts/check-systemd.sh
-
-echo "Подготовка пакета"
-cwd=$(pwd)
-cd build/release
-tar -czf ../release_${version}.tar.gz .
-cd ..
-rm -rf release/
-cd $cwd
-echo "Релиз ${version} создан"
+echo "Release artifacts created in $BUILD_DIR/"
+echo "Artifacts: ${REL_NAME}.tar.gz, docker-compose.yml"
