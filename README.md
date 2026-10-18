@@ -1,4 +1,4 @@
-#### SimpleOPDS Catalog NG (new generation) — Простой OPDS Каталог НП (новое поколение)
+#### SimpleOPDS Catalog NG (new generation) - Simple OPDS Catalog NP (new generation)
 #### Based on SimpleOPDS Catalog by Dmitry V.Shelepnev
 #### Author: Valery A. Ilychev
 #### Version 1.0.0RC1
@@ -44,31 +44,25 @@ All changes are being made in the dev branch of this repository.
 
 ---
 
-#### Развёртывание
+## Quick start (ready-made image)
 
-See [Deploy documentation](docs/deploy.md), including `SOPDS_ROOT` configuration for unified paths.
+Ready-made multi-arch images (amd64/arm64) are published at [ghcr.io/sarutobi/sopds-ng](https://github.com/sarutobi/sopds-ng/pkgs/container/sopds-ng):
 
----
-
-## Быстрый старт (готовый образ)
-
-Готовые multi-arch образы (amd64/arm64) публикуются в [ghcr.io/sarutobi/sopds-ng](https://github.com/sarutobi/sopds-ng/pkgs/container/sopds-ng):
-
-- `ghcr.io/sarutobi/sopds-ng:latest` — последняя версия из master
-- `ghcr.io/sarutobi/sopds-ng:master` — ветка master
-- `ghcr.io/sarutobi/sopds-ng:sha-xxxxx` — конкретный коммит
+- `ghcr.io/sarutobi/sopds-ng:latest` — latest version from master
+- `ghcr.io/sarutobi/sopds-ng:master` — master branch
+- `ghcr.io/sarutobi/sopds-ng:sha-xxxxx` — specific commit
 
 ```bash
-# 1. Скачайте docker-compose.yml и base.env
+# 1. Download docker-compose.yml and base.env
 wget https://raw.githubusercontent.com/sarutobi/sopds-ng/master/docker-compose.yml
 wget https://raw.githubusercontent.com/sarutobi/sopds-ng/master/base.env
 cp base.env data/.env
-# Настройте SECRET_KEY в data/.env
+# Configure SECRET_KEY in data/.env
 
-# 2. Измените docker-compose.yml: замените build: на image:
+# 2. Edit docker-compose.yml: replace build: with image:
 #   image: ghcr.io/sarutobi/sopds-ng:latest
 
-# 3. Запустите
+# 3. Start
 docker compose up -d
 ```
 
@@ -76,33 +70,33 @@ docker compose up -d
 
 ### Bare-metal install (systemd)
 
-1. Создайте системного пользователя:
+1. Create a system user:
    ```bash
    sudo useradd -r sopds
    ```
 
-2. Распакуйте релизный архив:
+2. Unpack the release archive:
    ```bash
    sudo tar -xzf release_*.tar.gz -C /opt/sopds-ng
    sudo chown -R sopds:sopds /opt/sopds-ng
    ```
 
-3. Подготовьте директорию данных:
+3. Prepare the data directory:
    ```bash
    sudo mkdir -p /opt/sopds-ng/data && sudo chown sopds:sopds /opt/sopds-ng/data
-   sudo cp base.env /opt/sopds-ng/data/.env   # затем отредактируйте .env
+   sudo cp base.env /opt/sopds-ng/data/.env   # then edit .env
    ```
 
-4. Установите и запустите systemd-сервис:
+4. Install and start the systemd service:
    ```bash
-   sudo cp etc/systemd/system/sopds.service /etc/systemd/system/
+   sudo cp etc/systemd/system/sopds.service /etc/systemd/system/sopds.service
    sudo systemctl daemon-reload
    sudo systemctl enable --now sopds
    ```
 
-5. Проверьте установку:
+5. Verify the installation:
    ```bash
    /opt/sopds-ng/check-systemd.sh
    ```
 
-Подробная инструкция — в [docs/deploy.md](docs/deploy.md).
+Detailed instructions are available in [docs/deploy.md](docs/deploy.md).
