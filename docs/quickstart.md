@@ -1,42 +1,87 @@
-# Быстрый старт SOPDS NG (bare-metal)
+# Быстрый старт SOPDS NG
 
-Краткая инструкция для развёртывания SOPDS NG на «голом» сервере (Debian) и работой с БД PostgreSQL.
-Подробная версия — [deploy.md](deploy.md).
-
-> **Требования:** Debian 12+, Python 3.13, uv, PostgreSQL 17.
+Краткая инструкция по развёртыванию SOPDS NG. Выберите подходящий вам способ установки.
 
 ---
 
-## 1. Создание пользователя и директорий
+## 1. Развёртывание через Docker (Рекомендуется)
 
+Самый быстрый способ запустить проект со всеми зависимостями (БД PostgreSQL, приложение).
+
+### Шаг 1: Подготовка окружения
+Убедитесь, что у вас установлены [Docker](https://docs.docker.com/get-docker/) и [Docker Compose](https://docs.docker.com/compose/install/).
+
+### Шаг 2: Загрузка конфигурации
+Скачайте файлы конфигурации в рабочую директорию:
+```bash
+wget https://raw.githubusercontent.com/sarutobi/sopds-ng/main/docker-compose.yml
+wget https://raw.githubusercontent.com/sarutobi/sopds-ng/main/base.env
+```
+
+### Шаг 3: Настройка переменных окружения
+Создайте директорию `data` и скопируйте туда шаблон настроек:
+```bash
+mkdir data
+cp base.env data/.env
+```
+Отредактируйте `data/.env`, указав следующие параметры:
+```env
+SOPDS_DB_NAME='sopds'
+SOPDS_DB_USER='sopds'
+SOPDS_DB_PASSWORD='ваш_пароль'     # Придумайте пароль
+SOPDS_DB_HOST='db'
+SOPDS_DB_PORT='5432'
+SOPDS_BOOK_PATH='/путь/к/книгам'   # Полный путь к вашей библиотеке на хосте
+```
+**Важно:** Файл `docker-compose.yml` редактировать не нужно.
+
+### Шаг 4: Запуск
+Запустите контейнеры, указав путь к файлу настроек:
+```bash
+docker compose --env-file data/.env up -d
+```
+
+### Шаг 5: Финальная настройка
+Выполните миграции БД, создайте суперпользователя и импортируйте справочник жанров:
+```bash
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py createsuperuser
+docker compose exec web python manage.py import_genres
+```
+Приложение будет доступно по адресу `http://localhost:8080`.
+
+---
+
+## 2. Развёртывание bare-metal (Debian)
+
+Инструкция для установки на сервер. Подробная версия — [deploy.md](deploy.md).
+
+> **Требования:** Debian 12+, Python 3.13, uv, PostgreSQL 17.
+
+### Шаг 1: Создание пользователя и директорий
 ```bash
 sudo useradd -r sopds -d /opt/sopds-ng -s /usr/sbin/nologin
 sudo mkdir -p /opt/sopds-ng/{app,data}
 sudo chown -R sopds:sopds /opt/sopds-ng
 ```
 
-## 2. Установка PostgreSQL
-
-
+### Шаг 2: Установка PostgreSQL
 ```bash
 sudo apt update
 sudo apt install -y postgresql-17 postgresql-client-17
-sudo -iu postgres
+sudo -iu postgres <<EOF
 createuser -DSRP sopds
 createdb -O sopds sopds
-exit
+EOF
 ```
+> **Внимание:** При создании пользователя БД будет запрошен пароль. Запомните его.
 
-При создании пользователя БД будет запрошен пароль. Запомните его.
-
-## 3. Установка uv
-
+### Шаг 3: Установка uv
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-## 4. Загрузка и распаковка релиза
-
+### Шаг 4: Загрузка релиза
 ```bash
 # Замените v1.0.0RC2 на актуальную версию
 VERSION=v1.0.0RC2
@@ -44,98 +89,32 @@ wget "https://github.com/sarutobi/sopds-ng/releases/download/${VERSION}/release_
 sudo tar -xzf /tmp/sopds-ng.tar.gz -C /opt/sopds-ng/app
 ```
 
-## 5. Настройка DATA_ROOT и .env
-
+### Шаг 5: Подготовка окружения (Deploy)
+Установите переменную пути к данным и запустите скрипт установки:
 ```bash
-sudo chown sopds:sopds /opt/sopds-ng/data
 export DATA_ROOT=/opt/sopds-ng/data
-```
-
-> **deploy.sh автоматизирует этот шаг** — скопирует `base.env` и подставит параметры
-> (DB_ENGINE, TIME_ZONE, ALLOWED_HOSTS и др.) из переданных опций. Пароль БД
-> задаётся вручную после запуска deploy.sh.
-
-Для **PostgreSQL** в `.env` должно быть:
-
-```env
-SOPDS_DB_ENGINE=postgres
-SOPDS_DB_NAME=sopds
-SOPDS_DB_USER=sopds
-SOPDS_DB_PASSWORD=<пароль>
-SOPDS_DB_HOST=localhost
-SOPDS_DB_PORT=5432
-```
-
-## 6. Deploy (prepare environment)
-
-Одноразовый скрипт установки: зависимости, миграции, статика, secret_key:
-
-```bash
 sudo -u sopds bash /opt/sopds-ng/app/deploy.sh
 ```
+**Что делает deploy.sh:** устанавливает зависимости через `uv`, генерирует `secret_key`, собирает статику и запускает миграции.
 
-**Что делает deploy.sh:**
-1. Создаёт `$DATA_ROOT/log/` и `$DATA_ROOT/static/`
-2. Копирует `base.env` → `.env` и подставляет параметры
-3. `uv sync --frozen --no-group dev` — установка зависимостей
-4. Генерирует `secret_key.txt` (если отсутствует)
-5. `collectstatic` и `migrate`
-
-> После deploy.sh укажите пароль БД вручную: `echo "SOPDS_DB_PASSWORD='ваш_пароль'" >> $DATA_ROOT/.env`
-
-## 6.1. Справочник жанров
-
-Без справочника жанров сканер помещает все жанры в раздел «Unknown genre».
-Загрузите его (ищется `$DATA_ROOT/genres_fb2.glst`, при отсутствии — встроенный в пакет):
-
+После завершения укажите пароль БД в `.env` вручную:
 ```bash
-cd /opt/sopds-ng/app
-sudo -u sopds DATA_ROOT="$DATA_ROOT" uv run python manage.py import_genres
+echo "SOPDS_DB_PASSWORD='ваш_пароль'" | sudo -u sopds tee -a $DATA_ROOT/.env
 ```
 
-Команда обновляет жанры по коду и безопасна для уже отсканированной БД.
-Подробнее — [deploy.md](deploy.md#8-справочник-жанров).
-
-## 7. Создание суперпользователя
-
+### Шаг 6: Финальная настройка
+Создайте суперпользователя и импортируйте жанры:
 ```bash
 cd /opt/sopds-ng/app
 sudo -u sopds DATA_ROOT="$DATA_ROOT" uv run python manage.py createsuperuser
+sudo -u sopds DATA_ROOT="$DATA_ROOT" uv run python manage.py import_genres
 ```
 
-## 8. Проверка (dev-сервер)
-
+### Шаг 7: Установка systemd-сервиса
 ```bash
-cd /opt/sopds-ng/app
-PORT=8080 sudo -u sopds DATA_ROOT="$DATA_ROOT" uv run gunicorn \
-  --config="python:sopds.settings.gunicorn" sopds.wsgi
-```
-
-Откройте `http://<ваш-сервер>:8080/` в браузере.
-
-## 9. Установка systemd-сервиса
-
-> **deploy.sh уже выполнен на шаге 6.** Если нет — выполните сначала:
-> `sudo -u sopds bash /opt/sopds-ng/app/deploy.sh`
-
-```bash
-# Установите systemd unit
 sudo cp /opt/sopds-ng/app/scripts/sopds.service /etc/systemd/system/sopds.service
 sudo systemctl daemon-reload
-sudo systemctl enable sopds.service
-sudo systemctl start sopds.service
+sudo systemctl enable --now sopds.service
 sudo systemctl status sopds.service
 ```
-
----
-
-## Известные проблемы bare-metal
-### `start_server.sh` + `ProtectSystem=strict` (решено)
-
-**Было:** `start_server.sh` при каждом запуске выполнял `uv sync --no-dev`, что конфликтовало с `ProtectSystem=strict`.
-
-**Решение:** разделены deploy и run:
-- `scripts/deploy.sh` — одноразовый setup (uv sync, migrate, collectstatic). Выполняется один раз после распаковки релиза: `sudo -u sopds bash /opt/sopds-ng/app/deploy.sh`
-- `scripts/start_server.sh` — только создание `/data/log`, генерация secret_key, запуск gunicorn. Использует `.venv/bin/` напрямую, без uv.
-
-При каждом рестарте сервиса systemd запускает только `start_server.sh` — безопасно при `ProtectSystem=strict`.
+Откройте `http://<ваш-сервер>:8080/` в браузере.
