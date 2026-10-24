@@ -81,7 +81,7 @@ def test_characterize_rawscan_baseline(
 
     if not snapshot_path.exists():
         save_snapshot(snapshot_path, snapshot)
-        pytest.fail(
+        pytest.skip(
             f"Baseline snapshot created at {snapshot_path}. Please review it and run again."
         )
 

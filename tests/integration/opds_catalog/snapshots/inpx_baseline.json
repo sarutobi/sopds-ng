@@ -13,11 +13,11 @@
   ],
   "bauthors": [
     {
-      "author": "Иванов, Иван",
+      "author": "Author",
       "book": "collection.inpx/books/books.zip"
     },
     {
-      "author": "Author",
+      "author": "Иванов, Иван",
       "book": "collection.inpx/books/books.zip"
     }
   ],
@@ -73,11 +73,11 @@
       "path": "."
     },
     {
-      "cat_name": "collection.inpx",
-      "cat_size": "365",
-      "cat_type": "2",
-      "parent": ".",
-      "path": "collection.inpx"
+      "cat_name": "books",
+      "cat_size": "0",
+      "cat_type": "0",
+      "parent": "collection.inpx",
+      "path": "collection.inpx/books"
     },
     {
       "cat_name": "books.inp",
@@ -87,18 +87,18 @@
       "path": "collection.inpx/books.inp"
     },
     {
-      "cat_name": "books",
-      "cat_size": "0",
-      "cat_type": "0",
-      "parent": "collection.inpx",
-      "path": "collection.inpx/books"
-    },
-    {
       "cat_name": "books.zip",
       "cat_size": "0",
       "cat_type": "3",
       "parent": "collection.inpx/books",
       "path": "collection.inpx/books/books.zip"
+    },
+    {
+      "cat_name": "collection.inpx",
+      "cat_size": "365",
+      "cat_type": "2",
+      "parent": ".",
+      "path": "collection.inpx"
     }
   ],
   "genres": [
