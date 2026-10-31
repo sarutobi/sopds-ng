@@ -14,8 +14,8 @@
 ### Шаг 2: Загрузка конфигурации
 Скачайте файлы конфигурации в рабочую директорию:
 ```bash
-wget https://raw.githubusercontent.com/sarutobi/sopds-ng/main/docker-compose.yml
-wget https://raw.githubusercontent.com/sarutobi/sopds-ng/main/base.env
+wget https://github.com/sarutobi/sopds-ng/releases/download/1.0.0/docker-compose.yml
+wget https://github.com/sarutobi/sopds-ng/releases/download/1.0.0/base.env
 ```
 
 ### Шаг 3: Настройка переменных окружения
@@ -41,6 +41,8 @@ SOPDS_BOOK_PATH='/путь/к/книгам'   # Полный путь к ваш�
 docker compose --env-file data/.env up -d
 ```
 
+> **Внимание!** ключ `--env-file data/.env` обязателен, без него приложение не запустится
+
 ### Шаг 5: Финальная настройка
 Выполните миграции БД, создайте суперпользователя и импортируйте справочник жанров:
 ```bash
@@ -48,7 +50,10 @@ docker compose exec web python manage.py migrate
 docker compose exec web python manage.py createsuperuser
 docker compose exec web python manage.py import_genres
 ```
+
 Приложение будет доступно по адресу `http://localhost:8080`.
+
+Журналы приложения можно посмотреть в файле `data/logs/`
 
 ---
 
@@ -70,7 +75,7 @@ sudo chown -R sopds:sopds /opt/sopds-ng
 sudo apt update
 sudo apt install -y postgresql-17 postgresql-client-17
 sudo -iu postgres <<EOF
-createuser -DSRP sopds
+createuser --no-createdb --no-superuser --no-createrole --pwprompt sopds
 createdb -O sopds sopds
 EOF
 ```
@@ -78,15 +83,15 @@ EOF
 
 ### Шаг 3: Установка uv
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+sudo -u sopds bash -c "curl -LsSf https://astral.sh/uv/install.sh | sh"
 ```
 
 ### Шаг 4: Загрузка релиза
 ```bash
-# Замените v1.0.0RC2 на актуальную версию
-VERSION=v1.0.0RC2
+# Замените на актуальную версию
+VERSION=v1.0.0
 wget "https://github.com/sarutobi/sopds-ng/releases/download/${VERSION}/release_${VERSION#v}.tar.gz" -O /tmp/sopds-ng.tar.gz
-sudo tar -xzf /tmp/sopds-ng.tar.gz -C /opt/sopds-ng/app
+sudo -u sopds tar -xzf /tmp/sopds-ng.tar.gz -C /opt/sopds-ng/app
 ```
 
 ### Шаг 5: Подготовка окружения (Deploy)
@@ -99,15 +104,21 @@ sudo -u sopds bash /opt/sopds-ng/app/deploy.sh
 
 После завершения укажите пароль БД в `.env` вручную:
 ```bash
-echo "SOPDS_DB_PASSWORD='ваш_пароль'" | sudo -u sopds tee -a $DATA_ROOT/.env
+sudo -u sopds bash -c "grep -q '^SOPDS_DB_PASSWORD=' $DATA_ROOT/.env && sed -i \"s/^SOPDS_DB_PASSWORD=.*/SOPDS_DB_PASSWORD='ваш_пароль'/\" $DATA_ROOT/.env || echo \"SOPDS_DB_PASSWORD='ваш_пароль'\" >> $DATA_ROOT/.env"
+```
+
+Настройте путь к каталогу с книгами:
+```bash
+sudo -u sopds bash -c "grep -q '^SOPDS_BOOK_PATH=' $DATA_ROOT/.env && sed -i \"s/^SOPDS_BOOK_PATH=.*/SOPDS_BOOK_PATH='/ваш/путь/каталога/книг'/\" $DATA_ROOT/.env || echo \"SOPDS_BOOK_PATH='/ваш/путь/каталога/книг'\" >> $DATA_ROOT/.env"
+
 ```
 
 ### Шаг 6: Финальная настройка
 Создайте суперпользователя и импортируйте жанры:
 ```bash
 cd /opt/sopds-ng/app
-sudo -u sopds DATA_ROOT="$DATA_ROOT" uv run python manage.py createsuperuser
-sudo -u sopds DATA_ROOT="$DATA_ROOT" uv run python manage.py import_genres
+sudo -u sopds bash -l -c "DATA_ROOT=\"$DATA_ROOT\" uv run python manage.py createsuperuser"
+sudo -u sopds bash -l -c "DATA_ROOT=\"$DATA_ROOT\" uv run python manage.py import_genres"
 ```
 
 ### Шаг 7: Установка systemd-сервиса
@@ -118,3 +129,5 @@ sudo systemctl enable --now sopds.service
 sudo systemctl status sopds.service
 ```
 Откройте `http://<ваш-сервер>:8080/` в браузере.
+
+Журналы приложения будут доступны в `/opt/sopds-ng/data/logs/`
