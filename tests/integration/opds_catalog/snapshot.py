@@ -23,21 +23,21 @@ def get_model_snapshot(
 
     # Сортировка по бизнес-ключам для детерминизма
     if hasattr(model_class, "full_name"):  # Author
-        qs = qs.order_by("full_name")
+        qs = qs.order_by("full_name", "id")
     elif hasattr(model_class, "title"):  # Book
-        qs = qs.order_by("title")
+        qs = qs.order_by("title", "filename", "path", "id")
     elif hasattr(model_class, "cat_name"):  # Catalog
-        qs = qs.order_by("cat_name")
+        qs = qs.order_by("cat_name", "path", "id")
     elif hasattr(model_class, "genre"):  # Genre
-        qs = qs.order_by("genre")
+        qs = qs.order_by("genre", "id")
     elif hasattr(model_class, "ser"):  # Series
-        qs = qs.order_by("ser")
+        qs = qs.order_by("ser", "id")
     elif model_class.__name__ == "bauthor":
-        qs = qs.order_by("author__full_name", "book__title")
+        qs = qs.order_by("author__full_name", "book__title", "book__filename", "id")
     elif model_class.__name__ == "bgenre":
-        qs = qs.order_by("genre__genre", "book__title")
+        qs = qs.order_by("genre__genre", "book__title", "book__filename", "id")
     elif model_class.__name__ == "bseries":
-        qs = qs.order_by("ser__ser", "book__title")
+        qs = qs.order_by("ser__ser", "book__title", "book__filename", "id")
     else:
         qs = qs.order_by("id")
 

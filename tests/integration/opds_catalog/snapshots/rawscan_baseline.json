@@ -63,11 +63,11 @@
     },
     {
       "author": "Бисмарк фон",
-      "book": "."
+      "book": "archive.zip"
     },
     {
       "author": "Бисмарк фон",
-      "book": "archive.zip"
+      "book": "."
     },
     {
       "author": "Иванов, Иван",
@@ -91,21 +91,6 @@
     {
       "annotation": "",
       "avail": "2",
-      "cat_type": "1",
-      "catalog": "archive.zip",
-      "docdate": "",
-      "filename": "book_R-1.fb2",
-      "filesize": "245",
-      "format": "fb2",
-      "lang": "",
-      "lang_code": "2",
-      "path": "archive.zip",
-      "search_title": "BOOK_R-1.FB2",
-      "title": "book_R-1.fb2"
-    },
-    {
-      "annotation": "",
-      "avail": "2",
       "cat_type": "0",
       "catalog": ".",
       "docdate": "",
@@ -115,6 +100,21 @@
       "lang": "",
       "lang_code": "2",
       "path": ".",
+      "search_title": "BOOK_R-1.FB2",
+      "title": "book_R-1.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "1",
+      "catalog": "archive.zip",
+      "docdate": "",
+      "filename": "book_R-1.fb2",
+      "filesize": "245",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": "archive.zip",
       "search_title": "BOOK_R-1.FB2",
       "title": "book_R-1.fb2"
     },
@@ -196,21 +196,6 @@
     {
       "annotation": "",
       "avail": "2",
-      "cat_type": "1",
-      "catalog": "archive.zip",
-      "docdate": "",
-      "filename": "book_R-2.fb2",
-      "filesize": "235",
-      "format": "fb2",
-      "lang": "",
-      "lang_code": "2",
-      "path": "archive.zip",
-      "search_title": "BOOK_R-2.FB2",
-      "title": "book_R-2.fb2"
-    },
-    {
-      "annotation": "",
-      "avail": "2",
       "cat_type": "0",
       "catalog": ".",
       "docdate": "",
@@ -220,6 +205,21 @@
       "lang": "",
       "lang_code": "2",
       "path": ".",
+      "search_title": "BOOK_R-2.FB2",
+      "title": "book_R-2.fb2"
+    },
+    {
+      "annotation": "",
+      "avail": "2",
+      "cat_type": "1",
+      "catalog": "archive.zip",
+      "docdate": "",
+      "filename": "book_R-2.fb2",
+      "filesize": "235",
+      "format": "fb2",
+      "lang": "",
+      "lang_code": "2",
+      "path": "archive.zip",
       "search_title": "BOOK_R-2.FB2",
       "title": "book_R-2.fb2"
     },
@@ -286,30 +286,30 @@
     {
       "annotation": "",
       "avail": "2",
-      "cat_type": "1",
-      "catalog": "archive.zip",
+      "cat_type": "0",
+      "catalog": ".",
       "docdate": "",
       "filename": "book_R-5.fb2",
       "filesize": "287",
       "format": "fb2",
       "lang": "",
       "lang_code": "2",
-      "path": "archive.zip",
+      "path": ".",
       "search_title": "BOOK_R-5.FB2",
       "title": "book_R-5.fb2"
     },
     {
       "annotation": "",
       "avail": "2",
-      "cat_type": "0",
-      "catalog": ".",
+      "cat_type": "1",
+      "catalog": "archive.zip",
       "docdate": "",
       "filename": "book_R-5.fb2",
       "filesize": "287",
       "format": "fb2",
       "lang": "",
       "lang_code": "2",
-      "path": ".",
+      "path": "archive.zip",
       "search_title": "BOOK_R-5.FB2",
       "title": "book_R-5.fb2"
     },
